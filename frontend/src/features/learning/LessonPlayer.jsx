@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { FaCircleCheck, FaLock, FaPlay } from 'react-icons/fa6';
 import VideoPlayer from './components/VideoPlayer.jsx';
 import LectureNotes from './LectureNotes.jsx';
 import SecurePdfViewer from './components/SecurePdfViewer.jsx';
@@ -126,8 +127,14 @@ export default function LessonPlayer() {
                           item.isLocked && 'cursor-not-allowed opacity-60',
                         )}
                       >
-                        <span className="mt-0.5">
-                          {item.isLocked ? '🔒' : item.isCompleted ? '✅' : '▶️'}
+                        <span className="mt-0.5" aria-hidden="true">
+                          {item.isLocked ? (
+                            <FaLock className="h-3.5 w-3.5 text-slate-400" />
+                          ) : item.isCompleted ? (
+                            <FaCircleCheck className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+                          ) : (
+                            <FaPlay className="h-3 w-3 text-slate-400" />
+                          )}
                         </span>
                         <span className="flex-1">
                           {item.title}

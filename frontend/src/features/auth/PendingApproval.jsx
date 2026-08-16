@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { FaCheck } from 'react-icons/fa6';
 import AuthCard from './components/AuthCard.jsx';
 import { fetchApprovalStatus } from './api/auth.api.js';
 import Button from '@/components/ui/Button.jsx';
@@ -84,7 +85,7 @@ export default function PendingApproval() {
                       : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
                 }`}
               >
-                {done ? '✓' : index + 1}
+                {done ? <FaCheck aria-hidden="true" className="h-3 w-3" /> : index + 1}
               </span>
               <span
                 className={`text-sm ${

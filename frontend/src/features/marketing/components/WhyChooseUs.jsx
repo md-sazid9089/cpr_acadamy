@@ -1,4 +1,5 @@
 import Card from '@/components/ui/Card.jsx';
+import { DotMatrix } from '@/components/ui/backgrounds';
 
 const STATS = [
   { value: '12,000+', label: 'Doctors trained' },
@@ -49,7 +50,11 @@ const REASONS = [
 /** Trust + stats block, the section directly below the course grid. */
 export default function WhyChooseUs() {
   return (
-    <section className="bg-surface-subtle py-16 dark:bg-surface-dark-subtle">
+    <section className="relative isolate overflow-hidden bg-white py-12 dark:bg-surface-dark">
+      <div className="pointer-events-none absolute inset-0 -z-10 text-brand-700 opacity-[0.04] dark:text-brand-300 dark:opacity-[0.10]">
+        <DotMatrix className="h-full w-full" />
+      </div>
+
       <div className="container-page">
         <div className="text-center">
           <h2 className="section-heading">Why doctors choose CPR Medical Academy</h2>

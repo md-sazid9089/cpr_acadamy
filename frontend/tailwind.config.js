@@ -6,18 +6,37 @@ export default {
     extend: {
       colors: {
         // White + green brand palette. `brand` is the primary green ramp.
+        // Royal emerald — deep, jewel-toned, slightly teal-leaning for a
+        // premium feel. Replaces the earlier bright/leafy emerald.
         brand: {
-          50: '#eefbf3',
-          100: '#d6f5e2',
-          200: '#b0eac9',
-          300: '#7cd9a8',
-          400: '#45c082',
-          500: '#1fa463',
-          600: '#12854f',
-          700: '#106a42',
-          800: '#105437',
-          900: '#0e452f',
-          950: '#04271a',
+          50: '#eef6f2',
+          100: '#d5ebe0',
+          200: '#a8d5be',
+          300: '#6fb89a',
+          400: '#3d9976',
+          500: '#217a5a',
+          600: '#186347',
+          700: '#14513b',
+          800: '#114231',
+          900: '#0e3628',
+          950: '#071e16',
+        },
+        // Warm accent, paired with `brand` for promo emphasis: offer prices,
+        // urgency notes and the Registration action. Global on purpose — use
+        // `accent-*` rather than raw amber classes so the promo colour can be
+        // retuned in one place.
+        accent: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+          950: '#451a03',
         },
         surface: {
           light: '#ffffff',
@@ -27,7 +46,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
+        // 'Noto Sans Bengali' sits after the Latin faces on purpose: the
+        // browser picks per glyph, so Latin keeps the existing look and only
+        // Bengali characters — which none of the earlier fonts cover — fall
+        // through to it.
+        sans: ['Inter', 'Segoe UI', 'system-ui', 'Noto Sans Bengali', 'sans-serif'],
       },
       keyframes: {
         marquee: {

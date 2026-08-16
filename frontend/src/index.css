@@ -1,3 +1,11 @@
+/* Self-hosted Bengali face. Latin text keeps the existing stack — this only
+   catches the Bengali glyphs, which no font in that stack provides, so the
+   Bangla copy renders the same on every device instead of falling back to
+   whatever the OS ships. */
+@import '@fontsource/noto-sans-bengali/400.css';
+@import '@fontsource/noto-sans-bengali/600.css';
+@import '@fontsource/noto-sans-bengali/700.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

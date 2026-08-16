@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
+import { FaStar } from 'react-icons/fa6';
 import { useCourse } from './api/courses.queries.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
 import Card, { CardBody } from '@/components/ui/Card.jsx';
@@ -57,7 +58,10 @@ export default function CourseDetail() {
           <p className="mt-3 max-w-2xl text-brand-100">{course.subtitle}</p>
 
           <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 text-sm">
-            <span>⭐ {course.rating ?? '—'} rating</span>
+            <span className="flex items-center gap-1.5">
+              <FaStar aria-hidden="true" className="h-3.5 w-3.5 text-amber-400" />
+              {course.rating ?? '—'} rating
+            </span>
             <span>{course.enrolledCount.toLocaleString('en-BD')} enrolled</span>
             <span>{course.lessonCount} lessons</span>
             <span>{course.duration}</span>

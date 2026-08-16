@@ -12,6 +12,11 @@ const VARIANTS = {
   ghost:
     'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
   danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
+  // Promo pair: a solid neutral and the warm `accent` token from the theme.
+  contrast:
+    'bg-slate-900 text-white hover:bg-slate-800 active:bg-slate-950 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white',
+  accent:
+    'bg-accent-500 text-accent-950 hover:bg-accent-400 active:bg-accent-600 dark:bg-accent-500 dark:text-accent-950 dark:hover:bg-accent-400',
   // For use on the dark green hero/CTA bands, where the surrounding colour is
   // the same in both themes — so these must not flip with dark mode.
   inverse: 'bg-white text-brand-800 hover:bg-brand-50 dark:bg-white dark:text-brand-800 dark:hover:bg-brand-50',

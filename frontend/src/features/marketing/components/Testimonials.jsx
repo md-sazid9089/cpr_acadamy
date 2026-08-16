@@ -27,7 +27,7 @@ const TESTIMONIALS = [
 
 export default function Testimonials() {
   return (
-    <section className="bg-white py-16 dark:bg-surface-dark">
+    <section className="bg-white py-12 dark:bg-surface-dark">
       <div className="container-page">
         <div className="text-center">
           <h2 className="section-heading">What our students say</h2>

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { FaRegStar, FaStar } from 'react-icons/fa6';
 import ExamTimer from './components/ExamTimer.jsx';
 import SbaQuestion from './components/SbaQuestion.jsx';
 import MtfQuestion from './components/MtfQuestion.jsx';
@@ -123,7 +124,17 @@ export default function ExamRunner() {
                   : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
               )}
             >
-              {flagged.has(current.id) ? '★ Flagged' : '☆ Flag for review'}
+              <span className="flex items-center gap-1.5">
+                {flagged.has(current.id) ? (
+                  <>
+                    <FaStar aria-hidden="true" className="h-3 w-3" /> Flagged
+                  </>
+                ) : (
+                  <>
+                    <FaRegStar aria-hidden="true" className="h-3 w-3" /> Flag for review
+                  </>
+                )}
+              </span>
             </button>
           </div>
 
