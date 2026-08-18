@@ -1,145 +1,254 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  FaFacebookF,
+  FaWhatsapp,
+  FaYoutube,
+  FaTelegram,
+  FaPhone,
+} from 'react-icons/fa6';
 import Logo from './Logo.jsx';
-import { CONTACT, COURSE_CATEGORIES, CATEGORY_SLUGS } from '@/constants';
-
-const QUICK_LINKS = [
-  { to: '/', label: 'Home' },
-  { to: '/batches', label: 'Batches' },
-  { to: '/class', label: 'Class Routine' },
-  { to: '/faq', label: 'FAQ' },
-  { to: '/contact', label: 'Contact Us' },
-  { to: '/login', label: 'Student Login' },
-];
-
-// External resources doctors actually use — mirrors Synapse's "Useful Websites".
-const USEFUL_WEBSITES = [
-  { href: 'https://bcps.edu.bd', label: 'BCPS Bangladesh' },
-  { href: 'https://www.bmdc.org.bd', label: 'BM&DC' },
-  { href: 'http://www.dghs.gov.bd', label: 'DGHS' },
-  { href: 'https://bpsc.gov.bd', label: 'Bangladesh Public Service Commission' },
-  { href: 'https://pubmed.ncbi.nlm.nih.gov', label: 'PubMed' },
-];
+import { CONTACT } from '@/constants';
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setSubscribed(true);
+      setEmail('');
+    }
+  };
+
   return (
-    <footer className="border-t border-slate-200 bg-surface-subtle dark:border-slate-800 dark:bg-surface-dark-subtle">
+    <footer className="relative border-t border-slate-800 bg-[#0c0d28] text-white">
+      {/* ── Main 4-Column Footer Content ── */}
       <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <Logo />
-          <p className="mt-4 max-w-xs text-sm text-slate-600 dark:text-slate-400">
-            Structured, exam-focused preparation for FCPS, BCS (Health) and MBBS professional
-            examinations — taught by clinicians who have sat the same papers.
+        {/* ── Column 1: Brand & Contact Info ── */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Logo compact className="h-10 w-10" />
+            <span className="text-lg font-bold text-white tracking-wide">
+              CPR Academy
+            </span>
+          </div>
+
+          <p className="text-xs leading-relaxed text-slate-300">
+            CPR Academy is Bangladesh's premier medical education platform for
+            FCPS Part-1, BCS (Health), Residency, and MBBS examination
+            preparation.
           </p>
-          <div className="mt-5 flex gap-3">
-            {[
-              { label: 'Facebook', href: 'https://facebook.com' },
-              { label: 'YouTube', href: 'https://youtube.com' },
-              { label: 'LinkedIn', href: 'https://linkedin.com' },
-            ].map((social) => (
+
+          <p className="text-xs leading-relaxed text-slate-400">
+            {CONTACT.address || 'House-32, Road-07, GEC Circle, Chattogram - 4000'}
+          </p>
+
+          <div className="space-y-1 text-xs">
+            <p className="text-slate-300">
+              <strong className="text-white">Helpline:</strong>{' '}
               <a
-                key={social.label}
-                href={social.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-brand-500 hover:text-brand-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-brand-400"
+                href="tel:+8801329672052"
+                className="transition-colors hover:text-blue-400"
               >
-                {social.label}
+                +88 01329 672052
               </a>
-            ))}
+            </p>
+            <p className="text-slate-300">
+              <strong className="text-white">Email:</strong>{' '}
+              <a
+                href={`mailto:${CONTACT.email || 'support@cpr.academy'}`}
+                className="transition-colors hover:text-blue-400"
+              >
+                {CONTACT.email || 'support@cpr.academy'}
+              </a>
+            </p>
           </div>
         </div>
 
+        {/* ── Column 2: Useful Links ── */}
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-900 dark:text-white">
-            Quick Links
-          </h3>
-          <ul className="mt-4 space-y-2.5">
-            {QUICK_LINKS.map((link) => (
-              <li key={link.to}>
-                <Link
-                  to={link.to}
-                  className="text-sm text-slate-600 transition-colors hover:text-brand-700 dark:text-slate-400 dark:hover:text-brand-400"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <div>
+            <h3 className="text-base font-bold text-white tracking-wide">
+              Useful Links
+            </h3>
+            <div className="mt-1.5 h-0.5 w-10 rounded bg-blue-500" />
+          </div>
 
-          <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-900 dark:text-white">
-            Categories
-          </h3>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {COURSE_CATEGORIES.map((category) => (
-              <li key={category}>
-                <Link
-                  to={`/courses/${CATEGORY_SLUGS[category]}`}
-                  className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 transition-colors hover:text-brand-700 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700"
-                >
-                  {category}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-900 dark:text-white">
-            Contact
-          </h3>
-          <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-400">
-            <li>{CONTACT.address}</li>
+          <ul className="mt-5 space-y-3 text-xs text-slate-300">
             <li>
-              <a href={`tel:${CONTACT.phone.replace(/\s/g, '')}`} className="hover:text-brand-700 dark:hover:text-brand-400">
-                {CONTACT.phone}
+              <Link to="/about" className="transition-colors hover:text-blue-400">
+                About us
+              </Link>
+            </li>
+            <li>
+              <a
+                href="https://bcps.edu.bd"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-blue-400"
+              >
+                BCPS Link
               </a>
             </li>
             <li>
-              <a href={`mailto:${CONTACT.email}`} className="hover:text-brand-700 dark:hover:text-brand-400">
-                {CONTACT.email}
+              <a
+                href="https://bpsc.gov.bd"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition-colors hover:text-blue-400"
+              >
+                BPSC Link
               </a>
             </li>
-            <li className="text-xs">{CONTACT.hours}</li>
+            <li>
+              <Link to="/faq" className="transition-colors hover:text-blue-400">
+                Privacy Policy
+              </Link>
+            </li>
           </ul>
         </div>
 
+        {/* ── Column 3: Our Company ── */}
         <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-900 dark:text-white">
-            Useful Websites
-          </h3>
-          <ul className="mt-4 space-y-2.5">
-            {USEFUL_WEBSITES.map((site) => (
-              <li key={site.href}>
-                <a
-                  href={site.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-slate-600 transition-colors hover:text-brand-700 dark:text-slate-400 dark:hover:text-brand-400"
-                >
-                  {site.label}
-                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M9 7h8v8" />
-                  </svg>
-                </a>
-              </li>
-            ))}
+          <div>
+            <h3 className="text-base font-bold text-white tracking-wide">
+              Our Company
+            </h3>
+            <div className="mt-1.5 h-0.5 w-10 rounded bg-blue-500" />
+          </div>
+
+          <ul className="mt-5 space-y-3 text-xs text-slate-300">
+            <li>
+              <Link to="/faq" className="transition-colors hover:text-blue-400">
+                Terms &amp; Conditions
+              </Link>
+            </li>
+            <li>
+              <Link to="/faq" className="transition-colors hover:text-blue-400">
+                Refund Policy
+              </Link>
+            </li>
+            <li>
+              <Link to="/contact" className="transition-colors hover:text-blue-400">
+                Contact Us
+              </Link>
+            </li>
+            <li>
+              <Link to="/batches" className="transition-colors hover:text-blue-400">
+                All Batches
+              </Link>
+            </li>
           </ul>
+        </div>
+
+        {/* ── Column 4: Newsletter SignUp & Social Links ── */}
+        <div>
+          <div>
+            <h3 className="text-base font-bold text-white tracking-wide">
+              Newsletter SignUp!
+            </h3>
+            <div className="mt-1.5 h-0.5 w-10 rounded bg-blue-500" />
+          </div>
+
+          <p className="mt-4 text-xs leading-relaxed text-slate-300">
+            Subscribe to our YouTube channel and newsletter for the latest videos
+            and updates.
+          </p>
+
+          {/* Email Subscription Form */}
+          <form onSubmit={handleSubscribe} className="mt-4">
+            <div className="flex items-center rounded-full bg-[#16193d] p-1 border border-slate-700/70 focus-within:border-blue-500">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Type your email add"
+                required
+                className="w-full bg-transparent px-3.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="shrink-0 rounded-full bg-[#1d63d3] px-4 py-1.5 text-xs font-bold text-white shadow transition hover:bg-blue-600"
+              >
+                {subscribed ? 'Subscribed!' : 'Subscribe'}
+              </button>
+            </div>
+          </form>
+
+          {/* Follow Us */}
+          <div className="mt-6">
+            <p className="text-xs font-semibold text-slate-300">Follow Us:</p>
+            <div className="mt-2.5 flex items-center gap-2">
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-[#1877f2] hover:text-white"
+              >
+                <FaFacebookF className="h-3.5 w-3.5" />
+              </a>
+
+              <a
+                href="https://wa.me/8801329672052"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="WhatsApp"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-[#25d366] hover:text-white"
+              >
+                <FaWhatsapp className="h-4 w-4" />
+              </a>
+
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="YouTube"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-[#ff0000] hover:text-white"
+              >
+                <FaYoutube className="h-4 w-4" />
+              </a>
+
+              <a
+                href="https://telegram.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Telegram"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-[#229ed9] hover:text-white"
+              >
+                <FaTelegram className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="border-t border-slate-200 dark:border-slate-800">
-        <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-slate-500 sm:flex-row dark:text-slate-400">
-          <p>© {new Date().getFullYear()} CPR Medical Academy. All rights reserved.</p>
-          <p className="flex gap-4">
-            <Link to="/faq" className="hover:text-brand-700 dark:hover:text-brand-400">
-              Refund Policy
+      {/* ── Bottom Copyright Bar ── */}
+      <div className="border-t border-slate-800/80 bg-[#08091d]">
+        <div className="container-page flex flex-col items-center justify-between gap-2 py-4 text-center text-xs text-slate-500 sm:flex-row">
+          <p>© {new Date().getFullYear()} CPR Academy. All Rights Reserved.</p>
+          <p className="flex gap-4 text-slate-400">
+            <Link to="/faq" className="hover:text-blue-400">
+              Privacy Policy
             </Link>
-            <Link to="/faq" className="hover:text-brand-700 dark:hover:text-brand-400">
-              Terms &amp; Privacy
+            <span>•</span>
+            <Link to="/faq" className="hover:text-blue-400">
+              Terms &amp; Conditions
             </Link>
           </p>
         </div>
       </div>
+
+      {/* ── Floating WhatsApp / Helpline Call Button ── */}
+      <a
+        href="tel:+8801329672052"
+        aria-label="Call helpline"
+        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xl transition-all duration-300 hover:scale-110 hover:bg-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-400/50"
+      >
+        <FaPhone className="h-5 w-5" />
+      </a>
     </footer>
   );
 }

@@ -11,6 +11,7 @@ import FAQ from '@/features/marketing/FAQ.jsx';
 import Contact from '@/features/marketing/Contact.jsx';
 import ClassRoutine from '@/features/marketing/ClassRoutine.jsx';
 import Gallery from '@/features/marketing/Gallery.jsx';
+import About from '@/features/marketing/About.jsx';
 import NotFound from '@/features/marketing/NotFound.jsx';
 
 // Courses & Batches
@@ -69,6 +70,7 @@ export const router = createBrowserRouter([
       { path: '/class', element: <ClassRoutine /> },
       { path: '/faq', element: <FAQ /> },
       { path: '/gallery', element: <Gallery /> },
+      { path: '/about', element: <About /> },
       { path: '/contact', element: <Contact /> },
 
       { path: '/login', element: <Login /> },
