@@ -1,25 +1,42 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
-/** Wordmark + heartbeat glyph. Renders as a link to home unless `as="span"`. */
+/**
+ * Brand mark, linking home.
+ *
+ * The artwork already contains the "CPR / Medical Academy" wordmark, so no
+ * separate text is rendered — the alt text carries the name for screen readers
+ * and for the case where the image fails to load.
+ *
+ * The source filename contains a space, hence the %20; keep it encoded, or
+ * rename the asset to `cpr-logo.png` and update this path.
+ *
+ * @param {{ className?: string, compact?: boolean }} props
+ * @param {boolean} [props.compact=false] Smaller mark, for tight bars.
+ */
 export default function Logo({ className, compact = false }) {
   return (
-    <Link to="/" className={cn('flex items-center gap-2.5', className)} aria-label="CPR Medical Academy, home">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2 12h4l2-5 3 10 3-7 2 2h6" />
-        </svg>
-      </span>
-      {!compact && (
-        <span className="leading-tight">
-          <span className="block text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
-            CPR <span className="text-brand-600 dark:text-brand-400">Medical Academy</span>
-          </span>
-          <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            FCPS · BCS · MBBS preparation
-          </span>
-        </span>
-      )}
+    <Link
+      to="/"
+      // Negative margin pulls the mark toward the viewport edge rather than
+      // sitting on the container's text gutter, so it reads as flush left.
+      className={cn('-ml-2 flex shrink-0 items-center lg:-ml-4', className)}
+      aria-label="CPR Medical Academy, home"
+    >
+      {/* Square + object-cover so the round crop stays a true circle rather
+          than an ellipse — the source is 2292x1824, so cover trims the sides
+          instead of squashing. The ring keeps the mark defined against the
+          white bar, since the artwork's own background is near-white. */}
+      <img
+        src="/assets/spotlight/cpr%20logo.png"
+        alt="CPR Medical Academy"
+        width="2292"
+        height="1824"
+        className={cn(
+          'aspect-square rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700',
+          compact ? 'h-11 w-11' : 'h-[4.5rem] w-[4.5rem]',
+        )}
+      />
     </Link>
   );
 }

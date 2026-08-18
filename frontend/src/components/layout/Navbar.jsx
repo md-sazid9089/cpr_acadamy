@@ -4,6 +4,7 @@ import Logo from './Logo.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useAuthStore } from '@/lib/auth';
+import { useScrolled } from '@/hooks/useScrolled';
 import { cn } from '@/lib/utils';
 
 const NAV_LINKS = [
@@ -16,15 +17,20 @@ const NAV_LINKS = [
 
 const linkClasses = ({ isActive }) =>
   cn(
-    'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+    'rounded-lg px-4 py-2.5 text-base font-medium transition-colors',
+    // Green wash on hover, not just green text, so the target reads as a
+    // control rather than a colour change.
+    'hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950 dark:hover:text-brand-300',
     isActive
       ? 'text-brand-700 dark:text-brand-400'
-      : 'text-slate-600 hover:text-brand-700 dark:text-slate-300 dark:hover:text-brand-400',
+      : 'text-slate-600 dark:text-slate-300',
   );
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { pathname } = useLocation();
+  const scrolled = useScrolled();
+  const isSolid = scrolled || mobileOpen;
 
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -36,11 +42,23 @@ export default function Navbar() {
   useEffect(() => setMobileOpen(false), [pathname]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-surface-dark/90">
-      <nav className="container-page flex h-16 items-center justify-between gap-4" aria-label="Main">
+    <header
+      className={cn(
+        'sticky top-0 z-40 transition-colors duration-300',
+        // Transparent while at the very top; the surface fades in on scroll.
+        // The open mobile drawer counts as "solid" too, otherwise the panel
+        // would hang off a see-through bar.
+        isSolid
+          ? 'border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-surface-dark/90'
+          : 'border-b border-transparent bg-transparent',
+      )}
+    >
+      {/* h-20 so the round logo (h-16) has breathing room. PublicLayout's
+          overlay offset and the Hero's top padding both track this height. */}
+      <nav className="container-page flex h-20 items-center justify-between gap-4" aria-label="Main">
         <Logo />
 
-        <div className="hidden items-center gap-1 lg:flex">
+        <div className="hidden items-center gap-2 lg:flex xl:gap-4">
           {NAV_LINKS.map((link) => (
             <NavLink key={link.to} to={link.to} end={link.end} className={linkClasses}>
               {link.label}
@@ -48,7 +66,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden items-center gap-3 lg:flex">
           <ThemeToggle />
           {isAuthenticated ? (
             <>
@@ -101,10 +119,11 @@ export default function Navbar() {
                 end={link.end}
                 className={({ isActive }) =>
                   cn(
-                    'block rounded-lg px-3 py-2.5 text-sm font-medium',
+                    'block rounded-lg px-4 py-3 text-base font-medium transition-colors',
+                    'hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950 dark:hover:text-brand-300',
                     isActive
                       ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
-                      : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800',
+                      : 'text-slate-700 dark:text-slate-300',
                   )
                 }
               >

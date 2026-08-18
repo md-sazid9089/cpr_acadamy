@@ -3,6 +3,7 @@ import ValueProps from './components/ValueProps.jsx';
 import CourseSpotlight from './components/CourseSpotlight.jsx';
 import FeaturedCourses from './components/FeaturedCourses.jsx';
 import WhyChooseUs from './components/WhyChooseUs.jsx';
+import Mentors from './components/Mentors.jsx';
 import Testimonials from './components/Testimonials.jsx';
 import CtaBanner from './components/CtaBanner.jsx';
 
@@ -30,7 +31,9 @@ const FCPS_SPOTLIGHT = {
   currency: '৳',
   offerNote: 'Limited time offer',
   enrollHref: '/courses/fcps',
-  imageSrc: '/assets/spotlight/doctor.png',
+  imageSrc: '/assets/spotlight/profilea.png',
+  // Decorative: the batch details are all in the adjacent copy, so an empty
+  // alt keeps screen readers from announcing a redundant image.
   imageAlt: '',
 };
 
@@ -42,6 +45,7 @@ export default function Home() {
       <ValueProps />
       <CourseSpotlight {...FCPS_SPOTLIGHT} />
       <FeaturedCourses />
+      <Mentors />
       <WhyChooseUs />
       <Testimonials />
       <CtaBanner />
