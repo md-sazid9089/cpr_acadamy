@@ -49,23 +49,25 @@ export default function Batches() {
 
   const activeGroup = BATCH_GROUPS.find((item) => item.id === group);
 
-  const { data: courses = [], isLoading, isError } = useCourses({
-    group: group && group !== ALL_GROUPS ? group : undefined,
-    ...filters,
-    search,
-  });
+  const queryParams = useMemo(() => {
+    if (!showResults) return undefined;
+    return {
+      group: group && group !== ALL_GROUPS ? group : undefined,
+      ...filters,
+      search,
+    };
+  }, [showResults, group, filters, search]);
 
-  // Unfiltered catalogue, used only for the per-category counts on the chooser
-  // cards. Shares the query cache with the list above.
-  const { data: allCourses = [] } = useCourses();
+  const { data: courses = [], isLoading, isError } = useCourses(queryParams);
 
   const groupCounts = useMemo(() => {
+    if (showResults) return {};
     const counts = {};
-    for (const course of allCourses) {
+    for (const course of courses) {
       if (course.batchGroup) counts[course.batchGroup] = (counts[course.batchGroup] ?? 0) + 1;
     }
     return counts;
-  }, [allCourses]);
+  }, [showResults, courses]);
 
   const onEnroll = useEnrollAction();
 

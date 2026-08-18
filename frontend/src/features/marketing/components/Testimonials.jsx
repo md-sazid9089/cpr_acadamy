@@ -1,60 +1,245 @@
-import Card from '@/components/ui/Card.jsx';
+import { useState } from 'react';
+import { FaPlay, FaQuoteRight, FaStar } from 'react-icons/fa6';
 
-// TODO: replace with GET /testimonials once the backend exists.
-const TESTIMONIALS = [
+const VIDEO_STORIES = [
   {
-    id: 't-1',
-    name: 'Dr. Farhana Akter',
-    result: 'FCPS Part-1 (Medicine), passed 2025',
-    quote:
-      'The weekly item analysis showed me exactly which topics I was guessing on. That single habit changed how I revised in the last two months.',
+    id: 'vs-1',
+    image: '/assets/spotlight/profilea.png',
+    quote: '২/৩ মাস আগেও কল্পনা করিনি আমি ক্যাডার হবো!',
+    tag: 'BCS (Health) Cadre',
+    name: 'Dr. Nazmul Hasan',
   },
   {
-    id: 't-2',
-    name: 'Dr. Mahmudul Hasan',
-    result: '41st BCS (Health), recommended',
-    quote:
-      'The written-answer evaluation was brutally honest and that is precisely what I needed. Model answers were far better than any guide book.',
+    id: 'vs-2',
+    image: '/assets/spotlight/profilea.png',
+    quote: 'মেন্টরদের সঠিক গাইডলাইনেই প্রথমবার FCPS Part-1 ক্লিয়ার করেছি!',
+    tag: 'FCPS Part-1 (Medicine)',
+    name: 'Dr. Tasmiah Mimi',
   },
   {
-    id: 't-3',
-    name: 'Dr. Sadia Rahman',
-    result: 'MBBS 3rd Professional, DMC',
+    id: 'vs-3',
+    image: '/assets/spotlight/profilea.png',
+    quote: 'আল্লাহর ইচ্ছা আর CPR এর উছিলায় প্রথম বিসিএস এ ক্যাডার হয়েছি।',
+    tag: '42nd BCS Health',
+    name: 'Dr. Mahmudul Islam',
+  },
+  {
+    id: 'vs-4',
+    image: '/assets/spotlight/profilea.png',
+    quote: 'সাফল্যের গল্প — নিয়মিত এক্সাম ও প্র্যাকটিসই সাফল্যের চাবিকাঠি।',
+    tag: 'BCS Health, 42nd BCS',
+    name: 'Dr. Jesmin Jui',
+  },
+];
+
+const WRITTEN_REVIEWS = [
+  {
+    id: 'wr-1',
+    name: 'Nazmul Hasan',
+    role: 'Student, BCS Health',
+    avatarText: 'NH',
+    borderGradient: 'from-amber-500/80 via-amber-600/40 to-transparent',
+    borderColor: 'border-amber-500/60',
     quote:
-      'Card exams every alternate day kept me consistent. The notes were concise enough to revise the night before the exam.',
+      '৪০ দিনের প্রিপারেশন নিয়েছিলাম। প্রশ্ন কমন পড়ার চেয়ে বেশি জরুরি কনসেপ্ট ক্লিয়ার থাকা। CPR এর প্রশ্নব্যাংক এবং নিয়মিত মক টেস্টের সল্ভ ক্লাস আমাকে কনফিডেন্স দিয়েছিল।',
+  },
+  {
+    id: 'wr-2',
+    name: 'Tasmiah B. Mimi',
+    role: 'Student, FCPS Part-1',
+    avatarText: 'TM',
+    borderGradient: 'from-purple-500/80 via-purple-600/40 to-transparent',
+    borderColor: 'border-purple-500/60',
+    quote:
+      'লেকচারগুলো এতটাই তথ্যবহুল ছিল যে বই পড়ার অতিরিক্ত চাপ নিতে হয়নি। বিশেষ করে আইটেম অ্যানালাইসিস এবং উইকলি টেস্ট আমার দুর্বল জায়গাগুলো চিহ্নিত করতে সাহায্য করেছে।',
+  },
+  {
+    id: 'wr-3',
+    name: 'জান্নাতুল ফেরদৌস নদীয়া',
+    role: 'Student, Residency',
+    avatarText: 'JN',
+    borderGradient: 'from-blue-500/80 via-blue-600/40 to-transparent',
+    borderColor: 'border-blue-500/60',
+    quote:
+      'রেসিডেন্সি ভর্তি পরীক্ষায় চান্স পাওয়া আমার জন্য স্বপ্ন ছিল। CPR এর সুপরিকল্পিত রুটিন এবং মেন্টরদের সার্বক্ষণিক গাইডলাইন ছাড়া এটা কখনোই সম্ভব হতো না। অসংখ্য ধন্যবাদ CPR টিমকে।',
+  },
+  {
+    id: 'wr-4',
+    name: 'Syeda Fatema Alam',
+    role: 'Student, FCPS & BCS',
+    avatarText: 'SF',
+    borderGradient: 'from-emerald-500/80 via-emerald-600/40 to-transparent',
+    borderColor: 'border-emerald-500/60',
+    quote:
+      'সবচেয়ে ইতিবাচক ব্যাপার হচ্ছে তাদের পরীক্ষা নেওয়ার পদ্ধতি। নিয়মিত পরীক্ষা দেওয়ার কারণে মূল পরীক্ষার ভয় একেবারেই কেটে গিয়েছিল। সবার জন্য শুভকামনা।',
   },
 ];
 
 export default function Testimonials() {
+  const [selectedVideo, setSelectedVideo] = useState(null);
+
   return (
-    <section className="bg-white py-12 dark:bg-surface-dark">
-      <div className="container-page">
-        <div className="text-center">
-          <h2 className="section-heading">What our students say</h2>
-          <p className="section-subheading mx-auto text-center">
-            Results from doctors who prepared with us in the last two examination cycles.
-          </p>
+    <section className="relative overflow-hidden bg-[#0c0f24] py-20 text-white">
+      {/* Background ambient glow */}
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-blue-600/10 blur-[120px]"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -bottom-40 right-10 h-[400px] w-[600px] rounded-full bg-purple-600/10 blur-[120px]"
+        aria-hidden="true"
+      />
+
+      <div className="container-page relative z-10 space-y-20">
+        {/* ═══════════════════════════════════════════════════════════════
+            PART 1: Video Stories / Achievers Banner (কৃতীদের কণ্ঠে সাফল্যের গল্প)
+            ═══════════════════════════════════════════════════════════════ */}
+        <div>
+          {/* Header */}
+          <div className="text-center">
+            <span className="inline-block rounded-full bg-blue-600/80 px-4 py-1.5 text-xs font-semibold text-white shadow-sm backdrop-blur-sm">
+              স্বপ্ন থেকে সাফল্যের যাত্রা
+            </span>
+            <h2
+              className="mt-3.5 text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl"
+              lang="bn"
+            >
+              কৃতীদের কণ্ঠে সাফল্যের গল্প
+            </h2>
+          </div>
+
+          {/* Video Cards Grid / Carousel */}
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {VIDEO_STORIES.map((story) => (
+              <div
+                key={story.id}
+                onClick={() => setSelectedVideo(story)}
+                className="group relative flex min-h-[220px] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.02] p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-blue-500/10"
+              >
+                {/* Photo & Tag Header */}
+                <div className="flex items-center gap-3">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-blue-400 bg-slate-800 shadow-md">
+                    <img
+                      src={story.image}
+                      alt={story.name}
+                      className="h-full w-full object-cover object-top"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
+                      <FaPlay className="h-3.5 w-3.5 text-white" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="inline-block rounded bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300">
+                      {story.tag}
+                    </span>
+                    <h3 className="text-xs font-bold text-white sm:text-sm">
+                      {story.name}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Quote in white box */}
+                <div className="mt-4 rounded-xl bg-white/95 p-3.5 text-slate-900 shadow-sm transition-transform duration-300 group-hover:scale-[1.02]">
+                  <p className="text-xs font-extrabold leading-snug sm:text-sm" lang="bn">
+                    "{story.quote}"
+                  </p>
+                </div>
+
+                {/* Play Button Indicator */}
+                <div className="mt-3 flex items-center justify-between text-xs font-semibold text-blue-300">
+                  <span className="flex items-center gap-1.5 text-[11px]">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[9px] text-white">
+                      ▶
+                    </span>
+                    ভিডিও দেখুন
+                  </span>
+                  <span className="text-[10px] text-white/50">CPR Academy</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Dots Indicator */}
+          <div className="mt-6 flex justify-center gap-1.5" aria-hidden="true">
+            <span className="h-1.5 w-6 rounded-full bg-blue-500" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+          </div>
         </div>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {TESTIMONIALS.map((item) => (
-            <Card key={item.id} className="flex flex-col p-6">
-              <div className="flex gap-1 text-amber-400" aria-label="5 out of 5 stars">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <svg key={index} className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2l3 6.5 7 .9-5 4.8 1.2 7L12 17.8 5.8 21.2 7 14.2l-5-4.8 7-.9z" />
-                  </svg>
-                ))}
+        {/* ═══════════════════════════════════════════════════════════════
+            PART 2: Written Student Reviews (শিক্ষার্থীদের বিশ্বাসের গল্প!)
+            ═══════════════════════════════════════════════════════════════ */}
+        <div>
+          {/* Header */}
+          <div className="text-center">
+            <h2
+              className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl"
+              lang="bn"
+            >
+              শিক্ষার্থীদের বিশ্বাসের গল্প!
+            </h2>
+            <p
+              className="mt-2 text-xs font-medium text-slate-400 sm:text-sm"
+              lang="bn"
+            >
+              CPR কেন হাজারো পরীক্ষার্থী চিকিৎসকের প্রথম পছন্দ?
+            </p>
+          </div>
+
+          {/* Testimonial Cards Grid */}
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {WRITTEN_REVIEWS.map((review) => (
+              <div
+                key={review.id}
+                className={`group flex flex-col justify-between rounded-2xl border ${review.borderColor} bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.1]`}
+              >
+                <div>
+                  {/* Rating Stars & Quote Icon */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1 text-amber-400">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <FaStar key={i} className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current" />
+                      ))}
+                    </div>
+                    <FaQuoteRight className="h-4 w-4 text-white/30 group-hover:text-white/60 transition-colors" />
+                  </div>
+
+                  {/* Quote Body */}
+                  <p
+                    className="mt-4 text-xs leading-relaxed text-slate-300 sm:text-[13px]"
+                    lang="bn"
+                  >
+                    "{review.quote}"
+                  </p>
+                </div>
+
+                {/* Author Info */}
+                <div className="mt-6 flex items-center gap-3 border-t border-white/10 pt-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
+                    {review.avatarText}
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-white sm:text-sm">
+                      {review.name}
+                    </h3>
+                    <p className="text-[11px] text-slate-400">{review.role}</p>
+                  </div>
+                </div>
               </div>
-              <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                “{item.quote}”
-              </blockquote>
-              <footer className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.name}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{item.result}</p>
-              </footer>
-            </Card>
-          ))}
+            ))}
+          </div>
+
+          {/* Dots Indicator */}
+          <div className="mt-6 flex justify-center gap-1.5" aria-hidden="true">
+            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+            <span className="h-1.5 w-6 rounded-full bg-blue-500" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+            <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+          </div>
         </div>
       </div>
     </section>

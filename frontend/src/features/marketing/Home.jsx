@@ -4,7 +4,7 @@ import CourseSpotlight from './components/CourseSpotlight.jsx';
 import FeaturedCourses from './components/FeaturedCourses.jsx';
 import TrackPromos from './components/TrackPromos.jsx';
 import Testimonials from './components/Testimonials.jsx';
-import CtaBanner from './components/CtaBanner.jsx';
+import FaqSection from './components/FaqSection.jsx';
 
 /**
  * Content for the spotlight band. Kept here rather than inside the component so
@@ -46,7 +46,7 @@ export default function Home() {
       <FeaturedCourses />
       <TrackPromos />
       <Testimonials />
-      <CtaBanner />
+      <FaqSection />
     </>
   );
 }
