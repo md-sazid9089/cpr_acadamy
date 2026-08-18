@@ -4,7 +4,7 @@ import { CONTACT, COURSE_CATEGORIES, CATEGORY_SLUGS } from '@/constants';
 
 const QUICK_LINKS = [
   { to: '/', label: 'Home' },
-  { to: '/courses', label: 'All Courses' },
+  { to: '/batches', label: 'Batches' },
   { to: '/class', label: 'Class Routine' },
   { to: '/faq', label: 'FAQ' },
   { to: '/contact', label: 'Contact Us' },

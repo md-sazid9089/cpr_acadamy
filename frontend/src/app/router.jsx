@@ -10,11 +10,14 @@ import Home from '@/features/marketing/Home.jsx';
 import FAQ from '@/features/marketing/FAQ.jsx';
 import Contact from '@/features/marketing/Contact.jsx';
 import ClassRoutine from '@/features/marketing/ClassRoutine.jsx';
+import Gallery from '@/features/marketing/Gallery.jsx';
 import NotFound from '@/features/marketing/NotFound.jsx';
 
-// Courses
+// Courses & Batches
 import CourseList from '@/features/courses/CourseList.jsx';
 import CourseDetail from '@/features/courses/CourseDetail.jsx';
+import CourseSchedule from '@/features/courses/CourseSchedule.jsx';
+import Batches from '@/features/courses/Batches.jsx';
 
 // Auth
 import Login from '@/features/auth/Login.jsx';
@@ -60,8 +63,12 @@ export const router = createBrowserRouter([
       { path: '/courses', element: <CourseList /> },
       { path: '/courses/:category', element: <CourseList /> },
       { path: '/courses/:category/:slug', element: <CourseDetail /> },
+      { path: '/courses/:category/:slug/schedule', element: <CourseSchedule /> },
+      { path: '/schedule', element: <CourseSchedule /> },
+      { path: '/batches', element: <Batches /> },
       { path: '/class', element: <ClassRoutine /> },
       { path: '/faq', element: <FAQ /> },
+      { path: '/gallery', element: <Gallery /> },
       { path: '/contact', element: <Contact /> },
 
       { path: '/login', element: <Login /> },

@@ -2,6 +2,7 @@ import Hero from './components/Hero.jsx';
 import ValueProps from './components/ValueProps.jsx';
 import CourseSpotlight from './components/CourseSpotlight.jsx';
 import FeaturedCourses from './components/FeaturedCourses.jsx';
+import TrackPromos from './components/TrackPromos.jsx';
 import Testimonials from './components/Testimonials.jsx';
 import CtaBanner from './components/CtaBanner.jsx';
 
@@ -43,6 +44,7 @@ export default function Home() {
       <ValueProps />
       <CourseSpotlight {...FCPS_SPOTLIGHT} />
       <FeaturedCourses />
+      <TrackPromos />
       <Testimonials />
       <CtaBanner />
     </>
