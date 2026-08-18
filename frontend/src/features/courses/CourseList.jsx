@@ -38,7 +38,7 @@ export default function CourseList() {
 
   return (
     <div className="bg-white dark:bg-surface-dark">
-      <section className="border-b border-slate-200 bg-surface-subtle py-12 dark:border-slate-800 dark:bg-surface-dark-subtle">
+      <section className="bg-white py-12 dark:bg-surface-dark">
         <div className="container-page text-center">
           <h1 className="section-heading">{heading}</h1>
           <p className="section-subheading mx-auto text-center">

@@ -33,11 +33,7 @@ export default function FeaturedCourses() {
     <section className="bg-white py-12 dark:bg-surface-dark">
       <div className="container-page">
         <div className="text-center">
-          <h2 className="section-heading">Featured Courses</h2>
-          <p className="section-subheading mx-auto text-center">
-            Pick your examination track — FCPS, BCS (Health) or MBBS professional — and see what's
-            running right now.
-          </p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white" lang="bn">আপনার কাঙ্খিত কোর্সটি খুঁজে নিন</h2>
         </div>
 
         <CategoryPills value={category} onChange={setCategory} counts={counts} className="mt-8" />
@@ -49,14 +45,14 @@ export default function FeaturedCourses() {
             </div>
           ) : isError ? (
             <EmptyState
-              title="Couldn't load featured courses"
+              title="Couldn't load featured batches"
               description="Please refresh the page in a moment."
             />
           ) : visible.length === 0 ? (
             <EmptyState
-              title={`No featured ${category} course right now`}
+              title={`No featured ${category} batch right now`}
               description="New batches are announced every month — check the full catalogue."
-              action={<Button to="/courses">Browse all courses</Button>}
+              action={<Button to="/batches">Browse all batches</Button>}
             />
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -68,8 +64,8 @@ export default function FeaturedCourses() {
         </div>
 
         <div className="mt-10 text-center">
-          <Button to="/courses" variant="outline" size="lg">
-            View all courses
+          <Button to="/batches" variant="outline" size="lg">
+            View all batches
           </Button>
         </div>
       </div>

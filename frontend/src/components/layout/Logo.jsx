@@ -28,10 +28,10 @@ export default function Logo({ className, compact = false }) {
           instead of squashing. The ring keeps the mark defined against the
           white bar, since the artwork's own background is near-white. */}
       <img
-        src="/assets/spotlight/cpr%20logo.png"
+        src="/assets/spotlight/cpr-logo.png"
         alt="CPR Medical Academy"
-        width="2292"
-        height="1824"
+        width="240"
+        height="191"
         className={cn(
           'aspect-square rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700',
           compact ? 'h-11 w-11' : 'h-[4.5rem] w-[4.5rem]',

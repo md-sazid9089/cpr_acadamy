@@ -150,7 +150,7 @@ function CarouselSlide({ slide, aspectClassName, fit }) {
     return (
       <div
         className={cn(
-          'flex w-full items-center justify-center bg-gradient-to-br from-brand-600 to-emerald-900 px-6 text-center',
+          'flex w-full items-center justify-center bg-gradient-to-br from-brand-600 to-brand-900 px-6 text-center',
           aspectClassName,
         )}
       >

@@ -61,13 +61,9 @@ function MentorCard({ mentor }) {
 
   return (
     <div className="group relative mx-auto w-full max-w-[240px] pb-10 sm:max-w-[260px]">
-      {/* Gradient wrapper — the colourful backdrop behind the cutout photo */}
-      <div
-        className="relative overflow-hidden rounded-2xl shadow-sm transition-transform duration-300 group-hover:scale-[1.02]"
-        style={{
-          background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 45%, #db2777 100%)',
-        }}
-      >
+      {/* Gradient wrapper — the backdrop behind the cutout photo. Brand tokens
+          rather than inline hex, so it tracks the palette like everything else. */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 via-brand-800 to-accent-800 shadow-sm transition-transform duration-300 group-hover:scale-[1.02]">
         {/* Photo — works best with a transparent-background cutout PNG */}
         <div className="aspect-[3/4]">
           {!imgFailed && mentor.image ? (

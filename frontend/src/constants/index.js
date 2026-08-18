@@ -24,6 +24,68 @@ export const CATEGORY_SLUGS = Object.freeze({
   MBBS: 'mbbs',
 });
 
+/**
+ * Batch groups — the second level under the three fixed categories, and the
+ * cards a visitor picks from on the Batches landing page. `category` keeps each
+ * group tied to one of COURSE_CATEGORIES so the existing /courses/:category
+ * routing keeps working unchanged.
+ *
+ * TODO: source from GET /batch-groups once the backend exists. The list below
+ * mirrors the tracks CPR currently runs — confirm with the client before launch.
+ */
+export const BATCH_GROUPS = Object.freeze([
+  { id: 'fcps-p1-medicine', label: 'FCPS P-I Medicine', category: 'FCPS' },
+  { id: 'fcps-p1-surgery', label: 'FCPS P-I Surgery', category: 'FCPS' },
+  { id: 'fcps-p1-paediatrics', label: 'FCPS P-I Paediatrics', category: 'FCPS' },
+  { id: 'fcps-p1-obs-gynae', label: 'FCPS P-I Obs & Gynae', category: 'FCPS' },
+  {
+    id: 'fcps-p1-foundation',
+    label: 'FCPS P-I Foundation',
+    note: '(Radiology, Dermatology, Anesthesia, EYE, ENT, PMR, Psychiatry, Radiotherapy, Patho, Micro, CM, Haemato)',
+    category: 'FCPS',
+  },
+  { id: 'residency', label: 'Residency', category: 'FCPS' },
+  { id: 'mphil-diploma', label: 'M.Phil & Diploma', category: 'FCPS' },
+  { id: 'mph', label: 'MPH', category: 'FCPS' },
+  { id: 'combined', label: 'Combined', category: 'FCPS' },
+  {
+    id: 'outlier',
+    label: 'Outlier',
+    note: '(MRCP, CS, COG, CPCH)',
+    category: 'FCPS',
+  },
+  { id: 'bmdc-licensing', label: 'BMDC Licensing', category: 'MBBS' },
+]);
+
+/** Sidebar facet — the shape of a batch, independent of its subject. */
+export const BATCH_TYPES = Object.freeze([
+  { id: 'foundation-core', label: 'Foundation Core Batch' },
+  { id: 'foundation', label: 'Foundation Batch' },
+  { id: 'online-live', label: 'Online Live Batch' },
+  { id: 'clinical', label: "Baily & Love's Pearl Batch/Clinical Batch" },
+  { id: 'friday-mega', label: 'Friday Mega Batch' },
+  { id: 'sba', label: 'SBA Batch' },
+  { id: 'exam-plus', label: 'Exam Plus Batch' },
+  { id: 'exam', label: 'Exam Batch' },
+  { id: 'crash', label: 'Crash Batch' },
+  { id: 'recovery', label: 'Recovery Batch' },
+  { id: 'mock-plus', label: 'Mock Plus Batch' },
+  { id: 'mock', label: 'Mock Batch' },
+]);
+
+/** Sidebar facet — which examination sitting the batch is aimed at. */
+export const BATCH_SESSIONS = Object.freeze([
+  { id: 'jan-26-p1', label: "Jan'26 P-1 Candidate" },
+  { id: 'jul-26-p1', label: "Jul'26 P-1 Candidate" },
+  { id: 'dec-26-p1', label: "Dec'26 P-1 Candidate" },
+]);
+
+/** Sidebar facet — delivery mode. */
+export const BATCH_BRANCHES = Object.freeze([
+  { id: 'online', label: 'Online' },
+  { id: 'offline', label: 'Offline' },
+]);
+
 export const EXAM_TYPES = Object.freeze({
   LIVE: 'live',
   MOCK: 'mock',

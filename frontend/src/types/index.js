@@ -40,6 +40,10 @@
  * @property {string} slug
  * @property {string} title
  * @property {CourseCategory} category
+ * @property {string} [batchGroup]   BATCH_GROUPS id, e.g. 'fcps-p1-medicine'.
+ * @property {string} [batchType]    BATCH_TYPES id, e.g. 'crash'.
+ * @property {string} [session]      BATCH_SESSIONS id, e.g. 'jan-26-p1'.
+ * @property {'online' | 'offline'} [branch]
  * @property {string} subtitle
  * @property {string} thumbnailUrl
  * @property {string[]} highlights    4–5 short USP bullets rendered on the card.

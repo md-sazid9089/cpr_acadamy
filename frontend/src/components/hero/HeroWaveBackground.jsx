@@ -1,10 +1,10 @@
-/**
- * Premium hero wave background — layered silk-ribbon effect.
+﻿/**
+ * Premium hero wave background â€” layered silk-ribbon effect.
  *
  * 4 flowing S-curve ribbons sweep diagonally across the left portion of
  * the hero. Each ribbon is a closed bezier band (top edge + bottom edge)
- * with an SVG linearGradient that fades from white/light-green near the
- * curl to transparent as it sweeps away — creating a glossy, dimensional
+ * with an SVG linearGradient that fades from white/light-navy near the
+ * curl to transparent as it sweeps away â€” creating a glossy, dimensional
  * "silk ribbon" look with depth where ribbons overlap.
  *
  * Colours reference the brand palette hex values directly in SVG gradient
@@ -24,40 +24,40 @@ export default function HeroWaveBackground({ className = '' }) {
       className={className}
     >
       <defs>
-        {/* Back ribbon gradient — very subtle, mostly transparent */}
+        {/* Back ribbon gradient â€” very subtle, mostly transparent */}
         <linearGradient id="hero-ribbon-1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#a8d5be" stopOpacity="0.5" />
-          <stop offset="35%" stopColor="#6fb89a" stopOpacity="0.35" />
-          <stop offset="70%" stopColor="#217a5a" stopOpacity="0.2" />
-          <stop offset="100%" stopColor="#186347" stopOpacity="0.08" />
+          <stop offset="0%" stopColor="#a8b6d3" stopOpacity="0.5" />
+          <stop offset="35%" stopColor="#768cb9" stopOpacity="0.35" />
+          <stop offset="70%" stopColor="#1b3f8b" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#163472" stopOpacity="0.08" />
         </linearGradient>
 
-        {/* Second ribbon — moderate visibility */}
+        {/* Second ribbon â€” moderate visibility */}
         <linearGradient id="hero-ribbon-2" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.55" />
-          <stop offset="30%" stopColor="#d5ebe0" stopOpacity="0.45" />
-          <stop offset="60%" stopColor="#6fb89a" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#3d9976" stopOpacity="0.1" />
+          <stop offset="30%" stopColor="#cdd5e5" stopOpacity="0.45" />
+          <stop offset="60%" stopColor="#768cb9" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#4965a2" stopOpacity="0.1" />
         </linearGradient>
 
-        {/* Third ribbon — bolder, more visible */}
+        {/* Third ribbon â€” bolder, more visible */}
         <linearGradient id="hero-ribbon-3" x1="0%" y1="20%" x2="80%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.6" />
-          <stop offset="25%" stopColor="#a8d5be" stopOpacity="0.5" />
-          <stop offset="55%" stopColor="#3d9976" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#14513b" stopOpacity="0.12" />
+          <stop offset="25%" stopColor="#a8b6d3" stopOpacity="0.5" />
+          <stop offset="55%" stopColor="#4965a2" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#122a5c" stopOpacity="0.12" />
         </linearGradient>
 
-        {/* Front ribbon — thinnest, brightest highlight */}
+        {/* Front ribbon â€” thinnest, brightest highlight */}
         <linearGradient id="hero-ribbon-4" x1="10%" y1="0%" x2="90%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.7" />
-          <stop offset="40%" stopColor="#d5ebe0" stopOpacity="0.5" />
-          <stop offset="75%" stopColor="#217a5a" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#186347" stopOpacity="0.05" />
+          <stop offset="40%" stopColor="#cdd5e5" stopOpacity="0.5" />
+          <stop offset="75%" stopColor="#1b3f8b" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#163472" stopOpacity="0.05" />
         </linearGradient>
       </defs>
 
-      {/* ── Ribbon 1 (backmost): wide, sweeping S from upper-left ── */}
+      {/* â”€â”€ Ribbon 1 (backmost): wide, sweeping S from upper-left â”€â”€ */}
       <path
         d={
           'M -80 60 ' +
@@ -72,7 +72,7 @@ export default function HeroWaveBackground({ className = '' }) {
         fill="url(#hero-ribbon-1)"
       />
 
-      {/* ── Ribbon 2: offset right, flowing S ── */}
+      {/* â”€â”€ Ribbon 2: offset right, flowing S â”€â”€ */}
       <path
         d={
           'M -60 220 ' +
@@ -87,7 +87,7 @@ export default function HeroWaveBackground({ className = '' }) {
         fill="url(#hero-ribbon-2)"
       />
 
-      {/* ── Ribbon 3: mid-canvas, bolder ── */}
+      {/* â”€â”€ Ribbon 3: mid-canvas, bolder â”€â”€ */}
       <path
         d={
           'M -40 400 ' +
@@ -102,7 +102,7 @@ export default function HeroWaveBackground({ className = '' }) {
         fill="url(#hero-ribbon-3)"
       />
 
-      {/* ── Ribbon 4 (frontmost): thin, bright accent ── */}
+      {/* â”€â”€ Ribbon 4 (frontmost): thin, bright accent â”€â”€ */}
       <path
         d={
           'M -20 560 ' +

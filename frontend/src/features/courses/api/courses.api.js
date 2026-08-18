@@ -11,16 +11,47 @@ import { MOCK_COURSES, MOCK_CURRICULUM } from './mock-courses.js';
  *   return data;
  */
 
-/** @param {{ category?: string, search?: string }} [params] */
+/**
+ * A facet matches when nothing is selected (no filter applied) or when the
+ * course's value is one of the selected ids.
+ *
+ * @param {string[] | undefined} selected
+ * @param {string | undefined} value
+ */
+function matchesFacet(selected, value) {
+  if (!selected?.length) return true;
+  return selected.includes(value);
+}
+
+/**
+ * @param {Object} [params]
+ * @param {string} [params.category]     'FCPS' | 'BCS' | 'MBBS' | 'ALL'
+ * @param {string} [params.group]        BATCH_GROUPS id.
+ * @param {string[]} [params.batchTypes]
+ * @param {string[]} [params.sessions]
+ * @param {string[]} [params.branches]
+ * @param {string} [params.search]
+ */
 export async function fetchCourses(params = {}) {
   await sleep(350);
 
-  const { category, search } = params;
+  const { category, group, batchTypes, sessions, branches, search } = params;
   let courses = [...MOCK_COURSES];
 
   if (category && category !== 'ALL') {
     courses = courses.filter((course) => course.category === category);
   }
+
+  if (group) {
+    courses = courses.filter((course) => course.batchGroup === group);
+  }
+
+  courses = courses.filter(
+    (course) =>
+      matchesFacet(batchTypes, course.batchType) &&
+      matchesFacet(sessions, course.session) &&
+      matchesFacet(branches, course.branch),
+  );
 
   if (search) {
     const needle = search.toLowerCase();

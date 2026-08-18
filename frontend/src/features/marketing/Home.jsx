@@ -2,10 +2,9 @@ import Hero from './components/Hero.jsx';
 import ValueProps from './components/ValueProps.jsx';
 import CourseSpotlight from './components/CourseSpotlight.jsx';
 import FeaturedCourses from './components/FeaturedCourses.jsx';
-import WhyChooseUs from './components/WhyChooseUs.jsx';
-import Mentors from './components/Mentors.jsx';
+import TrackPromos from './components/TrackPromos.jsx';
 import Testimonials from './components/Testimonials.jsx';
-import CtaBanner from './components/CtaBanner.jsx';
+import FaqSection from './components/FaqSection.jsx';
 
 /**
  * Content for the spotlight band. Kept here rather than inside the component so
@@ -37,7 +36,7 @@ const FCPS_SPOTLIGHT = {
   imageAlt: '',
 };
 
-/** Public homepage: hero → spotlight → course grid → trust → social proof → CTA. */
+/** Public homepage: hero → value props → spotlight → course grid → social proof → CTA. */
 export default function Home() {
   return (
     <>
@@ -45,10 +44,9 @@ export default function Home() {
       <ValueProps />
       <CourseSpotlight {...FCPS_SPOTLIGHT} />
       <FeaturedCourses />
-      <Mentors />
-      <WhyChooseUs />
+      <TrackPromos />
       <Testimonials />
-      <CtaBanner />
+      <FaqSection />
     </>
   );
 }
