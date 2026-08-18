@@ -5,44 +5,51 @@ export default {
   theme: {
     extend: {
       colors: {
-        // White + green brand palette. `brand` is the primary green ramp.
-        // Royal emerald — deep, jewel-toned, slightly teal-leaning for a
-        // premium feel. Replaces the earlier bright/leafy emerald.
+        // Client brand palette, taken from the CPR logo and poster artwork:
+        // navy dominant, red as the sparing action colour, white the ground.
+        //
+        // `brand` keeps its name so the ~115 existing usages remap by hue
+        // alone — shade and opacity logic across the app is unchanged.
+        // Anchor: 600 = #1B3F8B, the blue of the logo wordmark and the poster
+        // header bands. Verified AA: white on 600 = 9.86:1, 600 on white = 9.86:1,
+        // 400 on surface-dark = 5.55:1.
         brand: {
-          50: '#eef6f2',
-          100: '#d5ebe0',
-          200: '#a8d5be',
-          300: '#6fb89a',
-          400: '#3d9976',
-          500: '#217a5a',
-          600: '#186347',
-          700: '#14513b',
-          800: '#114231',
-          900: '#0e3628',
-          950: '#071e16',
+          50: '#f6f7fa',
+          100: '#e8ecf3',
+          200: '#cdd5e5',
+          300: '#a8b6d3',
+          400: '#768cb9',
+          500: '#4965a2',
+          600: '#1b3f8b',
+          700: '#163472',
+          800: '#122a5c',
+          900: '#0e2046',
+          950: '#09152f',
         },
-        // Warm accent, paired with `brand` for promo emphasis: offer prices,
-        // urgency notes and the Registration action. Global on purpose — use
-        // `accent-*` rather than raw amber classes so the promo colour can be
-        // retuned in one place.
+        // Action red — the "P" in the logo, the ECG trace, urgency badges.
+        // Used sparingly, as in the posters: CTAs, alerts, offer emphasis.
+        // Anchor: 600 = #E31E24. Verified AA: white on 600 = 4.69:1 and
+        // 600 on white = 4.69:1 — both clear 4.5 but with little headroom, so
+        // prefer 700 (6.47:1) for small text on white.
         accent: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f',
-          950: '#451a03',
+          50: '#fef6f6',
+          100: '#fce9e9',
+          200: '#f9cecf',
+          300: '#f4aaac',
+          400: '#ee787c',
+          500: '#e94b50',
+          600: '#e31e24',
+          700: '#ba191e',
+          800: '#961418',
+          900: '#720f12',
+          950: '#4d0a0c',
         },
+        // Neutrals retuned off the green tint they carried to match the navy.
         surface: {
           light: '#ffffff',
-          subtle: '#f6f8f7',
-          dark: '#0d1512',
-          'dark-subtle': '#141f1a',
+          subtle: '#f6f7fb',
+          dark: '#0b1220',
+          'dark-subtle': '#131c2e',
         },
       },
       fontFamily: {

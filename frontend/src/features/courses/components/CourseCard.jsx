@@ -6,9 +6,11 @@ import { formatBDT, formatDate } from '@/lib/utils';
 
 /** Decorative banner used until real thumbnails are uploaded. */
 const CATEGORY_GRADIENTS = {
-  FCPS: 'from-brand-600 to-emerald-800',
-  BCS: 'from-teal-600 to-brand-800',
-  MBBS: 'from-emerald-500 to-brand-700',
+  // Navy depths keep the three tracks distinguishable; MBBS carries the red
+  // accent so the palette's action colour appears once, not on every card.
+  FCPS: 'from-brand-600 to-brand-800',
+  BCS: 'from-brand-500 to-brand-700',
+  MBBS: 'from-accent-700 to-brand-800',
 };
 
 /**

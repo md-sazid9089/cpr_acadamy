@@ -39,7 +39,7 @@ export default function CourseDetail() {
 
   return (
     <div className="bg-white dark:bg-surface-dark">
-      <section className="border-b border-slate-200 bg-gradient-to-br from-brand-700 to-emerald-900 py-12 text-white dark:border-slate-800">
+      <section className="border-b border-slate-200 bg-gradient-to-br from-brand-700 to-brand-900 py-12 text-white dark:border-slate-800">
         <div className="container-page">
           <nav className="mb-4 flex items-center gap-2 text-sm text-brand-100" aria-label="Breadcrumb">
             <Link to="/courses" className="hover:text-white">

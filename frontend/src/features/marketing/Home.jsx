@@ -2,8 +2,6 @@ import Hero from './components/Hero.jsx';
 import ValueProps from './components/ValueProps.jsx';
 import CourseSpotlight from './components/CourseSpotlight.jsx';
 import FeaturedCourses from './components/FeaturedCourses.jsx';
-import WhyChooseUs from './components/WhyChooseUs.jsx';
-import Mentors from './components/Mentors.jsx';
 import Testimonials from './components/Testimonials.jsx';
 import CtaBanner from './components/CtaBanner.jsx';
 
@@ -37,7 +35,7 @@ const FCPS_SPOTLIGHT = {
   imageAlt: '',
 };
 
-/** Public homepage: hero → spotlight → course grid → trust → social proof → CTA. */
+/** Public homepage: hero → value props → spotlight → course grid → social proof → CTA. */
 export default function Home() {
   return (
     <>
@@ -45,8 +43,6 @@ export default function Home() {
       <ValueProps />
       <CourseSpotlight {...FCPS_SPOTLIGHT} />
       <FeaturedCourses />
-      <Mentors />
-      <WhyChooseUs />
       <Testimonials />
       <CtaBanner />
     </>
