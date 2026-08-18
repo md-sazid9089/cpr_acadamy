@@ -1,23 +1,18 @@
 import { Link } from 'react-router-dom';
 import { FaGraduationCap, FaArrowRightLong } from 'react-icons/fa6';
-import { BATCH_GROUPS, CATEGORY_SLUGS } from '@/constants';
+import { BATCH_GROUPS } from '@/constants';
 import { cn } from '@/lib/utils';
 
-/**
- * Build the link for one group card. The group lives as a query parameter so
- * the existing /courses/:category route keeps working and a filtered view stays
- * shareable.
- */
 function groupHref(group) {
   return `/batches?group=${group.id}`;
 }
 
 /**
- * Batch-group chooser — category cards matching Genesis reference.
+ * Batch-group chooser — 2-column responsive layout matching Genesis.
  *
  * @param {Object} props
- * @param {string} [props.category]  Restrict to one of COURSE_CATEGORIES.
- * @param {Record<string, number>} [props.counts]  group id → batch count.
+ * @param {string} [props.category]
+ * @param {Record<string, number>} [props.counts]
  * @param {string} [props.className]
  */
 export default function BatchGroupGrid({ category, counts, className }) {
@@ -28,50 +23,63 @@ export default function BatchGroupGrid({ category, counts, className }) {
   if (!groups.length) return null;
 
   return (
-    <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4', className)}>
-      {groups.map((group) => (
-        <Link
-          key={group.id}
-          to={groupHref(group)}
-          className={cn(
-            'group flex min-h-[140px] flex-col items-center justify-between rounded-xl border border-brand-200 bg-white p-5 text-center shadow-sm transition-all duration-200',
-            'hover:-translate-y-1 hover:border-brand-500 hover:shadow-md',
-            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600',
-            'dark:border-slate-800 dark:bg-surface-dark-subtle dark:hover:border-brand-600 dark:hover:bg-slate-900',
-          )}
-        >
-          <div className="flex flex-col items-center">
-            <FaGraduationCap
-              aria-hidden="true"
-              className="h-8 w-8 text-brand-600 transition-transform duration-200 group-hover:scale-110 dark:text-brand-400"
-            />
+    <div
+      className={cn(
+        'grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4',
+        className,
+      )}
+    >
+      {groups.map((group, index) => {
+        const isOddTotal = groups.length % 2 !== 0;
+        const isLastOdd = isOddTotal && index === groups.length - 1;
 
-            <h3 className="mt-2.5 text-sm font-bold text-brand-900 sm:text-base dark:text-brand-200">
-              {group.label}
-            </h3>
-
-            {group.note && (
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                {group.note}
-              </p>
+        return (
+          <Link
+            key={group.id}
+            to={groupHref(group)}
+            className={cn(
+              'group flex h-full min-h-[120px] flex-col items-center justify-between rounded-xl border border-blue-400 bg-white p-3.5 text-center shadow-sm transition-all duration-200 sm:min-h-[140px] sm:p-5',
+              'hover:-translate-y-1 hover:border-blue-600 hover:shadow-md',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600',
+              'dark:border-slate-700 dark:bg-surface-dark-subtle dark:hover:border-blue-500 dark:hover:bg-slate-900',
+              // On 2-col mobile view, center the last odd item (BMDC Licensing)
+              isLastOdd &&
+                'col-span-2 w-full max-w-[calc(50%-0.375rem)] mx-auto md:col-span-1 md:max-w-none',
             )}
+          >
+            <div className="flex w-full flex-col items-center">
+              <FaGraduationCap
+                aria-hidden="true"
+                className="h-7 w-7 text-[#1c4d96] transition-transform duration-200 group-hover:scale-110 sm:h-8 sm:w-8 dark:text-blue-400"
+              />
 
-            {counts?.[group.id] != null && counts[group.id] > 0 && (
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                {counts[group.id]} {counts[group.id] === 1 ? 'batch' : 'batches'}
-              </p>
-            )}
-          </div>
+              <h3 className="mt-2 text-xs font-bold text-[#1c3d5a] sm:text-sm md:text-base dark:text-blue-200">
+                {group.label}
+              </h3>
 
-          <span className="mt-3 flex items-center gap-1 text-xs font-semibold text-brand-700 group-hover:text-brand-800 sm:text-sm dark:text-brand-400 dark:group-hover:text-brand-300">
-            ব্যাচগুলো দেখুন
-            <FaArrowRightLong
-              aria-hidden="true"
-              className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-1"
-            />
-          </span>
-        </Link>
-      ))}
+              {group.note && (
+                <p className="mt-1 text-[10px] leading-snug text-slate-500 sm:text-[11px] dark:text-slate-400">
+                  {group.note}
+                </p>
+              )}
+
+              {counts?.[group.id] != null && counts[group.id] > 0 && (
+                <p className="mt-1 text-[10px] text-slate-400 sm:text-xs">
+                  {counts[group.id]} {counts[group.id] === 1 ? 'batch' : 'batches'}
+                </p>
+              )}
+            </div>
+
+            <span className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-blue-700 group-hover:text-blue-900 sm:mt-3 sm:text-xs dark:text-blue-400 dark:group-hover:text-blue-300">
+              ব্যাচগুলো দেখুন
+              <FaArrowRightLong
+                aria-hidden="true"
+                className="h-2.5 w-2.5 transition-transform duration-200 group-hover:translate-x-1"
+              />
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
 }
