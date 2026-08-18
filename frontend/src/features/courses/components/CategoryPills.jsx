@@ -32,8 +32,17 @@ export default function CategoryPills({ value = 'ALL', onChange, className, coun
             )}
           >
             {option === 'ALL' ? 'All Courses' : option}
+            {/* White on the active pill rather than brand-100: at 12px the
+                lighter tint lands at 4.0:1 on brand-600, just under AA. */}
             {counts?.[option] != null && (
-              <span className={cn('ml-2 text-xs', isActive ? 'text-brand-100' : 'text-slate-400')}>
+              <span
+                className={cn(
+                  'ml-2 text-xs',
+                  // slate-600 not 500: the inactive pill's own bg-slate-100
+                  // ground puts 500 at 4.34:1, just under AA.
+                  isActive ? 'text-white' : 'text-slate-600 dark:text-slate-400',
+                )}
+              >
                 {counts[option]}
               </span>
             )}

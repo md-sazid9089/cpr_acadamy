@@ -75,15 +75,15 @@ export default function CourseCard({ course, onEnroll }) {
 
         <dl className="mt-4 grid grid-cols-3 gap-2 border-y border-slate-100 py-3 text-center dark:border-slate-800">
           <div>
-            <dt className="text-[11px] uppercase tracking-wide text-slate-400">Duration</dt>
+            <dt className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Duration</dt>
             <dd className="text-sm font-semibold text-slate-700 dark:text-slate-200">{course.duration}</dd>
           </div>
           <div>
-            <dt className="text-[11px] uppercase tracking-wide text-slate-400">Lessons</dt>
+            <dt className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Lessons</dt>
             <dd className="text-sm font-semibold text-slate-700 dark:text-slate-200">{course.lessonCount}</dd>
           </div>
           <div>
-            <dt className="text-[11px] uppercase tracking-wide text-slate-400">Enrolled</dt>
+            <dt className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Enrolled</dt>
             <dd className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               {course.enrolledCount.toLocaleString('en-BD')}
             </dd>
@@ -95,7 +95,9 @@ export default function CourseCard({ course, onEnroll }) {
             {formatBDT(hasDiscount ? course.discountPrice : course.price)}
           </span>
           {hasDiscount && (
-            <span className="text-sm text-slate-400 line-through">{formatBDT(course.price)}</span>
+            <span className="text-sm text-slate-500 line-through dark:text-slate-400">
+              {formatBDT(course.price)}
+            </span>
           )}
           {course.startsOn && (
             <span className="ml-auto text-xs text-slate-500 dark:text-slate-400">

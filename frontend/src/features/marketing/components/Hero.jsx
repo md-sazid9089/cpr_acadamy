@@ -1,5 +1,5 @@
 import Carousel from '@/components/ui/Carousel.jsx';
-import HeroOfferCard from './HeroOfferCard.jsx';
+import HeroRibbonBackground from '@/components/hero/HeroRibbonBackground.jsx';
 
 /**
  * Promotional posters, served from `public/assets/carousel/`.
@@ -49,27 +49,6 @@ const CAROUSEL_SLIDES = [
   },
 ];
 
-/**
- * Featured promo shown beside the carousel.
- * TODO: source this from the announcements/offers endpoint so marketing can
- * change it without a deploy. `ctaTo` can point at a category (e.g.
- * '/courses/fcps') when the promo is track-specific.
- */
-const FEATURED_OFFER = {
-  badge: 'Admission open',
-  title: 'FCPS Part-1 (June 2026) & Residency (November 2026)',
-  highlight: 'Offline combined batch · starts 10 January 2026',
-  bullets: [
-    'FCPS Part-1: Medicine, Surgery, Paediatrics, Gynae & allied',
-    'Residency: MS, Paediatrics, Medicine MD, Basic & Dentistry',
-    'Radiology and Dermatology faculties included',
-    'Chattogram campus — Moti Tower, Chawkbazar',
-  ],
-  ctaLabel: 'Enroll Now',
-  ctaTo: '/courses/fcps',
-  footnote: 'Limited seats · admission closes once the batch fills',
-};
-
 /** Sub-heading shown above the carousel. Overridable via the `welcomeText` prop. */
 const WELCOME_TEXT = 'CPR Academy-তে আপনাকে স্বাগতম !';
 
@@ -100,12 +79,19 @@ export default function Hero({
 }) {
   // `isolate` makes this section a stacking context, so the -z-10 decorative
   // layers paint above its own background instead of disappearing behind it.
+  // The min-height fills the viewport below the announcement strip (~2.5rem);
+  // `svh` rather than `vh` so mobile browser chrome doesn't push the fold off.
   return (
-    <section className="relative isolate overflow-hidden bg-white dark:bg-surface-dark">
+    <section className="relative isolate min-h-[calc(88svh-2.5rem)] overflow-hidden bg-white dark:bg-surface-dark">
+      {/* Solid green panel + silk-ribbon swirls — the new component handles
+          its own mobile fallback (flat gradient) and dark-mode tuning. */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <HeroRibbonBackground className="h-full w-full" />
+      </div>
 
-
-
-      <div className="container-page py-6 lg:py-10">
+      {/* pt-16 clears the navbar, which overlays this section (see
+          PublicLayout) so the ribbons run up behind the transparent bar. */}
+      <div className="container-page pb-6 pt-20 lg:pb-10 lg:pt-24">
         {/* The visible hero is artwork, so the page's h1 is screen-reader only —
             without it the homepage would have no top-level heading at all. */}
         <h1 className="sr-only">
@@ -118,31 +104,45 @@ export default function Hero({
         {welcomeText && (
           <h2
             lang={welcomeLang}
-            className="mb-6 text-center text-2xl font-bold text-slate-800 sm:text-3xl lg:mb-8 dark:text-slate-200"
+            className="mb-4 text-center text-2xl font-bold text-slate-800 sm:text-3xl lg:mb-6 dark:text-slate-200"
           >
             {renderWelcome(welcomeText, welcomeHighlight)}
           </h2>
         )}
 
-        {/* Primary row: poster carousel + featured offer. Stacks on mobile. */}
-        <div className="grid items-stretch gap-8 lg:grid-cols-5">
-          <div className="lg:col-span-3">
+        {/* Primary row: mentor photo left, poster carousel right.
+            Below lg the photo is dropped and the carousel takes the full width —
+            stacking a tall portrait above the posters would push them off screen. */}
+        <div className="grid items-end gap-8 lg:grid-cols-2">
+          <div className="hidden lg:block">
+            <img
+              src="/assets/spotlight/profileb.png"
+              alt=""
+              aria-hidden="true"
+              // Negative bottom margin lets the portrait bleed into the
+              // section's padding; overflow-hidden on the section clips it.
+              // The photo is the tallest item in the row, so changing its
+              // margin resizes the row and drags the carousel with it.
+              // A transform lifts it on its own, leaving the layout alone.
+              className="-ml-4 -mb-10 max-h-[36rem] w-full -translate-y-8 object-contain object-left-bottom"
+            />
+          </div>
+
+          <div>
             <Carousel
               slides={CAROUSEL_SLIDES}
               interval={5000}
               fit="contain"
+              // Arrows off — the dots below still give manual control, so the
+              // posters aren't left autoplay-only.
+              showArrows={false}
               // Portrait-ish on mobile where the column is full width, wider on
               // desktop so the landscape brochure spreads stay legible.
               aspectClassName="aspect-[3/4] sm:aspect-[4/3]"
               label="Course promotions"
             />
           </div>
-
-          <div className="lg:col-span-2">
-            <HeroOfferCard {...FEATURED_OFFER} />
-          </div>
         </div>
-
       </div>
     </section>
   );

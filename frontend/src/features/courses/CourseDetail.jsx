@@ -114,7 +114,7 @@ export default function CourseDetail() {
                             )}
                             {lesson.title}
                           </span>
-                          <span className="shrink-0 text-xs text-slate-400">
+                          <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
                             {KIND_LABELS[lesson.kind]}
                             {lesson.durationMinutes ? ` · ${lesson.durationMinutes} min` : ''}
                           </span>
@@ -135,7 +135,9 @@ export default function CourseDetail() {
                 {formatBDT(hasDiscount ? course.discountPrice : course.price)}
               </span>
               {hasDiscount && (
-                <span className="text-base text-slate-400 line-through">{formatBDT(course.price)}</span>
+                <span className="text-base text-slate-500 line-through dark:text-slate-400">
+                  {formatBDT(course.price)}
+                </span>
               )}
             </div>
 
