@@ -20,7 +20,7 @@ export const MOCK_COURSES = [
     session: 'jan-26-p1',
     branch: 'offline',
     subtitle: 'Complete basic-science coverage with weekly item-analysis exams.',
-    thumbnailUrl: null,
+    thumbnailUrl: '/assets/carousel/postera.jpeg',
     highlights: [
       '180+ recorded lectures by FCPS-qualified faculty',
       'Weekly SBA & MTF exams with detailed explanations',
@@ -47,7 +47,7 @@ export const MOCK_COURSES = [
     session: 'jul-26-p1',
     branch: 'offline',
     subtitle: 'Ward-round style clinical training for the final professional stage.',
-    thumbnailUrl: null,
+    thumbnailUrl: '/assets/carousel/posterb.jpeg',
     highlights: [
       'Long case & short case demonstration videos',
       'One-to-one mock viva with senior consultants',
@@ -72,7 +72,7 @@ export const MOCK_COURSES = [
     session: 'jul-26-p1',
     branch: 'offline',
     subtitle: 'Preliminary, written and viva in a single guided track.',
-    thumbnailUrl: null,
+    thumbnailUrl: '/assets/carousel/posterc.jpeg',
     highlights: [
       'Complete preliminary syllabus in 90 days',
       'Bangla, English, GK & mathematics refreshers',
@@ -98,7 +98,7 @@ export const MOCK_COURSES = [
     session: 'jan-26-p1',
     branch: 'offline',
     subtitle: 'High-yield revision built around the university question pattern.',
-    thumbnailUrl: null,
+    thumbnailUrl: '/assets/carousel/posterd.jpeg',
     highlights: [
       'Chapter-wise high-yield note bundle',
       'Card & item exams every alternate day',
@@ -123,7 +123,7 @@ export const MOCK_COURSES = [
     session: 'dec-26-p1',
     branch: 'offline',
     subtitle: 'Foundation year support with dissection-hall oriented teaching.',
-    thumbnailUrl: null,
+    thumbnailUrl: '/assets/carousel/postere.jpeg',
     highlights: [
       'Region-wise anatomy with cadaveric demonstration',
       'Physiology viva question bank',

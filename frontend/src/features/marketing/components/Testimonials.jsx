@@ -38,8 +38,8 @@ const WRITTEN_REVIEWS = [
     name: 'Nazmul Hasan',
     role: 'Student, BCS Health',
     avatarText: 'NH',
-    borderGradient: 'from-amber-500/80 via-amber-600/40 to-transparent',
     borderColor: 'border-amber-500/60',
+    glowColor: 'hover:border-amber-400',
     quote:
       '৪০ দিনের প্রিপারেশন নিয়েছিলাম। প্রশ্ন কমন পড়ার চেয়ে বেশি জরুরি কনসেপ্ট ক্লিয়ার থাকা। CPR এর প্রশ্নব্যাংক এবং নিয়মিত মক টেস্টের সল্ভ ক্লাস আমাকে কনফিডেন্স দিয়েছিল।',
   },
@@ -48,8 +48,8 @@ const WRITTEN_REVIEWS = [
     name: 'Tasmiah B. Mimi',
     role: 'Student, FCPS Part-1',
     avatarText: 'TM',
-    borderGradient: 'from-purple-500/80 via-purple-600/40 to-transparent',
     borderColor: 'border-purple-500/60',
+    glowColor: 'hover:border-purple-400',
     quote:
       'লেকচারগুলো এতটাই তথ্যবহুল ছিল যে বই পড়ার অতিরিক্ত চাপ নিতে হয়নি। বিশেষ করে আইটেম অ্যানালাইসিস এবং উইকলি টেস্ট আমার দুর্বল জায়গাগুলো চিহ্নিত করতে সাহায্য করেছে।',
   },
@@ -58,8 +58,8 @@ const WRITTEN_REVIEWS = [
     name: 'জান্নাতুল ফেরদৌস নদীয়া',
     role: 'Student, Residency',
     avatarText: 'JN',
-    borderGradient: 'from-blue-500/80 via-blue-600/40 to-transparent',
     borderColor: 'border-blue-500/60',
+    glowColor: 'hover:border-blue-400',
     quote:
       'রেসিডেন্সি ভর্তি পরীক্ষায় চান্স পাওয়া আমার জন্য স্বপ্ন ছিল। CPR এর সুপরিকল্পিত রুটিন এবং মেন্টরদের সার্বক্ষণিক গাইডলাইন ছাড়া এটা কখনোই সম্ভব হতো না। অসংখ্য ধন্যবাদ CPR টিমকে।',
   },
@@ -68,8 +68,8 @@ const WRITTEN_REVIEWS = [
     name: 'Syeda Fatema Alam',
     role: 'Student, FCPS & BCS',
     avatarText: 'SF',
-    borderGradient: 'from-emerald-500/80 via-emerald-600/40 to-transparent',
     borderColor: 'border-emerald-500/60',
+    glowColor: 'hover:border-emerald-400',
     quote:
       'সবচেয়ে ইতিবাচক ব্যাপার হচ্ছে তাদের পরীক্ষা নেওয়ার পদ্ধতি। নিয়মিত পরীক্ষা দেওয়ার কারণে মূল পরীক্ষার ভয় একেবারেই কেটে গিয়েছিল। সবার জন্য শুভকামনা।',
   },
@@ -79,7 +79,7 @@ export default function Testimonials() {
   const [selectedVideo, setSelectedVideo] = useState(null);
 
   return (
-    <section className="relative overflow-hidden bg-[#0c0f24] py-20 text-white">
+    <section className="relative overflow-hidden bg-[#0c0f24] py-16 sm:py-20 text-white">
       {/* Background ambient glow */}
       <div
         className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-blue-600/10 blur-[120px]"
@@ -90,7 +90,7 @@ export default function Testimonials() {
         aria-hidden="true"
       />
 
-      <div className="container-page relative z-10 space-y-20">
+      <div className="container-page relative z-10 space-y-16 sm:space-y-20">
         {/* ═══════════════════════════════════════════════════════════════
             PART 1: Video Stories / Achievers Banner (কৃতীদের কণ্ঠে সাফল্যের গল্প)
             ═══════════════════════════════════════════════════════════════ */}
@@ -108,13 +108,13 @@ export default function Testimonials() {
             </h2>
           </div>
 
-          {/* Video Cards Grid / Carousel */}
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Horizontal scroll on mobile (in a row) / Grid on desktop */}
+          <div className="mt-8 flex gap-4 overflow-x-auto px-4 pb-4 pt-2 snap-x snap-mandatory scroll-smooth sm:mt-10 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:px-0 sm:pb-0">
             {VIDEO_STORIES.map((story) => (
               <div
                 key={story.id}
                 onClick={() => setSelectedVideo(story)}
-                className="group relative flex min-h-[220px] cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.02] p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-blue-500/10"
+                className="group relative flex w-[78vw] max-w-[280px] shrink-0 snap-center cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.02] p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-blue-500/10 aspect-[4/5] sm:aspect-auto sm:w-auto sm:max-w-none sm:min-h-[230px]"
               >
                 {/* Photo & Tag Header */}
                 <div className="flex items-center gap-3">
@@ -141,14 +141,14 @@ export default function Testimonials() {
                 </div>
 
                 {/* Quote in white box */}
-                <div className="mt-4 rounded-xl bg-white/95 p-3.5 text-slate-900 shadow-sm transition-transform duration-300 group-hover:scale-[1.02]">
+                <div className="my-auto rounded-xl bg-white/95 p-3.5 text-slate-900 shadow-sm transition-transform duration-300 group-hover:scale-[1.02]">
                   <p className="text-xs font-extrabold leading-snug sm:text-sm" lang="bn">
                     "{story.quote}"
                   </p>
                 </div>
 
                 {/* Play Button Indicator */}
-                <div className="mt-3 flex items-center justify-between text-xs font-semibold text-blue-300">
+                <div className="flex items-center justify-between text-xs font-semibold text-blue-300">
                   <span className="flex items-center gap-1.5 text-[11px]">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[9px] text-white">
                       ▶
@@ -190,12 +190,12 @@ export default function Testimonials() {
             </p>
           </div>
 
-          {/* Testimonial Cards Grid */}
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Horizontal scroll on mobile (in a row) with Facebook poster ratio / Grid on desktop */}
+          <div className="mt-8 flex gap-4 overflow-x-auto px-4 pb-4 pt-2 snap-x snap-mandatory scroll-smooth sm:mt-10 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:px-0 sm:pb-0">
             {WRITTEN_REVIEWS.map((review) => (
               <div
                 key={review.id}
-                className={`group flex flex-col justify-between rounded-2xl border ${review.borderColor} bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.1]`}
+                className={`group flex w-[78vw] max-w-[280px] shrink-0 snap-center flex-col justify-between rounded-2xl border ${review.borderColor} bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.1] aspect-[4/5] sm:aspect-auto sm:w-auto sm:max-w-none`}
               >
                 <div>
                   {/* Rating Stars & Quote Icon */}
@@ -210,7 +210,7 @@ export default function Testimonials() {
 
                   {/* Quote Body */}
                   <p
-                    className="mt-4 text-xs leading-relaxed text-slate-300 sm:text-[13px]"
+                    className="mt-3.5 text-xs leading-relaxed text-slate-300 sm:text-[13px] line-clamp-6 sm:line-clamp-none"
                     lang="bn"
                   >
                     "{review.quote}"
@@ -218,7 +218,7 @@ export default function Testimonials() {
                 </div>
 
                 {/* Author Info */}
-                <div className="mt-6 flex items-center gap-3 border-t border-white/10 pt-4">
+                <div className="mt-4 flex items-center gap-3 border-t border-white/10 pt-3.5">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
                     {review.avatarText}
                   </div>

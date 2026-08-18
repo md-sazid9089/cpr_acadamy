@@ -33,7 +33,12 @@ export default function FeaturedCourses() {
     <section className="bg-white py-12 dark:bg-surface-dark">
       <div className="container-page">
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white" lang="bn">আপনার কাঙ্খিত কোর্সটি খুঁজে নিন</h2>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white" lang="bn">
+            আপনার কাঙ্খিত কোর্সটি খুঁজে নিন
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-medium text-slate-600 sm:text-base dark:text-slate-400" lang="bn">
+            প্রিলি থেকে ভাইভা-আপনার স্বপ্নপূরণে ২৪/৭ পাশে থাকবো আমরা!
+          </p>
         </div>
 
         <CategoryPills value={category} onChange={setCategory} counts={counts} className="mt-8" />
