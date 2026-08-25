@@ -10,9 +10,15 @@ export function createQueryClient() {
       queries: {
         staleTime: 60 * 1000,
         refetchOnWindowFocus: false,
-        // A revoked session (401) is handled by the axios interceptor, so
-        // retrying it here would only delay the redirect to /login.
-        retry: (failureCount, error) => (error?.status === 401 ? false : failureCount < 2),
+        // Never retry a 4xx: the request was answered, the answer just wasn't
+        // what we wanted. A revoked session (401) is handled by the axios
+        // interceptor, and retrying a 404 only makes "not found" pages sit on a
+        // spinner for several seconds before showing the error.
+        retry: (failureCount, error) => {
+          const status = error?.status;
+          if (status >= 400 && status < 500) return false;
+          return failureCount < 2;
+        },
       },
       mutations: { retry: 0 },
     },

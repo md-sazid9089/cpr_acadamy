@@ -22,7 +22,7 @@ const DASHBOARD_MENU = [
   {
     id: 'subscriptions',
     title: 'Subscriptions',
-    to: '/dashboard/payments',
+    to: '/dashboard/subscriptions',
     icon: FaCreditCard,
     iconColor: 'text-[#1c4d96]',
   },
@@ -50,7 +50,7 @@ const DASHBOARD_MENU = [
   {
     id: 'complain-box',
     title: 'Complain Box',
-    to: '/contact',
+    to: '/dashboard/complaints',
     icon: FaComments,
     iconColor: 'text-[#1c4d96]',
   },
@@ -64,7 +64,7 @@ const DASHBOARD_MENU = [
   {
     id: 'my-account',
     title: 'My Account',
-    to: '/dashboard/progress',
+    to: '/dashboard/account',
     icon: FaIdCard,
     iconColor: 'text-[#1c4d96]',
   },

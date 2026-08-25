@@ -58,6 +58,11 @@ export default {
         // Bengali characters — which none of the earlier fonts cover — fall
         // through to it.
         sans: ['Inter', 'Segoe UI', 'system-ui', 'Noto Sans Bengali', 'sans-serif'],
+        // `font-bn` — opt-in Bengali face for elements that are wholly Bangla.
+        // Hind Siliguri and Anek Bangla lead the chain so the client can drop
+        // either in later without a code change; only Noto Sans Bengali is
+        // self-hosted today, so that is what actually paints.
+        bn: ['Hind Siliguri', 'Anek Bangla', 'Noto Sans Bengali', 'sans-serif'],
       },
       keyframes: {
         marquee: {
@@ -68,10 +73,17 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(6px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        // Course-player bottom sheet. Paired with motion-reduce:animate-none so
+        // it becomes an instant show when the visitor asks for less motion.
+        'slide-up': {
+          '0%': { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
       },
       animation: {
         marquee: 'marquee 28s linear infinite',
         'fade-in': 'fade-in 0.25s ease-out both',
+        'slide-up': 'slide-up 0.2s ease-out both',
       },
     },
   },

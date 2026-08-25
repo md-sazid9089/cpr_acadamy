@@ -34,6 +34,15 @@ import MyCourses from '@/features/student-dashboard/MyCourses.jsx';
 import Progress from '@/features/student-dashboard/Progress.jsx';
 import UpcomingExams from '@/features/student-dashboard/UpcomingExams.jsx';
 import PaymentHistory from '@/features/student-dashboard/PaymentHistory.jsx';
+import Subscriptions from '@/features/student-dashboard/Subscriptions.jsx';
+import SubscriptionDetail from '@/features/student-dashboard/SubscriptionDetail.jsx';
+import AddSubscription from '@/features/student-dashboard/AddSubscription.jsx';
+import MyAccount from '@/features/student-dashboard/MyAccount.jsx';
+import Complaints from '@/features/student-dashboard/Complaints.jsx';
+import ComplaintDetail from '@/features/student-dashboard/ComplaintDetail.jsx';
+
+// Course player
+import CoursePlayer from '@/pages/CoursePlayer.jsx';
 
 // Learning, exams, payments
 import LessonPlayer from '@/features/learning/LessonPlayer.jsx';
@@ -84,6 +93,18 @@ export const router = createBrowserRouter([
     ],
   },
 
+  // Full-bleed course player: the public chrome would only compete with the
+  // lesson, so it sits outside PublicLayout with its own auth guard.
+  {
+    path: '/learn/:courseSlug/:lessonId',
+    element: (
+      <ProtectedRoute role={ROLES.STUDENT}>
+        <CoursePlayer />
+      </ProtectedRoute>
+    ),
+    errorElement: <NotFound />,
+  },
+
   {
     path: '/dashboard',
     element: (
@@ -100,6 +121,12 @@ export const router = createBrowserRouter([
       { path: 'exams/:examId/result', element: <ExamResult /> },
       { path: 'learn/:slug', element: <LessonPlayer /> },
       { path: 'payments', element: <PaymentHistory /> },
+      { path: 'account', element: <MyAccount /> },
+      { path: 'complaints', element: <Complaints /> },
+      { path: 'complaints/:complaintId', element: <ComplaintDetail /> },
+      { path: 'subscriptions', element: <Subscriptions /> },
+      { path: 'subscriptions/:batchId', element: <SubscriptionDetail /> },
+      { path: 'subscriptions/:batchId/add', element: <AddSubscription /> },
       { path: 'checkout/:slug', element: <Checkout /> },
       { path: 'invoices/:invoiceId', element: <Invoice /> },
       { path: '*', element: <Navigate to="/dashboard" replace /> },

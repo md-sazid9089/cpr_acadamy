@@ -1,20 +1,16 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import {
-  FaArrowLeft,
-  FaCheck,
-  FaTriangleExclamation,
-  FaClockRotateLeft,
-  FaTableColumns,
-} from 'react-icons/fa6';
+import { Link } from 'react-router-dom';
+import { FaCheck, FaTriangleExclamation, FaClockRotateLeft, FaPlay } from 'react-icons/fa6';
 import { useMyCourses } from './api/dashboard.queries.js';
+import DashboardPageHeader from './components/DashboardPageHeader.jsx';
+import DashboardTabs from './components/DashboardTabs.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { CATEGORY_SLUGS } from '@/constants';
 
 const TABS = [
-  { id: 'active', label: 'Active Batches', icon: FaCheck, iconColor: 'text-emerald-300' },
+  { id: 'active', label: 'Active Batches', icon: FaCheck, iconColor: 'text-emerald-500' },
   { id: 'unpaid', label: 'Unpaid Batches', icon: FaTriangleExclamation, iconColor: 'text-amber-500' },
   { id: 'previous', label: 'Previous Batches', icon: FaClockRotateLeft, iconColor: 'text-sky-500' },
 ];
@@ -22,7 +18,6 @@ const TABS = [
 export default function MyCourses() {
   const { data: courses = [], isLoading } = useMyCourses();
   const [activeTab, setActiveTab] = useState('active');
-  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -42,54 +37,9 @@ export default function MyCourses() {
 
   return (
     <div className="space-y-6">
-      {/* ── Top Bar with Back, Centered Title & Dashboard Dropdown ── */}
-      <div className="flex items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard')}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:text-sm dark:border-slate-700 dark:bg-surface-dark-subtle dark:text-slate-200 dark:hover:bg-slate-800"
-        >
-          <FaArrowLeft className="h-3 w-3" />
-          Back
-        </button>
+      <DashboardPageHeader title="My Courses" backTo="/dashboard" />
 
-        <h1 className="text-xl font-bold tracking-tight text-[#1c3d5a] sm:text-2xl lg:text-3xl dark:text-white">
-          My Courses
-        </h1>
-
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:text-sm dark:border-slate-700 dark:bg-surface-dark-subtle dark:text-slate-200 dark:hover:bg-slate-800"
-        >
-          <FaTableColumns className="h-3.5 w-3.5 text-blue-600" />
-          Dashboard
-        </Link>
-      </div>
-
-      {/* ── 3 Batch Status Tabs (Pill Bar) ── */}
-      <div className="overflow-hidden rounded-xl border border-sky-200 bg-gradient-to-r from-sky-100/70 via-blue-50 to-indigo-50/60 p-1.5 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-800">
-        <div className="grid grid-cols-3 gap-1.5">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center justify-center gap-2 rounded-lg py-2.5 px-3 text-xs font-bold transition-all sm:text-sm ${
-                  isActive
-                    ? 'bg-[#1c4d96] text-white shadow-md'
-                    : 'bg-white/80 text-slate-700 hover:bg-white dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-white' : tab.iconColor}`} />
-                <span className="truncate">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <DashboardTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
 
       {/* ── Main Section Container with Blue Header Bar ── */}
       <div className="overflow-hidden rounded-2xl border border-blue-400 bg-[#f4fbf8] shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle">
@@ -111,6 +61,9 @@ export default function MyCourses() {
                 const categorySlug = CATEGORY_SLUGS[course.category] || 'fcps';
                 const scheduleUrl = `/courses/${categorySlug}/${course.slug}/schedule`;
                 const progressValue = course.progress ?? 0;
+                // Read the record, not the tab: a card is only resumable when
+                // the enrolment itself is running.
+                const isActive = course.status === 'active' || !course.status;
 
                 return (
                   <div
@@ -155,8 +108,26 @@ export default function MyCourses() {
                       </p>
                     </div>
 
+                    {/* Primary action — only for a running batch, and only when
+                        we know where the student left off. */}
+                    {isActive && course.nextLesson && (
+                      <Link
+                        to={`/learn/${course.slug}/${course.nextLesson.id}`}
+                        className="mt-6 flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[#1c4d96] px-4 text-center text-sm font-bold text-white shadow-sm transition hover:bg-[#163d78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                      >
+                        <FaPlay aria-hidden="true" className="h-3 w-3" />
+                        Continue Course
+                      </Link>
+                    )}
+
+                    {isActive && course.nextLesson && (
+                      <p className="mt-2 truncate text-center text-[11px] text-slate-500 dark:text-slate-400">
+                        Up next: {course.nextLesson.title}
+                      </p>
+                    )}
+
                     {/* 4 Action Buttons in 2x2 Grid */}
-                    <div className="mt-6 grid grid-cols-2 gap-3">
+                    <div className="mt-4 grid grid-cols-2 gap-3">
                       <Link
                         to={scheduleUrl}
                         className="flex items-center justify-center rounded-xl bg-[#eef3fc] px-3 py-2.5 text-center text-xs font-bold text-[#1c4d96] shadow-sm transition hover:bg-[#dfeaf9] dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
