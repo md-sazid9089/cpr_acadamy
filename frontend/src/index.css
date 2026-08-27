@@ -1,0 +1,48 @@
+/* Self-hosted Bengali face. Latin text keeps the existing stack — this only
+   catches the Bengali glyphs, which no font in that stack provides, so the
+   Bangla copy renders the same on every device instead of falling back to
+   whatever the OS ships. */
+@import '@fontsource/noto-sans-bengali/400.css';
+@import '@fontsource/noto-sans-bengali/600.css';
+@import '@fontsource/noto-sans-bengali/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-white text-slate-800 antialiased dark:bg-surface-dark dark:text-slate-200;
+  }
+
+  /* Visible focus ring everywhere, brand-tinted. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white dark:ring-offset-surface-dark;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-heading {
+    @apply text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white;
+  }
+
+  .section-subheading {
+    @apply mt-3 max-w-2xl text-base text-slate-600 dark:text-slate-400;
+  }
+}
+
+@layer utilities {
+  /* Discourages casual copying of licensed lecture material. */
+  .select-none-secure {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
