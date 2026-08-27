@@ -9,9 +9,11 @@ import { cn } from '@/lib/utils';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', end: true },
-  { to: '/courses', label: 'Courses' },
+  { to: '/batches', label: 'Batches' },
   { to: '/class', label: 'Class' },
   { to: '/faq', label: 'FAQ' },
+  { to: '/about', label: 'About' },
+  { to: '/gallery', label: 'Gallery' },
   { to: '/contact', label: 'Contact' },
 ];
 
