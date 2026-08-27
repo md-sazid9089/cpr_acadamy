@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { FaBookOpen, FaHospital, FaStethoscope, FaLightbulb } from 'react-icons/fa6';
 
 /**
  * Promotional track cards — 2-in-a-row on mobile and 2-column on desktop.
@@ -15,7 +16,7 @@ const TRACK_CARDS = [
     ctaTo: '/batches?group=fcps-p1-medicine',
     gradient: 'from-brand-100 via-brand-50/70 to-white',
     darkGradient: 'dark:from-brand-900 dark:via-brand-950/70 dark:to-surface-dark',
-    icon: '📚',
+    Icon: FaBookOpen,
   },
   {
     id: 'bcs',
@@ -27,7 +28,7 @@ const TRACK_CARDS = [
     ctaTo: '/batches',
     gradient: 'from-brand-50 via-white to-brand-100',
     darkGradient: 'dark:from-brand-950 dark:via-surface-dark dark:to-brand-900',
-    icon: '🏥',
+    Icon: FaHospital,
   },
   {
     id: 'mbbs',
@@ -39,7 +40,7 @@ const TRACK_CARDS = [
     ctaTo: '/batches?group=bmdc-licensing',
     gradient: 'from-accent-50 via-brand-50/70 to-brand-100',
     darkGradient: 'dark:from-accent-950 dark:via-brand-950/70 dark:to-brand-900',
-    icon: '🩺',
+    Icon: FaStethoscope,
   },
   {
     id: 'guidance',
@@ -51,7 +52,7 @@ const TRACK_CARDS = [
     ctaTo: '/contact',
     gradient: 'from-accent-100 via-accent-50/70 to-white',
     darkGradient: 'dark:from-accent-950 dark:via-brand-950 dark:to-surface-dark',
-    icon: '💡',
+    Icon: FaLightbulb,
   },
 ];
 
@@ -109,9 +110,10 @@ export default function TrackPromos() {
               </div>
 
               {/* Decorative icon */}
-              <div className="pointer-events-none absolute -bottom-2 -right-2 select-none text-4xl opacity-20 transition-transform duration-300 group-hover:scale-110 sm:-bottom-3 sm:-right-3 sm:text-8xl lg:text-9xl">
-                {card.icon}
-              </div>
+              <card.Icon
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-2 -right-2 h-12 w-12 text-slate-900/20 transition-transform duration-300 group-hover:scale-110 sm:-bottom-3 sm:-right-3 sm:h-28 sm:w-28 lg:h-32 lg:w-32 dark:text-white/20"
+              />
             </Link>
           ))}
         </div>

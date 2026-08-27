@@ -7,6 +7,11 @@ import {
   FaWhatsapp,
   FaCheck,
   FaCalendarCheck,
+  FaCircle,
+  FaCircleInfo,
+  FaThumbtack,
+  FaAngleRight,
+  FaArrowRightLong,
 } from 'react-icons/fa6';
 import { useCourse } from './api/courses.queries.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
@@ -179,7 +184,8 @@ export default function CourseDetail() {
                 className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 sm:text-sm"
               >
                 <FaCalendarCheck className="h-3.5 w-3.5" />
-                View Schedule →
+                View Schedule
+                <FaArrowRightLong aria-hidden="true" className="h-3 w-3" />
               </Link>
             </div>
 
@@ -193,18 +199,19 @@ export default function CourseDetail() {
 
               <div className="space-y-4 p-6 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                 <div className="flex items-start gap-2.5 font-bold text-slate-900 dark:text-white">
-                  <span className="text-accent-500">🔴</span>
+                  <FaCircle aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 text-accent-500" />
                   <span>{course.title}</span>
                 </div>
 
                 <div className="flex items-start gap-2.5 font-bold text-slate-900 dark:text-white">
-                  <span className="text-accent-500">🔴</span>
+                  <FaCircle aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 text-accent-500" />
                   <span>Orientation &amp; First Class: {course.startsOn ? formatDate(course.startsOn) : '20-Jan-2026'}</span>
                 </div>
 
                 <div className="rounded-xl bg-amber-50/60 p-4 border border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-900/40">
-                  <p className="font-semibold text-amber-900 dark:text-amber-300" lang="bn">
-                    👉 কাদের জন্য এই ব্যাচ:
+                  <p className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-300" lang="bn">
+                    <FaCircleInfo aria-hidden="true" className="h-4 w-4 shrink-0" />
+                    কাদের জন্য এই ব্যাচ:
                   </p>
                   <p className="mt-1 text-slate-700 dark:text-slate-300" lang="bn">
                     যারা আগামী {course.category} পরীক্ষায় প্রথমবার অংশগ্রহণ করতে যাচ্ছেন অথবা পূর্ববর্তী পরীক্ষায় কাঙ্ক্ষিত ফলাফল অর্জন করতে পারেননি, তাদের জন্য সাজানো হয়েছে এই পূর্ণাঙ্গ কম্বাইন্ড প্রস্তুতি ব্যাচ।
@@ -216,8 +223,9 @@ export default function CourseDetail() {
                 </p>
 
                 <div className="space-y-2 pt-2">
-                  <h3 className="font-bold text-slate-900 dark:text-white" lang="bn">
-                    📌 ব্যাচের প্রধান বৈশিষ্ট্যসমূহ:
+                  <h3 className="flex items-center gap-2 font-bold text-slate-900 dark:text-white" lang="bn">
+                    <FaThumbtack aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
+                    ব্যাচের প্রধান বৈশিষ্ট্যসমূহ:
                   </h3>
                   <ul className="space-y-2 pl-2">
                     <li className="flex items-start gap-2">
@@ -256,16 +264,16 @@ export default function CourseDetail() {
                       key={index}
                       className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200"
                     >
-                      <span className="text-base">👉</span>
+                      <FaAngleRight aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
                       <span>{highlight}</span>
                     </li>
                   ))}
                   <li className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
-                    <span className="text-base">👉</span>
+                    <FaAngleRight aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
                     <span>National Merit Ranking with every central assessment exam</span>
                   </li>
                   <li className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
-                    <span className="text-base">👉</span>
+                    <FaAngleRight aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
                     <span>Special OSPE / Clinical Case discussion webinars</span>
                   </li>
                 </ul>
@@ -305,11 +313,11 @@ export default function CourseDetail() {
 
                 <div className="space-y-2 text-slate-600 dark:text-slate-400" lang="bn">
                   <p className="flex items-center gap-2">
-                    <span className="text-brand-600 dark:text-brand-400">🔹</span>
+                    <FaCircle aria-hidden="true" className="h-1.5 w-1.5 shrink-0 text-brand-600 dark:text-brand-400" />
                     <span>এককালীন ও কিস্তিতে ফি প্রদানের বিশেষ সুযোগ রয়েছে।</span>
                   </p>
                   <p className="flex items-center gap-2">
-                    <span className="text-brand-600 dark:text-brand-400">🔹</span>
+                    <FaCircle aria-hidden="true" className="h-1.5 w-1.5 shrink-0 text-brand-600 dark:text-brand-400" />
                     <span>সিট সংখ্যা সীমিত — নির্ধারিত আসন পূর্ণ হওয়ার সাথে সাথে ভর্তি প্রক্রিয়া বন্ধ করা হবে।</span>
                   </p>
                 </div>
@@ -353,8 +361,9 @@ export default function CourseDetail() {
                 </ol>
 
                 <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/60">
-                  <p className="font-bold text-brand-900 dark:text-brand-300" lang="bn">
-                    📞 যেকোনো সহযোগিতায় সরাসরি কথা বলুন:
+                  <p className="flex items-center gap-2 font-bold text-brand-900 dark:text-brand-300" lang="bn">
+                    <FaPhone aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                    যেকোনো সহযোগিতায় সরাসরি কথা বলুন:
                   </p>
                   <p className="mt-1 flex flex-wrap items-center gap-4 text-xs font-medium sm:text-sm">
                     <a href={`tel:${CONTACT.phone.replace(/\s/g, '')}`} className="flex items-center gap-1.5 font-bold text-brand-700 hover:underline dark:text-brand-400">

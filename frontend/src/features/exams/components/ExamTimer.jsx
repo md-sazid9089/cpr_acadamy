@@ -21,7 +21,7 @@ export default function ExamTimer({ endsAt, durationMinutes = 60, onExpire, clas
 
   useEffect(() => {
     if (!isUrgent) return undefined;
-    document.title = `⏱ ${formatDuration(remaining)} — exam in progress`;
+    document.title = `${formatDuration(remaining)} — exam in progress`;
     return () => {
       document.title = 'CPR Medical Academy';
     };
