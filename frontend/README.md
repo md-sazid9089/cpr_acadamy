@@ -69,5 +69,6 @@ Known items worth resolving first:
   larger than their display size.
 - `public/assets/spotlight/profile.jpeg` (1.9 MB) is referenced nowhere and can
   be deleted.
-- The JS bundle is a single 586 KB chunk; route-level `React.lazy` on
-  `/dashboard`, `/admin` and the auth pages defers about 32% of it.
+- The dashboard, admin, auth and player routes are code-split via `React.lazy`
+  in `src/app/router.jsx`. The entry chunk is 560 KB (173 KB gzipped); the
+  marketing pages stay eager on purpose, since they are the landing surface.
