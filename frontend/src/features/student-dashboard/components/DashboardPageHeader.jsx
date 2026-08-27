@@ -11,8 +11,10 @@ const BUTTON =
  * @param {string} props.title
  * @param {string} [props.backTo]  Where Back goes. Defaults to history back so
  *   a nested page returns to the list the student actually came from.
+ * @param {boolean} [props.showDashboardLink=true]  Set false to drop the
+ *   Dashboard shortcut on pages that do not want it.
  */
-export default function DashboardPageHeader({ title, backTo }) {
+export default function DashboardPageHeader({ title, backTo, showDashboardLink = true }) {
   const navigate = useNavigate();
 
   return (
@@ -33,10 +35,20 @@ export default function DashboardPageHeader({ title, backTo }) {
         {title}
       </h1>
 
-      <Link to="/dashboard" aria-label="Dashboard" className={BUTTON}>
-        <FaTableColumns aria-hidden="true" className="h-3.5 w-3.5 text-blue-600" />
-        <span className="hidden sm:inline">Dashboard</span>
-      </Link>
+      {showDashboardLink ? (
+        <Link to="/dashboard" aria-label="Dashboard" className={BUTTON}>
+          <FaTableColumns aria-hidden="true" className="h-3.5 w-3.5 text-blue-600" />
+          <span className="hidden sm:inline">Dashboard</span>
+        </Link>
+      ) : (
+        // A hidden copy of the Back button, not a fixed-width box: it is the
+        // only thing guaranteed to match Back's width at every breakpoint, so
+        // the title stays optically centred on the page.
+        <span aria-hidden="true" className={`${BUTTON} invisible`}>
+          <FaArrowLeft className="h-3 w-3" />
+          Back
+        </span>
+      )}
     </div>
   );
 }

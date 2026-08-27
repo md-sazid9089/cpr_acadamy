@@ -20,7 +20,11 @@ export default function AddSubscription() {
 
   return (
     <div className="space-y-6">
-      <DashboardPageHeader title="Add Subscriptions" backTo={`/dashboard/subscriptions/${batchId}`} />
+      <DashboardPageHeader
+        title="Add Subscriptions"
+        backTo={`/dashboard/subscriptions/${batchId}`}
+        showDashboardLink={false}
+      />
 
       <DashboardPanel title="Available Subscription Packages">
         {isLoading ? (

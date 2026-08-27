@@ -35,7 +35,11 @@ export default function SubscriptionDetail() {
 
   return (
     <div className="space-y-6">
-      <DashboardPageHeader title="Subscriptions" backTo="/dashboard/subscriptions" />
+      <DashboardPageHeader
+        title="Subscriptions"
+        backTo="/dashboard/subscriptions"
+        showDashboardLink={false}
+      />
 
       <DashboardTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
 

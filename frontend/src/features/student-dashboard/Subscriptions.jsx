@@ -24,7 +24,7 @@ export default function Subscriptions() {
 
   return (
     <div className="space-y-6">
-      <DashboardPageHeader title="Subscriptions" backTo="/dashboard" />
+      <DashboardPageHeader title="Subscriptions" backTo="/dashboard" showDashboardLink={false} />
 
       <DashboardPanel title="Subscription Available Batches">
         {isLoading ? (
