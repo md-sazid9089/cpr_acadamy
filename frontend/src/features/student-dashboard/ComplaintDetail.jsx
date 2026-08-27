@@ -23,7 +23,7 @@ function Message({ message }) {
       <div
         className={`mt-1.5 inline-block max-w-[85%] rounded-xl px-4 py-3 text-left text-sm leading-relaxed ${
           isStudent
-            ? 'bg-blue-50 text-slate-800 dark:bg-blue-950/40 dark:text-slate-100'
+            ? 'bg-brand-50 text-slate-800 dark:bg-brand-950/40 dark:text-slate-100'
             : 'bg-emerald-50 text-slate-800 dark:bg-emerald-950/30 dark:text-slate-100'
         }`}
       >
@@ -84,7 +84,7 @@ export default function ComplaintDetail() {
     <div className="space-y-6">
       <DashboardPageHeader title="Complain Solve" backTo="/dashboard/complaints" />
 
-      <div className="overflow-hidden rounded-2xl border border-blue-400 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-surface-dark-subtle">
+      <div className="overflow-hidden rounded-2xl border border-brand-400 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-surface-dark-subtle">
         {/* ── Thread meta ── */}
         <div className="border-b border-slate-200 pb-4 dark:border-slate-700">
           <p className="text-sm text-slate-700 dark:text-slate-300">
@@ -108,10 +108,10 @@ export default function ComplaintDetail() {
         {/* ── Footer: closing banner, or the reply box ── */}
         {isSolved ? (
           <div className="border-t border-slate-200 pt-5 text-center dark:border-slate-700">
-            <p className="text-base font-bold text-[#1c4d96] sm:text-lg dark:text-blue-300">
+            <p className="text-base font-bold text-brand-600 sm:text-lg dark:text-brand-300">
               This conversation is ended.
             </p>
-            <p className="mt-1 text-base font-bold text-[#1c4d96] sm:text-lg dark:text-blue-300">
+            <p className="mt-1 text-base font-bold text-brand-600 sm:text-lg dark:text-brand-300">
               Hope you are satisfied with our support
             </p>
           </div>

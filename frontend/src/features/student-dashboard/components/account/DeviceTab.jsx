@@ -10,7 +10,7 @@ function DeviceRow({ device, verified }) {
   const Icon = device.type === 'desktop' ? FaDesktop : FaMobileScreen;
 
   return (
-    <div className="relative inline-flex w-full max-w-md items-center gap-3 rounded-lg border border-blue-300 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
+    <div className="relative inline-flex w-full max-w-md items-center gap-3 rounded-lg border border-brand-300 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
       <Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-slate-600 dark:text-slate-300" />
 
       <p className="min-w-0 flex-1 text-sm text-slate-800 dark:text-slate-200">
@@ -40,7 +40,7 @@ function DeviceRow({ device, verified }) {
 
 function GroupHeading({ children }) {
   return (
-    <h2 className="mb-3 border-b-2 border-blue-200 pb-1.5 text-base font-bold text-[#1c4d96] sm:text-lg dark:border-slate-700 dark:text-blue-300">
+    <h2 className="mb-3 border-b-2 border-brand-200 pb-1.5 text-base font-bold text-brand-600 sm:text-lg dark:border-slate-700 dark:text-brand-300">
       {children}
     </h2>
   );
@@ -99,7 +99,7 @@ export default function DeviceTab() {
           {/* Bengali guidance, matching the wording the academy already uses. */}
           <div
             lang="bn"
-            className="mt-6 space-y-2 text-center text-sm font-semibold leading-relaxed text-rose-600 dark:text-rose-400"
+            className="mt-6 space-y-2 text-center text-sm font-semibold leading-relaxed text-accent-600 dark:text-accent-400"
           >
             <p>
               আপনি ইতোমধ্যে <strong>ডিভাইস/ব্রাউজার</strong> ভেরিফাই করেছেন। অনুগ্রহপূর্বক সেটি ব্যবহার

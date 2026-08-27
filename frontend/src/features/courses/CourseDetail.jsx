@@ -74,18 +74,18 @@ export default function CourseDetail() {
               ═══════════════════════════════════════════════════════════════ */}
           <div className="space-y-6">
             {/* ── Top Header Banner Card ── */}
-            <div className="overflow-hidden rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-blue-50/60 to-indigo-50 shadow-sm dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-slate-850">
+            <div className="overflow-hidden rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-brand-100 shadow-sm dark:border-slate-800 dark:from-slate-900 dark:via-surface-dark dark:to-slate-900">
               {/* Blue Header Bar */}
-              <div className="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-6 py-3.5 text-center text-white shadow-sm sm:text-left">
+              <div className="bg-gradient-to-r from-brand-700 via-brand-600 to-brand-500 px-6 py-3.5 text-center text-white shadow-sm sm:text-left">
                 <h1 className="text-lg font-bold sm:text-xl md:text-2xl">
                   {course.title}
                 </h1>
               </div>
 
               {/* Meta Grid Row */}
-              <div className="grid gap-4 p-5 sm:grid-cols-3 sm:divide-x sm:divide-sky-200/60 dark:sm:divide-slate-800">
+              <div className="grid gap-4 p-5 sm:grid-cols-3 sm:divide-x sm:divide-brand-200/60 dark:sm:divide-slate-800">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-400">
                     <FaCalendarDays className="h-5 w-5" />
                   </div>
                   <div>
@@ -99,7 +99,7 @@ export default function CourseDetail() {
                 </div>
 
                 <div className="flex items-center gap-3 sm:pl-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-400">
                     <FaClock className="h-5 w-5" />
                   </div>
                   <div>
@@ -113,7 +113,7 @@ export default function CourseDetail() {
                 </div>
 
                 <div className="flex items-center gap-3 sm:pl-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-400">
                     <FaCalendarDays className="h-5 w-5" />
                   </div>
                   <div>
@@ -135,7 +135,7 @@ export default function CourseDetail() {
                 onClick={() => scrollToSection('description')}
                 className={`rounded-lg px-4 py-2 text-xs font-semibold transition-all sm:text-sm ${
                   activeSection === 'description'
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-brand-600 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                 }`}
               >
@@ -146,7 +146,7 @@ export default function CourseDetail() {
                 onClick={() => scrollToSection('outline')}
                 className={`rounded-lg px-4 py-2 text-xs font-semibold transition-all sm:text-sm ${
                   activeSection === 'outline'
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-brand-600 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                 }`}
               >
@@ -157,7 +157,7 @@ export default function CourseDetail() {
                 onClick={() => scrollToSection('fee')}
                 className={`rounded-lg px-4 py-2 text-xs font-semibold transition-all sm:text-sm ${
                   activeSection === 'fee'
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-brand-600 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                 }`}
               >
@@ -168,7 +168,7 @@ export default function CourseDetail() {
                 onClick={() => scrollToSection('registration')}
                 className={`rounded-lg px-4 py-2 text-xs font-semibold transition-all sm:text-sm ${
                   activeSection === 'registration'
-                    ? 'bg-blue-600 text-white shadow-sm'
+                    ? 'bg-brand-600 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                 }`}
               >
@@ -176,7 +176,7 @@ export default function CourseDetail() {
               </button>
               <Link
                 to={scheduleUrl}
-                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 sm:text-sm"
+                className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 sm:text-sm"
               >
                 <FaCalendarCheck className="h-3.5 w-3.5" />
                 View Schedule →
@@ -185,20 +185,20 @@ export default function CourseDetail() {
 
             {/* ── Section 1: Description Card ── */}
             <div id="description" className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-surface-dark-subtle">
-              <div className="border-b border-sky-100 bg-sky-50/80 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/60">
-                <h2 className="text-base font-bold text-sky-900 dark:text-sky-300">
+              <div className="border-b border-brand-100 bg-brand-50/80 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                <h2 className="text-base font-bold text-brand-900 dark:text-brand-300">
                   Description
                 </h2>
               </div>
 
               <div className="space-y-4 p-6 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                 <div className="flex items-start gap-2.5 font-bold text-slate-900 dark:text-white">
-                  <span className="text-rose-500">🔴</span>
+                  <span className="text-accent-500">🔴</span>
                   <span>{course.title}</span>
                 </div>
 
                 <div className="flex items-start gap-2.5 font-bold text-slate-900 dark:text-white">
-                  <span className="text-rose-500">🔴</span>
+                  <span className="text-accent-500">🔴</span>
                   <span>Orientation &amp; First Class: {course.startsOn ? formatDate(course.startsOn) : '20-Jan-2026'}</span>
                 </div>
 
@@ -243,8 +243,8 @@ export default function CourseDetail() {
 
             {/* ── Section 2: Course Outline Card ── */}
             <div id="outline" className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-surface-dark-subtle">
-              <div className="border-b border-sky-100 bg-sky-50/80 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/60">
-                <h2 className="text-base font-bold text-sky-900 dark:text-sky-300">
+              <div className="border-b border-brand-100 bg-brand-50/80 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                <h2 className="text-base font-bold text-brand-900 dark:text-brand-300">
                   Course Outline
                 </h2>
               </div>
@@ -274,8 +274,8 @@ export default function CourseDetail() {
 
             {/* ── Section 3: Course Fee & Offer Card ── */}
             <div id="fee" className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-surface-dark-subtle">
-              <div className="border-b border-sky-100 bg-sky-50/80 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/60">
-                <h2 className="text-base font-bold text-sky-900 dark:text-sky-300">
+              <div className="border-b border-brand-100 bg-brand-50/80 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                <h2 className="text-base font-bold text-brand-900 dark:text-brand-300">
                   Course Fee &amp; Offer
                 </h2>
               </div>
@@ -318,8 +318,8 @@ export default function CourseDetail() {
 
             {/* ── Section 4: Registration Process Card ── */}
             <div id="registration" className="scroll-mt-24 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-surface-dark-subtle">
-              <div className="border-b border-sky-100 bg-sky-50/80 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/60">
-                <h2 className="text-base font-bold text-sky-900 dark:text-sky-300">
+              <div className="border-b border-brand-100 bg-brand-50/80 px-6 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                <h2 className="text-base font-bold text-brand-900 dark:text-brand-300">
                   Registration Process
                 </h2>
               </div>
@@ -327,33 +327,33 @@ export default function CourseDetail() {
               <div className="space-y-4 p-6 text-sm text-slate-700 dark:text-slate-300">
                 <ol className="space-y-3" lang="bn">
                   <li className="flex items-start gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
                       ১
                     </span>
                     <span>CPR Academy ওয়েবসাইটে রেজিস্ট্রেশন বা লগইন করুন।</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
                       ২
                     </span>
                     <span>আপনার পছন্দের ব্যাচে <strong className="text-brand-700 dark:text-brand-400">"Enrol Now"</strong> বাটনে ক্লিক করে চেকআউট পেজে যান।</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
                       ৩
                     </span>
                     <span>bKash, Nagad, Rocket অথবা কার্ডের মাধ্যমে কোর্স ফি পরিশোধ করুন।</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
                       ৪
                     </span>
                     <span>পেমেন্ট সফল হলে সাথে সাথেই আপনার ড্যাশবোর্ডে কোর্স এবং ক্লাসের অ্যাক্সেস সক্রিয় হয়ে যাবে।</span>
                   </li>
                 </ol>
 
-                <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/60">
-                  <p className="font-bold text-sky-900 dark:text-sky-300" lang="bn">
+                <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                  <p className="font-bold text-brand-900 dark:text-brand-300" lang="bn">
                     📞 যেকোনো সহযোগিতায় সরাসরি কথা বলুন:
                   </p>
                   <p className="mt-1 flex flex-wrap items-center gap-4 text-xs font-medium sm:text-sm">
@@ -361,7 +361,7 @@ export default function CourseDetail() {
                       <FaPhone className="h-3.5 w-3.5" />
                       {CONTACT.phone}
                     </a>
-                    <a href={`https://wa.me/${CONTACT.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 font-bold text-emerald-700 hover:underline dark:text-emerald-400">
+                    <a href={`https://wa.me/${CONTACT.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 font-bold text-brand-700 hover:underline dark:text-brand-400">
                       <FaWhatsapp className="h-4 w-4" />
                       WhatsApp: {CONTACT.whatsapp}
                     </a>
@@ -377,7 +377,7 @@ export default function CourseDetail() {
           <div className="space-y-6">
             {/* ── Poster Card ── */}
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-surface-dark-subtle">
-              <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-brand-700 via-brand-800 to-sky-900">
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-br from-brand-700 via-brand-800 to-brand-900">
                 <img
                   src={course.thumbnailUrl || '/assets/carousel/posterd.jpeg'}
                   alt={course.title}
@@ -408,7 +408,7 @@ export default function CourseDetail() {
                   <Button
                     fullWidth
                     size="lg"
-                    className="bg-blue-600 font-bold hover:bg-blue-700"
+                    className="font-bold"
                     onClick={() => onEnroll(course)}
                   >
                     Enrol Now
@@ -418,7 +418,7 @@ export default function CourseDetail() {
                     to={scheduleUrl}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
                   >
-                    <FaCalendarCheck className="h-3.5 w-3.5 text-emerald-600" />
+                    <FaCalendarCheck className="h-3.5 w-3.5 text-brand-600" />
                     View Class Schedule
                   </Link>
                 </div>
@@ -460,7 +460,7 @@ export default function CourseDetail() {
               <div className="mt-3 flex flex-col gap-2">
                 <a
                   href={`tel:${CONTACT.phone.replace(/\s/g, '')}`}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-800 transition-colors hover:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300"
+                  className="flex items-center justify-center gap-2 rounded-lg bg-brand-50 px-4 py-2.5 text-xs font-bold text-brand-800 transition-colors hover:bg-brand-100 dark:bg-brand-950 dark:text-emerald-300"
                 >
                   <FaPhone className="h-3.5 w-3.5" />
                   {CONTACT.phone}
@@ -469,7 +469,7 @@ export default function CourseDetail() {
                   href={`https://wa.me/${CONTACT.whatsapp}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-700"
+                  className="flex items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white transition-opacity hover:opacity-90"
                 >
                   <FaWhatsapp className="h-4 w-4" />
                   WhatsApp Support

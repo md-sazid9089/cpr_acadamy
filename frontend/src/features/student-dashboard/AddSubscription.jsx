@@ -36,9 +36,9 @@ export default function AddSubscription() {
             {plans.map((plan) => (
               <li
                 key={plan.id}
-                className="flex flex-col rounded-xl border-2 border-blue-300 bg-white p-5 shadow-sm transition-all hover:border-blue-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
+                className="flex flex-col rounded-xl border-2 border-brand-300 bg-white p-5 shadow-sm transition-all hover:border-brand-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
               >
-                <h2 className="text-center text-base font-bold text-[#1c4d96] dark:text-blue-300">
+                <h2 className="text-center text-base font-bold text-brand-600 dark:text-brand-300">
                   {plan.name}
                 </h2>
                 <p className="mt-1 text-center text-xs text-slate-500 dark:text-slate-400">
@@ -66,7 +66,7 @@ export default function AddSubscription() {
 
                 <Link
                   to={`/dashboard/checkout/${batchId}`}
-                  className="mt-5 flex items-center justify-center rounded-lg bg-[#1c4d96] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#163d78] sm:text-sm"
+                  className="mt-5 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 sm:text-sm"
                 >
                   Subscribe
                 </Link>

@@ -23,7 +23,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="relative border-t border-slate-800 bg-[#0c0d28] text-white">
+    <footer className="relative border-t border-slate-800 bg-brand-950 text-white">
       {/* ── Main 4-Column Footer Content ── */}
       <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
         {/* ── Column 1: Brand & Contact Info ── */}
@@ -50,7 +50,7 @@ export default function Footer() {
               <strong className="text-white">Helpline:</strong>{' '}
               <a
                 href="tel:+8801329672052"
-                className="transition-colors hover:text-blue-400"
+                className="transition-colors hover:text-brand-400"
               >
                 +88 01329 672052
               </a>
@@ -59,7 +59,7 @@ export default function Footer() {
               <strong className="text-white">Email:</strong>{' '}
               <a
                 href={`mailto:${CONTACT.email || 'support@cpr.academy'}`}
-                className="transition-colors hover:text-blue-400"
+                className="transition-colors hover:text-brand-400"
               >
                 {CONTACT.email || 'support@cpr.academy'}
               </a>
@@ -73,12 +73,12 @@ export default function Footer() {
             <h3 className="text-base font-bold text-white tracking-wide">
               Useful Links
             </h3>
-            <div className="mt-1.5 h-0.5 w-10 rounded bg-blue-500" />
+            <div className="mt-1.5 h-0.5 w-10 rounded bg-brand-500" />
           </div>
 
           <ul className="mt-5 space-y-3 text-xs text-slate-300">
             <li>
-              <Link to="/about" className="transition-colors hover:text-blue-400">
+              <Link to="/about" className="transition-colors hover:text-brand-400">
                 About us
               </Link>
             </li>
@@ -87,7 +87,7 @@ export default function Footer() {
                 href="https://bcps.edu.bd"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors hover:text-blue-400"
+                className="transition-colors hover:text-brand-400"
               >
                 BCPS Link
               </a>
@@ -97,13 +97,13 @@ export default function Footer() {
                 href="https://bpsc.gov.bd"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors hover:text-blue-400"
+                className="transition-colors hover:text-brand-400"
               >
                 BPSC Link
               </a>
             </li>
             <li>
-              <Link to="/faq" className="transition-colors hover:text-blue-400">
+              <Link to="/faq" className="transition-colors hover:text-brand-400">
                 Privacy Policy
               </Link>
             </li>
@@ -116,27 +116,27 @@ export default function Footer() {
             <h3 className="text-base font-bold text-white tracking-wide">
               Our Company
             </h3>
-            <div className="mt-1.5 h-0.5 w-10 rounded bg-blue-500" />
+            <div className="mt-1.5 h-0.5 w-10 rounded bg-brand-500" />
           </div>
 
           <ul className="mt-5 space-y-3 text-xs text-slate-300">
             <li>
-              <Link to="/faq" className="transition-colors hover:text-blue-400">
+              <Link to="/faq" className="transition-colors hover:text-brand-400">
                 Terms &amp; Conditions
               </Link>
             </li>
             <li>
-              <Link to="/faq" className="transition-colors hover:text-blue-400">
+              <Link to="/faq" className="transition-colors hover:text-brand-400">
                 Refund Policy
               </Link>
             </li>
             <li>
-              <Link to="/contact" className="transition-colors hover:text-blue-400">
+              <Link to="/contact" className="transition-colors hover:text-brand-400">
                 Contact Us
               </Link>
             </li>
             <li>
-              <Link to="/batches" className="transition-colors hover:text-blue-400">
+              <Link to="/batches" className="transition-colors hover:text-brand-400">
                 All Batches
               </Link>
             </li>
@@ -149,7 +149,7 @@ export default function Footer() {
             <h3 className="text-base font-bold text-white tracking-wide">
               Newsletter SignUp!
             </h3>
-            <div className="mt-1.5 h-0.5 w-10 rounded bg-blue-500" />
+            <div className="mt-1.5 h-0.5 w-10 rounded bg-brand-500" />
           </div>
 
           <p className="mt-4 text-xs leading-relaxed text-slate-300">
@@ -159,7 +159,7 @@ export default function Footer() {
 
           {/* Email Subscription Form */}
           <form onSubmit={handleSubscribe} className="mt-4">
-            <div className="flex items-center rounded-full bg-[#16193d] p-1 border border-slate-700/70 focus-within:border-blue-500">
+            <div className="flex items-center rounded-full bg-brand-900 p-1 border border-slate-700/70 focus-within:border-brand-500">
               <input
                 type="email"
                 value={email}
@@ -170,7 +170,7 @@ export default function Footer() {
               />
               <button
                 type="submit"
-                className="shrink-0 rounded-full bg-[#1d63d3] px-4 py-1.5 text-xs font-bold text-white shadow transition hover:bg-blue-600"
+                className="shrink-0 rounded-full bg-brand-600 px-4 py-1.5 text-xs font-bold text-white shadow transition hover:bg-brand-600"
               >
                 {subscribed ? 'Subscribed!' : 'Subscribe'}
               </button>
@@ -226,15 +226,15 @@ export default function Footer() {
       </div>
 
       {/* ── Bottom Copyright Bar ── */}
-      <div className="border-t border-slate-800/80 bg-[#08091d]">
+      <div className="border-t border-slate-800/80 bg-brand-950">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-4 text-center text-xs text-slate-500 sm:flex-row">
           <p>© {new Date().getFullYear()} CPR Academy. All Rights Reserved.</p>
           <p className="flex gap-4 text-slate-400">
-            <Link to="/faq" className="hover:text-blue-400">
+            <Link to="/faq" className="hover:text-brand-400">
               Privacy Policy
             </Link>
             <span>•</span>
-            <Link to="/faq" className="hover:text-blue-400">
+            <Link to="/faq" className="hover:text-brand-400">
               Terms &amp; Conditions
             </Link>
           </p>
@@ -245,7 +245,7 @@ export default function Footer() {
       <a
         href="tel:+8801329672052"
         aria-label="Call helpline"
-        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xl transition-all duration-300 hover:scale-110 hover:bg-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-400/50"
+        className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white shadow-2xl transition-all duration-300 hover:scale-110 hover:bg-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-400/50"
       >
         <FaPhone className="h-5 w-5" />
       </a>

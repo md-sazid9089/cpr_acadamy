@@ -122,7 +122,7 @@ export default function Gallery() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 1: Photo Gallery Header + Dual Hero Banner
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-purple-50/50 via-blue-50/30 to-purple-50/40 py-12 sm:py-16 dark:from-slate-900/60 dark:via-surface-dark dark:to-slate-900/50">
+      <section className="relative overflow-hidden bg-gradient-to-b from-brand-100/50 via-white to-brand-50/60 py-12 sm:py-16 dark:from-slate-900/60 dark:via-surface-dark dark:to-slate-900/50">
         {/* Background watermark grid pattern */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
@@ -136,7 +136,7 @@ export default function Gallery() {
         <div className="container-page relative z-10">
           {/* Main Title */}
           <div className="text-center">
-            <h1 className="text-3xl font-extrabold tracking-tight text-[#1c3d5a] sm:text-4xl lg:text-5xl dark:text-white">
+            <h1 className="text-3xl font-extrabold tracking-tight text-brand-900 sm:text-4xl lg:text-5xl dark:text-white">
               Photo Gallery
             </h1>
           </div>
@@ -148,7 +148,7 @@ export default function Gallery() {
                 key={photo.id}
                 type="button"
                 onClick={() => setLightboxImage(photo)}
-                className="group relative overflow-hidden rounded-2xl border border-blue-200/80 bg-white shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl dark:border-slate-700"
+                className="group relative overflow-hidden rounded-2xl border border-brand-200/80 bg-white shadow-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl dark:border-slate-700"
               >
                 <div className="aspect-[4/3] w-full overflow-hidden sm:aspect-[3/4]">
                   <img
@@ -171,7 +171,7 @@ export default function Gallery() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 2: 4-Column Photo Gallery on Cyan/Turquoise Background
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-[#179ab5] via-[#1bb5cf] to-[#148ba4] py-12 sm:py-16 shadow-inner">
+      <section className="relative overflow-hidden bg-gradient-to-r from-brand-600 via-brand-500 to-brand-700 py-12 sm:py-16 shadow-inner">
         {/* Soft decorative background circles */}
         <div
           className="pointer-events-none absolute -left-20 top-1/4 h-80 w-80 rounded-full bg-white/10 blur-3xl"

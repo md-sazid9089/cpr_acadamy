@@ -44,7 +44,7 @@ export default function FaqSection() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-purple-50/40 via-blue-50/30 to-purple-50/50 py-16 dark:from-slate-900/60 dark:via-surface-dark dark:to-slate-900/50">
+    <section className="relative overflow-hidden bg-gradient-to-b from-brand-100/50 via-white to-brand-50/60 py-16 dark:from-slate-900/60 dark:via-surface-dark dark:to-slate-900/50">
       {/* Background medical plus pattern */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
@@ -59,7 +59,7 @@ export default function FaqSection() {
         {/* ── Section Header ── */}
         <div className="text-center">
           <h2
-            className="text-2xl font-extrabold tracking-tight text-[#1c3d5a] sm:text-3xl lg:text-4xl dark:text-white"
+            className="text-2xl font-extrabold tracking-tight text-brand-900 sm:text-3xl lg:text-4xl dark:text-white"
             lang="bn"
           >
             আপনার প্রশ্নগুলির উত্তর
@@ -81,8 +81,8 @@ export default function FaqSection() {
                 key={faq.id}
                 className={`overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 dark:bg-surface-dark-subtle ${
                   isOpen
-                    ? 'border-blue-500 shadow-md ring-1 ring-blue-400/30'
-                    : 'border-slate-200/90 hover:border-blue-300 dark:border-slate-800'
+                    ? 'border-brand-500 shadow-md ring-1 ring-brand-400/30'
+                    : 'border-slate-200/90 hover:border-brand-300 dark:border-slate-800'
                 }`}
               >
                 <button
@@ -95,7 +95,7 @@ export default function FaqSection() {
                     {/* Active blue indicator bar */}
                     <div
                       className={`h-5 w-1 rounded-full transition-colors ${
-                        isOpen ? 'bg-blue-600' : 'bg-transparent'
+                        isOpen ? 'bg-brand-600' : 'bg-transparent'
                       }`}
                     />
                     <span
@@ -106,11 +106,11 @@ export default function FaqSection() {
                     </span>
                   </div>
 
-                  <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors group-hover:text-blue-600 sm:text-sm dark:text-slate-400">
+                  <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors group-hover:text-brand-600 sm:text-sm dark:text-slate-400">
                     <span className="hidden sm:inline">উত্তর দেখুন</span>
                     <FaArrowRightLong
                       className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                        isOpen ? 'rotate-90 text-blue-600' : 'text-slate-400'
+                        isOpen ? 'rotate-90 text-brand-600' : 'text-slate-400'
                       }`}
                     />
                   </span>
@@ -131,7 +131,7 @@ export default function FaqSection() {
         <div className="mt-10 text-center">
           <Link
             to="/faq"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#1d63d3] px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-blue-700 hover:shadow-lg"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-brand-700 hover:shadow-lg"
           >
             <span>সকল প্রশ্ন দেখুন</span>
             <FaArrowRightLong className="h-3.5 w-3.5" />

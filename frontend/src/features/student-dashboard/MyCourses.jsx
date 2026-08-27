@@ -12,7 +12,7 @@ import { CATEGORY_SLUGS } from '@/constants';
 const TABS = [
   { id: 'active', label: 'Active Batches', icon: FaCheck, iconColor: 'text-emerald-500' },
   { id: 'unpaid', label: 'Unpaid Batches', icon: FaTriangleExclamation, iconColor: 'text-amber-500' },
-  { id: 'previous', label: 'Previous Batches', icon: FaClockRotateLeft, iconColor: 'text-sky-500' },
+  { id: 'previous', label: 'Previous Batches', icon: FaClockRotateLeft, iconColor: 'text-brand-500' },
 ];
 
 export default function MyCourses() {
@@ -42,9 +42,9 @@ export default function MyCourses() {
       <DashboardTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
 
       {/* ── Main Section Container with Blue Header Bar ── */}
-      <div className="overflow-hidden rounded-2xl border border-blue-400 bg-[#f4fbf8] shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle">
+      <div className="overflow-hidden rounded-2xl border border-brand-400 bg-brand-50 shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle">
         {/* Blue Title Header Strip */}
-        <div className="bg-[#1c4d96] px-6 py-3 text-sm font-bold text-white sm:text-base">
+        <div className="bg-brand-600 px-6 py-3 text-sm font-bold text-white sm:text-base">
           {TABS.find((t) => t.id === activeTab)?.label}
         </div>
 
@@ -68,11 +68,11 @@ export default function MyCourses() {
                 return (
                   <div
                     key={course.id}
-                    className="flex flex-col justify-between rounded-2xl border-2 border-blue-300 bg-white p-6 shadow-sm transition-all hover:border-blue-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
+                    className="flex flex-col justify-between rounded-2xl border-2 border-brand-300 bg-white p-6 shadow-sm transition-all hover:border-brand-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
                   >
                     <div>
                       {/* Course / Batch Title */}
-                      <h2 className="text-center text-base font-bold text-[#1c4d96] sm:text-lg dark:text-blue-300">
+                      <h2 className="text-center text-base font-bold text-brand-600 sm:text-lg dark:text-brand-300">
                         {course.title}
                       </h2>
 
@@ -95,14 +95,14 @@ export default function MyCourses() {
                         </div>
                         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
+                            className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all duration-500"
                             style={{ width: `${progressValue}%` }}
                           />
                         </div>
                       </div>
 
                       {/* Notice / Validity text */}
-                      <p className="mt-3 text-center text-[11px] font-semibold leading-relaxed text-rose-600 dark:text-rose-400">
+                      <p className="mt-3 text-center text-[11px] font-semibold leading-relaxed text-accent-600 dark:text-accent-400">
                         Your batch will remain active till "{course.category || 'FCPS P-I'}, December'26 final exam
                         (Expected 3rd December'26. Date will be reviewed &amp; adjusted after exam circular)"
                       </p>
@@ -113,7 +113,7 @@ export default function MyCourses() {
                     {isActive && course.nextLesson && (
                       <Link
                         to={`/learn/${course.slug}/${course.nextLesson.id}`}
-                        className="mt-6 flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-[#1c4d96] px-4 text-center text-sm font-bold text-white shadow-sm transition hover:bg-[#163d78] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                        className="mt-6 flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-center text-sm font-bold text-white shadow-sm transition hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                       >
                         <FaPlay aria-hidden="true" className="h-3 w-3" />
                         Continue Course
@@ -130,28 +130,28 @@ export default function MyCourses() {
                     <div className="mt-4 grid grid-cols-2 gap-3">
                       <Link
                         to={scheduleUrl}
-                        className="flex items-center justify-center rounded-xl bg-[#eef3fc] px-3 py-2.5 text-center text-xs font-bold text-[#1c4d96] shadow-sm transition hover:bg-[#dfeaf9] dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+                        className="flex items-center justify-center rounded-xl bg-brand-100 px-3 py-2.5 text-center text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-200 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
                       >
                         View Schedule
                       </Link>
 
                       <Link
                         to={`/dashboard/learn/${course.slug}`}
-                        className="flex items-center justify-center rounded-xl bg-[#eef3fc] px-3 py-2.5 text-center text-xs font-bold text-[#1c4d96] shadow-sm transition hover:bg-[#dfeaf9] dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+                        className="flex items-center justify-center rounded-xl bg-brand-100 px-3 py-2.5 text-center text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-200 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
                       >
                         Confusing Questions
                       </Link>
 
                       <Link
                         to="/dashboard/exams"
-                        className="flex items-center justify-center rounded-xl bg-[#eef3fc] px-3 py-2.5 text-center text-xs font-bold text-[#1c4d96] shadow-sm transition hover:bg-[#dfeaf9] dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+                        className="flex items-center justify-center rounded-xl bg-brand-100 px-3 py-2.5 text-center text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-200 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
                       >
                         My Exam Performance
                       </Link>
 
                       <Link
                         to={`/dashboard/checkout/${course.slug}`}
-                        className="flex items-center justify-center rounded-xl bg-[#eef3fc] px-3 py-2.5 text-center text-xs font-bold text-[#1c4d96] shadow-sm transition hover:bg-[#dfeaf9] dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+                        className="flex items-center justify-center rounded-xl bg-brand-100 px-3 py-2.5 text-center text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-200 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
                       >
                         Pay Course Fee
                       </Link>

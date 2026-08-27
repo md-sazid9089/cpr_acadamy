@@ -8,11 +8,11 @@ import Button from '@/components/ui/Button.jsx';
 
 /** Solid primary action — matches the "View Subscriptions" button. */
 const PRIMARY_ACTION =
-  'flex items-center justify-center rounded-lg bg-[#1c4d96] px-4 py-2.5 text-center text-xs font-bold text-white shadow-sm transition hover:bg-[#163d78] sm:text-sm';
+  'flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-center text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 sm:text-sm';
 
 /** Tinted secondary action — matches the pink "Add Subscriptions" button. */
 const SECONDARY_ACTION =
-  'flex items-center justify-center rounded-lg bg-gradient-to-r from-rose-50 to-blue-50 px-4 py-2.5 text-center text-xs font-bold text-[#1c4d96] shadow-sm ring-1 ring-rose-100 transition hover:from-rose-100 hover:to-blue-100 sm:text-sm dark:from-slate-800 dark:to-slate-800 dark:text-blue-300 dark:ring-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-700';
+  'flex items-center justify-center rounded-lg bg-gradient-to-r from-accent-50 to-brand-50 px-4 py-2.5 text-center text-xs font-bold text-brand-600 shadow-sm ring-1 ring-accent-100 transition hover:from-accent-100 hover:to-brand-100 sm:text-sm dark:from-slate-800 dark:to-slate-800 dark:text-brand-300 dark:ring-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-700';
 
 /**
  * /dashboard/subscriptions — the batches this student can hold subscriptions
@@ -42,9 +42,9 @@ export default function Subscriptions() {
             {batches.map((batch) => (
               <div
                 key={batch.id}
-                className="rounded-xl border-2 border-blue-300 bg-white p-5 shadow-sm transition-all hover:border-blue-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
+                className="rounded-xl border-2 border-brand-300 bg-white p-5 shadow-sm transition-all hover:border-brand-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
               >
-                <h2 className="text-center text-base font-bold text-[#1c4d96] sm:text-lg dark:text-blue-300">
+                <h2 className="text-center text-base font-bold text-brand-600 sm:text-lg dark:text-brand-300">
                   {batch.title}
                 </h2>
 

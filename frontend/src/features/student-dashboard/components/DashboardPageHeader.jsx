@@ -31,13 +31,13 @@ export default function DashboardPageHeader({ title, backTo, showDashboardLink =
         Back
       </button>
 
-      <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold tracking-tight text-[#1c3d5a] sm:text-2xl lg:text-3xl dark:text-white">
+      <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold tracking-tight text-brand-900 sm:text-2xl lg:text-3xl dark:text-white">
         {title}
       </h1>
 
       {showDashboardLink ? (
         <Link to="/dashboard" aria-label="Dashboard" className={BUTTON}>
-          <FaTableColumns aria-hidden="true" className="h-3.5 w-3.5 text-blue-600" />
+          <FaTableColumns aria-hidden="true" className="h-3.5 w-3.5 text-brand-600" />
           <span className="hidden sm:inline">Dashboard</span>
         </Link>
       ) : (

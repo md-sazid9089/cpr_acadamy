@@ -2,14 +2,14 @@ import { Link } from 'react-router-dom';
 
 export default function About() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#b8e4f0] via-[#cceef6] to-[#b3e1ed] py-12 sm:py-16 dark:from-slate-950 dark:via-surface-dark dark:to-slate-900">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-brand-100 via-brand-50 to-brand-100 py-12 sm:py-16 dark:from-slate-950 dark:via-surface-dark dark:to-slate-900">
       {/* Decorative bokeh background circles */}
       <div
         className="pointer-events-none absolute -left-20 top-20 h-96 w-96 rounded-full bg-white/30 blur-2xl"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute -right-20 top-1/3 h-96 w-96 rounded-full bg-cyan-200/40 blur-2xl"
+        className="pointer-events-none absolute -right-20 top-1/3 h-96 w-96 rounded-full bg-brand-200/40 blur-2xl"
         aria-hidden="true"
       />
       <div
@@ -20,7 +20,7 @@ export default function About() {
       <div className="container-page relative z-10 max-w-5xl space-y-10">
         {/* ── Page Header ── */}
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#1c3d5a] sm:text-4xl lg:text-5xl dark:text-white">
+          <h1 className="text-3xl font-extrabold tracking-tight text-brand-900 sm:text-4xl lg:text-5xl dark:text-white">
             About Us
           </h1>
         </div>
@@ -32,7 +32,7 @@ export default function About() {
             <div className="relative flex items-center justify-center lg:col-span-5">
               {/* Pink watercolor blob backdrop */}
               <div
-                className="absolute inset-0 m-auto h-64 w-64 rounded-full bg-gradient-to-tr from-pink-400/40 to-rose-300/40 blur-xl sm:h-72 sm:w-72"
+                className="absolute inset-0 m-auto h-64 w-64 rounded-full bg-gradient-to-tr from-brand-400/40 to-accent-300/40 blur-xl sm:h-72 sm:w-72"
                 aria-hidden="true"
               />
 
@@ -47,9 +47,9 @@ export default function About() {
 
             {/* Right: Content */}
             <div className="space-y-4 lg:col-span-7">
-              <h2 className="text-2xl font-extrabold tracking-tight text-[#1c3d5a] sm:text-3xl lg:text-4xl dark:text-white">
+              <h2 className="text-2xl font-extrabold tracking-tight text-brand-900 sm:text-3xl lg:text-4xl dark:text-white">
                 Achieve your Goals <br />
-                <span className="text-[#1d63d3] dark:text-blue-400">with CPR Academy</span>
+                <span className="text-brand-600 dark:text-brand-400">with CPR Academy</span>
               </h2>
 
               <p className="text-xs leading-relaxed text-slate-700 sm:text-sm dark:text-slate-300">
@@ -71,7 +71,7 @@ export default function About() {
               <div className="pt-2">
                 <Link
                   to="/batches"
-                  className="inline-flex items-center justify-center rounded-lg border-2 border-[#1c4d96] bg-transparent px-6 py-2 text-xs font-bold text-[#1c4d96] shadow-sm transition hover:bg-[#1c4d96] hover:text-white sm:text-sm dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white"
+                  className="inline-flex items-center justify-center rounded-lg border-2 border-brand-600 bg-transparent px-6 py-2 text-xs font-bold text-brand-600 shadow-sm transition hover:bg-brand-600 hover:text-white sm:text-sm dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-600 dark:hover:text-white"
                 >
                   Join Us
                 </Link>
@@ -86,10 +86,10 @@ export default function About() {
             {/* Left: Content */}
             <div className="order-2 space-y-4 lg:order-1 lg:col-span-7">
               <div>
-                <span className="text-xs font-bold text-[#1d63d3] sm:text-sm dark:text-blue-400">
+                <span className="text-xs font-bold text-brand-600 sm:text-sm dark:text-brand-400">
                   Why Choose CPR Academy
                 </span>
-                <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-[#1c3d5a] sm:text-3xl lg:text-4xl dark:text-white">
+                <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-brand-900 sm:text-3xl lg:text-4xl dark:text-white">
                   Tools For Doctors
                 </h2>
               </div>
@@ -117,7 +117,7 @@ export default function About() {
               <div className="pt-2">
                 <Link
                   to="/batches"
-                  className="inline-flex items-center justify-center rounded-lg bg-[#1d63d3] px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-blue-700 sm:text-sm"
+                  className="inline-flex items-center justify-center rounded-lg bg-brand-600 px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-brand-700 sm:text-sm"
                 >
                   See our Batches
                 </Link>
@@ -128,7 +128,7 @@ export default function About() {
             <div className="relative order-1 flex items-center justify-center lg:order-2 lg:col-span-5">
               {/* Organic green/teal shape backdrop */}
               <div
-                className="absolute inset-0 m-auto h-64 w-64 rounded-full bg-gradient-to-tr from-emerald-400/50 to-teal-300/50 blur-xl sm:h-72 sm:w-72"
+                className="absolute inset-0 m-auto h-64 w-64 rounded-full bg-gradient-to-tr from-brand-400/50 to-accent-300/40 blur-xl sm:h-72 sm:w-72"
                 aria-hidden="true"
               />
 

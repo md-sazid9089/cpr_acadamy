@@ -38,10 +38,10 @@ export default function BatchGroupGrid({ category, counts, className }) {
             key={group.id}
             to={groupHref(group)}
             className={cn(
-              'group flex h-full min-h-[120px] flex-col items-center justify-between rounded-xl border border-blue-400 bg-white p-3.5 text-center shadow-sm transition-all duration-200 sm:min-h-[140px] sm:p-5',
-              'hover:-translate-y-1 hover:border-blue-600 hover:shadow-md',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600',
-              'dark:border-slate-700 dark:bg-surface-dark-subtle dark:hover:border-blue-500 dark:hover:bg-slate-900',
+              'group flex h-full min-h-[120px] flex-col items-center justify-between rounded-xl border border-brand-400 bg-white p-3.5 text-center shadow-sm transition-all duration-200 sm:min-h-[140px] sm:p-5',
+              'hover:-translate-y-1 hover:border-brand-600 hover:shadow-md',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600',
+              'dark:border-slate-700 dark:bg-surface-dark-subtle dark:hover:border-brand-500 dark:hover:bg-slate-900',
               // On 2-col mobile view, center the last odd item (BMDC Licensing)
               isLastOdd &&
                 'col-span-2 w-full max-w-[calc(50%-0.375rem)] mx-auto md:col-span-1 md:max-w-none',
@@ -50,10 +50,10 @@ export default function BatchGroupGrid({ category, counts, className }) {
             <div className="flex w-full flex-col items-center">
               <FaGraduationCap
                 aria-hidden="true"
-                className="h-7 w-7 text-[#1c4d96] transition-transform duration-200 group-hover:scale-110 sm:h-8 sm:w-8 dark:text-blue-400"
+                className="h-7 w-7 text-brand-600 transition-transform duration-200 group-hover:scale-110 sm:h-8 sm:w-8 dark:text-brand-400"
               />
 
-              <h3 className="mt-2 text-xs font-bold text-[#1c3d5a] sm:text-sm md:text-base dark:text-blue-200">
+              <h3 className="mt-2 text-xs font-bold text-brand-900 sm:text-sm md:text-base dark:text-brand-200">
                 {group.label}
               </h3>
 
@@ -70,7 +70,7 @@ export default function BatchGroupGrid({ category, counts, className }) {
               )}
             </div>
 
-            <span className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-blue-700 group-hover:text-blue-900 sm:mt-3 sm:text-xs dark:text-blue-400 dark:group-hover:text-blue-300">
+            <span className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-brand-700 group-hover:text-brand-900 sm:mt-3 sm:text-xs dark:text-brand-400 dark:group-hover:text-brand-300">
               ব্যাচগুলো দেখুন
               <FaArrowRightLong
                 aria-hidden="true"

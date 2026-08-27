@@ -83,11 +83,11 @@ export default function Complaints() {
                 <li key={complaint.id}>
                   <Link
                     to={`/dashboard/complaints/${complaint.id}`}
-                    className="group flex items-center gap-4 rounded-xl border-2 border-blue-300 bg-white p-4 shadow-sm transition-all hover:border-blue-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
+                    className="group flex items-center gap-4 rounded-xl border-2 border-brand-300 bg-white p-4 shadow-sm transition-all hover:border-brand-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                        <h3 className="text-sm font-bold text-[#1c4d96] sm:text-base dark:text-blue-300">
+                        <h3 className="text-sm font-bold text-brand-600 sm:text-base dark:text-brand-300">
                           {complaint.relatedTo}
                         </h3>
                         <ComplaintStatusBadge status={complaint.status} />
@@ -111,7 +111,7 @@ export default function Complaints() {
 
                     <FaAngleRight
                       aria-hidden="true"
-                      className="h-4 w-4 shrink-0 text-blue-500 transition-transform group-hover:translate-x-1"
+                      className="h-4 w-4 shrink-0 text-brand-500 transition-transform group-hover:translate-x-1"
                     />
                   </Link>
                 </li>

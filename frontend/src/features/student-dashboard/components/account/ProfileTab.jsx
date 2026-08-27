@@ -21,13 +21,13 @@ function Field({ label, value, type }) {
 /** Section heading with the underline rule and the edit pencil. */
 function SectionHeader({ title, onEdit }) {
   return (
-    <div className="mb-3 flex items-center justify-between gap-4 border-b-2 border-blue-200 pb-1.5 dark:border-slate-700">
-      <h2 className="text-base font-bold text-[#1c4d96] sm:text-lg dark:text-blue-300">{title}</h2>
+    <div className="mb-3 flex items-center justify-between gap-4 border-b-2 border-brand-200 pb-1.5 dark:border-slate-700">
+      <h2 className="text-base font-bold text-brand-600 sm:text-lg dark:text-brand-300">{title}</h2>
       <button
         type="button"
         onClick={onEdit}
         aria-label={`Edit ${title}`}
-        className="rounded p-1 text-blue-600 transition-colors hover:bg-blue-100 hover:text-blue-800 dark:text-blue-400 dark:hover:bg-slate-800"
+        className="rounded p-1 text-brand-600 transition-colors hover:bg-brand-100 hover:text-brand-800 dark:text-brand-400 dark:hover:bg-slate-800"
       >
         <FaPenToSquare aria-hidden="true" className="h-4 w-4" />
       </button>
@@ -117,7 +117,7 @@ export default function ProfileTab() {
                   </div>
                   <button
                     type="button"
-                    className="mt-2 w-28 rounded-lg border border-blue-400 bg-white px-3 py-1.5 text-xs font-bold text-[#1c4d96] transition hover:bg-blue-50 dark:border-slate-600 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+                    className="mt-2 w-28 rounded-lg border border-brand-400 bg-white px-3 py-1.5 text-xs font-bold text-brand-600 transition hover:bg-brand-50 dark:border-slate-600 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
                   >
                     Change
                   </button>

@@ -138,23 +138,23 @@ export default function CourseSchedule() {
   };
 
   return (
-    <div className="min-h-screen bg-[#edf6f9] py-8 dark:bg-surface-dark/95 print:bg-white print:py-0">
+    <div className="min-h-screen bg-brand-50 py-8 dark:bg-surface-dark/95 print:bg-white print:py-0">
       <div className="container-page max-w-6xl">
         {/* ── Breadcrumb ── */}
         <div className="mb-4 flex items-center justify-between text-xs font-medium text-slate-500 print:hidden dark:text-slate-400">
           <div className="flex items-center gap-2">
-            <Link to="/" className="hover:text-blue-600 dark:hover:text-blue-400">Home</Link>
+            <Link to="/" className="hover:text-brand-600 dark:hover:text-brand-400">Home</Link>
             <span>/</span>
-            <Link to="/batches" className="hover:text-blue-600 dark:hover:text-blue-400">Batches</Link>
+            <Link to="/batches" className="hover:text-brand-600 dark:hover:text-brand-400">Batches</Link>
             <span>/</span>
-            <Link to={detailUrl} className="hover:text-blue-600 dark:hover:text-blue-400">{courseData.title}</Link>
+            <Link to={detailUrl} className="hover:text-brand-600 dark:hover:text-brand-400">{courseData.title}</Link>
             <span>/</span>
-            <span className="font-semibold text-blue-700 dark:text-blue-400">Schedule</span>
+            <span className="font-semibold text-brand-700 dark:text-brand-400">Schedule</span>
           </div>
 
           <Link
             to={detailUrl}
-            className="inline-flex items-center gap-1.5 font-semibold text-blue-600 hover:underline dark:text-blue-400"
+            className="inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:underline dark:text-brand-400"
           >
             <FaArrowLeftLong className="h-3 w-3" />
             Back to Course Details
@@ -163,23 +163,19 @@ export default function CourseSchedule() {
 
         {/* ── Top Action Header Row ── */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1c3d5a] sm:text-3xl dark:text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-brand-900 sm:text-3xl dark:text-white">
             Batch Schedule
           </h1>
 
           <div className="flex items-center gap-3 print:hidden">
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="inline-flex items-center gap-2 rounded-lg border border-blue-400 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-50 dark:border-slate-700 dark:bg-surface-dark-subtle dark:text-blue-300 dark:hover:bg-slate-800"
-            >
+            <Button variant="outline" size="md" onClick={handlePrint}>
               <FaPrint className="h-4 w-4" />
               Print
-            </button>
+            </Button>
 
             <Button
               size="md"
-              className="bg-[#1d63d3] px-6 font-bold hover:bg-blue-700"
+              className="px-6 font-bold"
               onClick={() => onEnroll(courseData)}
             >
               Enroll
@@ -188,14 +184,14 @@ export default function CourseSchedule() {
         </div>
 
         {/* ── Batch Info Box ── */}
-        <div className="mb-6 overflow-hidden rounded-xl border border-blue-400 bg-white shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle">
+        <div className="mb-6 overflow-hidden rounded-xl border border-brand-400 bg-white shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle">
           {/* Blue title bar */}
-          <div className="bg-[#1c4d96] px-5 py-3 text-sm font-bold text-white sm:text-base">
+          <div className="bg-brand-600 px-5 py-3 text-sm font-bold text-white sm:text-base">
             {courseData.title}
           </div>
 
           {/* Details */}
-          <div className="space-y-1.5 bg-[#f6fbf9] p-5 text-sm text-slate-800 dark:bg-slate-900/60 dark:text-slate-200">
+          <div className="space-y-1.5 bg-brand-50 p-5 text-sm text-slate-800 dark:bg-slate-900/60 dark:text-slate-200">
             <p>
               <strong className="font-bold text-slate-900 dark:text-white">Year:</strong> 2026
             </p>
@@ -209,22 +205,22 @@ export default function CourseSchedule() {
         </div>
 
         {/* ── Routine Table ── */}
-        <div className="overflow-hidden rounded-xl border-2 border-blue-500 bg-white shadow-sm dark:border-blue-600 dark:bg-surface-dark-subtle">
+        <div className="overflow-hidden rounded-xl border-2 border-brand-500 bg-white shadow-sm dark:border-brand-600 dark:bg-surface-dark-subtle">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
-              <thead className="bg-[#1c4d96] text-white">
-                <tr className="divide-x divide-blue-400/50">
+              <thead className="bg-brand-600 text-white">
+                <tr className="divide-x divide-brand-400/50">
                   <th className="w-1/4 py-3 px-4 text-center font-bold">Date &amp; Time</th>
                   <th className="w-1/4 py-3 px-4 text-center font-bold">Exam</th>
                   <th className="w-1/4 py-3 px-4 text-center font-bold">Solve Class</th>
                   <th className="w-1/4 py-3 px-4 text-center font-bold">Lecture</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-blue-200 text-slate-800 dark:divide-slate-800 dark:text-slate-200">
+              <tbody className="divide-y divide-brand-200 text-slate-800 dark:divide-slate-800 dark:text-slate-200">
                 {ROUTINE_DATA.map((row) => (
                   <tr
                     key={row.id}
-                    className="divide-x divide-blue-200 transition-colors hover:bg-sky-50/50 dark:divide-slate-800 dark:hover:bg-slate-900/40"
+                    className="divide-x divide-brand-200 transition-colors hover:bg-brand-50/50 dark:divide-slate-800 dark:hover:bg-slate-900/40"
                   >
                     {/* Date & Time */}
                     <td className="whitespace-pre-line py-3 px-4 text-xs font-semibold sm:text-sm text-slate-800 dark:text-slate-200">
@@ -238,7 +234,7 @@ export default function CourseSchedule() {
                           NO EXAM
                         </span>
                       ) : (
-                        <span className="text-blue-900 font-semibold dark:text-blue-300">
+                        <span className="text-brand-900 font-semibold dark:text-brand-300">
                           {row.exam}
                         </span>
                       )}
@@ -276,7 +272,7 @@ export default function CourseSchedule() {
           </div>
 
           {/* Bottom Banner */}
-          <div className="border-t border-blue-400 bg-white py-3 text-center text-sm font-bold text-slate-900 dark:border-slate-800 dark:bg-surface-dark-subtle dark:text-white">
+          <div className="border-t border-brand-400 bg-white py-3 text-center text-sm font-bold text-slate-900 dark:border-slate-800 dark:bg-surface-dark-subtle dark:text-white">
             To Be Continued...
           </div>
         </div>
@@ -287,7 +283,7 @@ export default function CourseSchedule() {
         </p>
 
         {/* ── Footer Contact Box ── */}
-        <div className="mt-6 rounded-xl border border-blue-400 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle">
+        <div className="mt-6 rounded-xl border border-brand-400 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle">
           <p className="text-sm font-bold text-slate-900 dark:text-white">
             Address: <span className="font-normal text-slate-700 dark:text-slate-300">{CONTACT.address}</span>
           </p>
@@ -296,7 +292,7 @@ export default function CourseSchedule() {
           </p>
           <p className="mt-2 text-sm font-bold text-slate-900 dark:text-white">
             For Result Please Visit:{' '}
-            <a href="https://cprmedicalacademy.com" target="_blank" rel="noreferrer" className="text-blue-700 hover:underline dark:text-blue-400">
+            <a href="https://cprmedicalacademy.com" target="_blank" rel="noreferrer" className="text-brand-700 hover:underline dark:text-brand-400">
               www.cprmedicalacademy.com
             </a>
           </p>
