@@ -62,13 +62,12 @@ moment those bodies are swapped.
 
 Known items worth resolving first:
 
-- `public/assets/spotlight/cpr logo.png` is **5.8 MB** and loads on every page
-  in the navbar and footer, where it renders at 72×72. Exporting it at 144×144
-  takes the homepage from roughly 10 MB to under 1 MB.
-- `profileb.png` (2.7 MB) and the six carousel posters (1.5 MB) are likewise far
-  larger than their display size.
-- `public/assets/spotlight/profile.jpeg` (1.9 MB) is referenced nowhere and can
-  be deleted.
+- `public/assets/spotlight/cpr logo.png` (5.7 MB) and `profile.jpeg` (1.8 MB)
+  are referenced nowhere — the navbar uses the 62 KB `cpr-logo.png`. Nothing
+  fetches them, so they cost deploy size only, but they can be deleted.
+- The posters and `profileb.png` were re-exported at display size: the homepage
+  now transfers 1.5 MB instead of 4.4 MB. Keep new artwork under ~1200 px on the
+  long edge, since nothing on the site paints wider than about 600 CSS px.
 - The dashboard, admin, auth and player routes are code-split via `React.lazy`
   in `src/app/router.jsx`. The entry chunk is 560 KB (173 KB gzipped); the
   marketing pages stay eager on purpose, since they are the landing surface.

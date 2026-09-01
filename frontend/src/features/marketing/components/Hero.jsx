@@ -119,6 +119,12 @@ export default function Hero({
               src="/assets/spotlight/profileb.png"
               alt=""
               aria-hidden="true"
+              // Intrinsic size of the asset. Without it the row has no height
+              // until the portrait decodes, so the grid resizes on load and
+              // embla re-measures the carousel beside it — which cost about
+              // 450ms of forced layout on first paint.
+              width={1200}
+              height={1575}
               // Negative bottom margin lets the portrait bleed into the
               // section's padding; overflow-hidden on the section clips it.
               // The photo is the tallest item in the row, so changing its

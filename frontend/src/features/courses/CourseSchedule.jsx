@@ -116,7 +116,7 @@ export default function CourseSchedule() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-white dark:bg-surface-dark">
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-surface-dark">
         <Spinner size="lg" label="Loading schedule…" />
       </div>
     );

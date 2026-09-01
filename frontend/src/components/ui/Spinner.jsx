@@ -23,7 +23,7 @@ export default function Spinner({ size = 'md', label, className }) {
 /** Full-viewport loader for route-level Suspense fallbacks. */
 export function PageSpinner() {
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center">
       <Spinner size="lg" label="Loading…" />
     </div>
   );
