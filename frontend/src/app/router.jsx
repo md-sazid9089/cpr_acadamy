@@ -4,14 +4,16 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import PublicLayout from '@/components/layout/PublicLayout.jsx';
 import DashboardLayout from '@/components/layout/DashboardLayout.jsx';
 import ProtectedRoute from '@/features/auth/ProtectedRoute.jsx';
-import { PageSpinner } from '@/components/ui';
+// Straight from the module, not the barrel: importing from '@/components/ui'
+// pulls every primitive it re-exports into whichever chunk does the importing,
+// and this file is the entry chunk.
+import { PageSpinner } from '@/components/ui/Spinner.jsx';
 import { ROLES } from '@/constants';
 
 // Marketing pages stay in the entry chunk: they are what a first-time visitor
 // lands on, so splitting them would only add a round trip before first paint.
 import Home from '@/features/marketing/Home.jsx';
 import FAQ from '@/features/marketing/FAQ.jsx';
-import Contact from '@/features/marketing/Contact.jsx';
 import ClassRoutine from '@/features/marketing/ClassRoutine.jsx';
 import Gallery from '@/features/marketing/Gallery.jsx';
 import About from '@/features/marketing/About.jsx';
@@ -22,6 +24,12 @@ import CourseList from '@/features/courses/CourseList.jsx';
 import CourseDetail from '@/features/courses/CourseDetail.jsx';
 import CourseSchedule from '@/features/courses/CourseSchedule.jsx';
 import Batches from '@/features/courses/Batches.jsx';
+
+// Contact is the one marketing page carrying a validated form, so it is the
+// only thing that pulled zod and react-hook-form — about 85 KB — into the entry
+// chunk that every visitor downloads. Split out, that cost falls on the people
+// who actually open it.
+const Contact = lazy(() => import('@/features/marketing/Contact.jsx'));
 
 // Everything below is behind a click — auth, the dashboards, the player — so it
 // is code-split and fetched only when the route is actually visited.
@@ -45,7 +53,8 @@ const MyAccount = lazy(() => import('@/features/student-dashboard/MyAccount.jsx'
 const Complaints = lazy(() => import('@/features/student-dashboard/Complaints.jsx'));
 const ComplaintDetail = lazy(() => import('@/features/student-dashboard/ComplaintDetail.jsx'));
 
-// Course player
+// Course hub & player
+const CourseHub = lazy(() => import('@/features/course-hub/CourseHub.jsx'));
 const CoursePlayer = lazy(() => import('@/pages/CoursePlayer.jsx'));
 
 // Learning, exams, payments
@@ -59,6 +68,9 @@ const Invoice = lazy(() => import('@/features/payments/Invoice.jsx'));
 const AdminOverview = lazy(() => import('@/features/admin/AdminOverview.jsx'));
 const AdminStudents = lazy(() => import('@/features/admin/AdminStudents.jsx'));
 const AdminCourses = lazy(() => import('@/features/admin/AdminCourses.jsx'));
+const AdminVideos = lazy(() => import('@/features/admin/AdminVideos.jsx'));
+const AdminExams = lazy(() => import('@/features/admin/AdminExams.jsx'));
+const AdminSchedules = lazy(() => import('@/features/admin/AdminSchedules.jsx'));
 const AdminReports = lazy(() => import('@/features/admin/AdminReports.jsx'));
 
 /**
@@ -76,7 +88,7 @@ function suspend(element) {
  * chat bubble). /dashboard/* and /admin/* sit behind ProtectedRoute, which also
  * enforces the admin-approval gate before either shell mounts.
  */
-export const router = createBrowserRouter([
+const router = createBrowserRouter([
   {
     element: <PublicLayout />,
     errorElement: <NotFound />,
@@ -92,7 +104,7 @@ export const router = createBrowserRouter([
       { path: '/faq', element: <FAQ /> },
       { path: '/gallery', element: <Gallery /> },
       { path: '/about', element: <About /> },
-      { path: '/contact', element: <Contact /> },
+      { path: '/contact', element: suspend(<Contact />) },
 
       { path: '/login', element: suspend(<Login />) },
       { path: '/register', element: suspend(<Register />) },
@@ -124,6 +136,7 @@ export const router = createBrowserRouter([
       { index: true, element: suspend(<Overview />) },
       { path: 'courses', element: suspend(<MyCourses />) },
       { path: 'progress', element: suspend(<Progress />) },
+      { path: 'course/:slug', element: suspend(<CourseHub />) },
       { path: 'exams', element: suspend(<UpcomingExams />) },
       { path: 'exams/:examId', element: suspend(<ExamRunner />) },
       { path: 'exams/:examId/result', element: suspend(<ExamResult />) },
@@ -152,6 +165,9 @@ export const router = createBrowserRouter([
       { index: true, element: suspend(<AdminOverview />) },
       { path: 'students', element: suspend(<AdminStudents />) },
       { path: 'courses', element: suspend(<AdminCourses />) },
+      { path: 'videos', element: suspend(<AdminVideos />) },
+      { path: 'exams', element: suspend(<AdminExams />) },
+      { path: 'schedules', element: suspend(<AdminSchedules />) },
       { path: 'reports', element: suspend(<AdminReports />) },
       { path: '*', element: <Navigate to="/admin" replace /> },
     ],

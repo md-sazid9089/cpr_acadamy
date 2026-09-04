@@ -10,6 +10,7 @@ const ICONS = {
   users: 'M17 20v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9.5 8a3.5 3.5 0 100-7 3.5 3.5 0 000 7M22 20v-2a4 4 0 00-3-3.87',
   report: 'M14 3v5h5M6 3h9l5 5v13H6zM9 13h6M9 17h4',
   play: 'M6 4l14 8-14 8z',
+  calendar: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
 };
 
 function Icon({ name }) {
@@ -33,6 +34,9 @@ export const ADMIN_NAV = [
   { to: '/admin', label: 'Dashboard', icon: 'grid', end: true },
   { to: '/admin/students', label: 'Students', icon: 'users' },
   { to: '/admin/courses', label: 'Courses', icon: 'book' },
+  { to: '/admin/videos', label: 'Videos', icon: 'play' },
+  { to: '/admin/exams', label: 'Exams', icon: 'clipboard' },
+  { to: '/admin/schedules', label: 'Schedules', icon: 'calendar' },
   { to: '/admin/reports', label: 'Reports', icon: 'report' },
 ];
 

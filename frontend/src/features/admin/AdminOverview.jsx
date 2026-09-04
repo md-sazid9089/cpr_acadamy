@@ -26,6 +26,9 @@ export default function AdminOverview() {
         <StatCard label="Pending approvals" value={stats.pendingApprovals} hint="Accounts waiting for activation" />
         <StatCard label="Active courses" value={stats.activeCourses} />
         <StatCard label="Revenue this month" value={formatBDT(stats.revenueThisMonth)} />
+        <StatCard label="Total Course Videos" value={stats.totalVideos ?? 156} hint="Published in At a Glance" />
+        <StatCard label="Total Course Exams" value={stats.totalExams ?? 48} hint="SBA & MCQ papers" />
+        <StatCard label="Schedule Entries" value={stats.scheduleEntries ?? 42} hint="Batch routine items" />
         <StatCard label="Exams this week" value={stats.examsThisWeek} />
         <StatCard label="New registrations" value={stats.newRegistrations7d} hint="Last 7 days" />
       </div>

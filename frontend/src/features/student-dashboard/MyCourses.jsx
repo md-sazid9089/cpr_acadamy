@@ -112,7 +112,7 @@ export default function MyCourses() {
                         we know where the student left off. */}
                     {isActive && course.nextLesson && (
                       <Link
-                        to={`/learn/${course.slug}/${course.nextLesson.id}`}
+                        to={`/dashboard/course/${course.slug}`}
                         className="mt-6 flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-center text-sm font-bold text-white shadow-sm transition hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                       >
                         <FaPlay aria-hidden="true" className="h-3 w-3" />
