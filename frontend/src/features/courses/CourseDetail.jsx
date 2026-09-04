@@ -19,7 +19,7 @@ import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { CONTACT, CATEGORY_SLUGS } from '@/constants';
-import { formatBDT, formatDate } from '@/lib/utils';
+import { formatBDT, formatDate, formatNumber } from '@/lib/utils';
 
 export default function CourseDetail() {
   const { slug } = useParams();
@@ -444,7 +444,7 @@ export default function CourseDetail() {
                   </div>
                   <div className="flex justify-between py-2.5">
                     <dt className="text-slate-500 dark:text-slate-400">Enrolled Students</dt>
-                    <dd className="font-semibold text-slate-800 dark:text-slate-200">{course.enrolledCount.toLocaleString('en-BD')}+</dd>
+                    <dd className="font-semibold text-slate-800 dark:text-slate-200">{formatNumber(course.enrolledCount)}+</dd>
                   </div>
                   <div className="flex justify-between py-2.5">
                     <dt className="text-slate-500 dark:text-slate-400">Access Validity</dt>

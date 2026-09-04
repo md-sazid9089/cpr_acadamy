@@ -11,6 +11,12 @@ export function cn(...inputs) {
 // formatters are built once and reused.
 const BDT_FORMAT = new Intl.NumberFormat('en-BD');
 
+/** Group a plain count, e.g. 2140 -> '2,140'. Same formatter, no currency mark. */
+export function formatNumber(value) {
+  if (value == null) return '—';
+  return BDT_FORMAT.format(Number(value));
+}
+
 /** Format a number as Bangladeshi Taka, e.g. 4500 -> '৳4,500'. */
 export function formatBDT(amount) {
   if (amount == null) return '—';

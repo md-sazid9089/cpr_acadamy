@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchAdminReports } from './api/admin.api.js';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
-import { formatBDT } from '@/lib/utils';
+import { formatBDT, formatNumber } from '@/lib/utils';
 
 export default function AdminReports() {
   const { data, isLoading } = useQuery({ queryKey: ['admin', 'reports'], queryFn: fetchAdminReports });
@@ -60,7 +60,7 @@ export default function AdminReports() {
                     {item.category}
                   </span>
                   <span className="text-slate-500 dark:text-slate-400">
-                    {item.count.toLocaleString('en-BD')} ({share}%)
+                    {formatNumber(item.count)} ({share}%)
                   </span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">

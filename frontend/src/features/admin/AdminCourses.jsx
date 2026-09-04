@@ -4,7 +4,7 @@ import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
-import { formatBDT, formatDate } from '@/lib/utils';
+import { formatBDT, formatDate, formatNumber } from '@/lib/utils';
 
 export default function AdminCourses() {
   const { data: courses = [], isLoading } = useQuery({
@@ -20,7 +20,7 @@ export default function AdminCourses() {
     },
     { key: 'category', header: 'Category', render: (row) => <Badge tone="brand">{row.category}</Badge> },
     { key: 'startsOn', header: 'Starts', render: (row) => formatDate(row.startsOn) },
-    { key: 'enrolled', header: 'Enrolled', align: 'right', render: (row) => row.enrolled.toLocaleString('en-BD') },
+    { key: 'enrolled', header: 'Enrolled', align: 'right', render: (row) => formatNumber(row.enrolled) },
     { key: 'price', header: 'Price', align: 'right', render: (row) => formatBDT(row.price) },
     {
       key: 'isPublished',

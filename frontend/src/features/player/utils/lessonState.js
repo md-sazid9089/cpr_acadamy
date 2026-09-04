@@ -47,54 +47,43 @@ export function isReleased(lesson, now = new Date()) {
   return new Date(lesson.releaseAt) <= now;
 }
 
+// Built once rather than per call: these run for every row the lesson sidebar
+// renders, and constructing an Intl formatter is the expensive half of the work.
+const DAY_SHORT = new Intl.DateTimeFormat('en-GB', {
+  timeZone: TIME_ZONE,
+  day: 'numeric',
+  month: 'short',
+});
+const DAY_LONG = new Intl.DateTimeFormat('en-GB', {
+  timeZone: TIME_ZONE,
+  day: 'numeric',
+  month: 'long',
+});
+const CLOCK = new Intl.DateTimeFormat('en-GB', {
+  timeZone: TIME_ZONE,
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+});
+
 /** '24 Jan' — used on the disabled Next button. */
 export function formatUnlockDayShort(iso) {
   if (!iso) return '';
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: TIME_ZONE,
-    day: 'numeric',
-    month: 'short',
-  }).format(new Date(iso));
+  return DAY_SHORT.format(new Date(iso));
 }
 
 /** '24 Jan, 8:00 PM' — used on the locked lesson row's meta line. */
 export function formatUnlockShort(iso) {
   if (!iso) return '';
   const date = new Date(iso);
-  const day = new Intl.DateTimeFormat('en-GB', {
-    timeZone: TIME_ZONE,
-    day: 'numeric',
-    month: 'short',
-  }).format(date);
-  const time = new Intl.DateTimeFormat('en-GB', {
-    timeZone: TIME_ZONE,
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
-    .format(date)
-    .toUpperCase();
-  return `${day}, ${time}`;
+  return `${DAY_SHORT.format(date)}, ${CLOCK.format(date).toUpperCase()}`;
 }
 
 /** '24 January, 8:00 PM' — used on the locked content pane. */
 export function formatUnlockLong(iso) {
   if (!iso) return '';
   const date = new Date(iso);
-  const day = new Intl.DateTimeFormat('en-GB', {
-    timeZone: TIME_ZONE,
-    day: 'numeric',
-    month: 'long',
-  }).format(date);
-  const time = new Intl.DateTimeFormat('en-GB', {
-    timeZone: TIME_ZONE,
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
-    .format(date)
-    .toUpperCase();
-  return `${day}, ${time}`;
+  return `${DAY_LONG.format(date)}, ${CLOCK.format(date).toUpperCase()}`;
 }
 
 /** 118 -> '1 h 58 m'; 45 -> '45 m'. */

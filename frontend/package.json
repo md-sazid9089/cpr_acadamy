@@ -29,7 +29,6 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "@tanstack/react-query-devtools": "^5.62.7",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
