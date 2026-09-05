@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FaPlus, FaTrash } from 'react-icons/fa6';
 import { createExam, deleteExam, fetchAdminExams } from '../api/admin.api.js';
+import { adminExamsKey } from './keys.js';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
@@ -22,8 +23,6 @@ export const TYPE_LABELS = {
   [QUESTION_TYPES.SBA]: 'SBA',
   [QUESTION_TYPES.MTF]: 'MCQ (T/F)',
 };
-
-export const adminExamsKey = (courseId) => ['admin', 'exams', courseId];
 
 /** Exams belonging to one course. Clicking a row opens the question builder. */
 export default function CourseExamsTab() {

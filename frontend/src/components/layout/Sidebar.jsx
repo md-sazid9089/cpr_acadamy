@@ -11,6 +11,7 @@ const ICONS = {
   report: 'M14 3v5h5M6 3h9l5 5v13H6zM9 13h6M9 17h4',
   play: 'M6 4l14 8-14 8z',
   calendar: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
+  taka: 'M12 3v18M7 8h10M7 14h6',
 };
 
 function Icon({ name }) {
@@ -39,13 +40,20 @@ export const ADMIN_NAV = [
   { to: '/admin', label: 'Dashboard', icon: 'grid', end: true },
   { to: '/admin/students', label: 'Students', icon: 'users' },
   { to: '/admin/courses', label: 'Courses', icon: 'book' },
+  { to: '/admin/revenue', label: 'Revenue', icon: 'taka' },
   { to: '/admin/reports', label: 'Reports', icon: 'report' },
 ];
 
-/** Vertical nav for the dashboard shells; slides in as a drawer on mobile. */
-export default function Sidebar({ items, title = 'Menu', open = false, onClose, footer }) {
+/**
+ * Vertical nav for the dashboard shells; slides in as a drawer on mobile.
+ * `header` renders above the links (logo, theme switch), `footer` below them
+ * (signed-in user, log out) — the admin shell has no navbar, so both live here.
+ */
+export default function Sidebar({ items, title = 'Menu', open = false, onClose, header, footer }) {
   const content = (
     <nav className="flex h-full flex-col gap-1 p-4" aria-label={title}>
+      {header && <div className="mb-3">{header}</div>}
+
       <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
         {title}
       </p>
@@ -77,13 +85,13 @@ export default function Sidebar({ items, title = 'Menu', open = false, onClose, 
   return (
     <>
       <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block dark:border-slate-800 dark:bg-surface-dark-subtle">
-        <div className="sticky top-16">{content}</div>
+        <div className="sticky top-0 h-screen overflow-y-auto">{content}</div>
       </aside>
 
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} aria-hidden="true" />
-          <div className="absolute left-0 top-0 h-full w-64 bg-white shadow-xl dark:bg-surface-dark-subtle">
+          <div className="absolute left-0 top-0 h-full w-64 overflow-y-auto bg-white shadow-xl dark:bg-surface-dark-subtle">
             {content}
           </div>
         </div>

@@ -10,8 +10,7 @@ import {
   fetchAdminVideos,
   updateScheduleEntry,
 } from '../api/admin.api.js';
-import { adminExamsKey } from './CourseExamsTab.jsx';
-import { adminVideosKey } from './CourseVideosTab.jsx';
+import { adminExamsKey, adminScheduleKey, adminVideosKey } from './keys.js';
 import PublishGate from './PublishGate.jsx';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
@@ -19,8 +18,6 @@ import Button from '@/components/ui/Button.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import Input, { Select } from '@/components/ui/Input.jsx';
 import { cn, formatClockTime, formatDate } from '@/lib/utils';
-
-export const adminScheduleKey = (courseId) => ['admin', 'schedule', courseId];
 
 const NONE = '';
 const NO_EXAM = 'NO EXAM';
@@ -177,7 +174,7 @@ export default function CourseScheduleTab() {
         </div>
       </Card>
 
-      {!isLoading && <PublishGate videos={videos} exams={exams} schedule={schedule} />}
+      {!isLoading && <PublishGate course={course} videos={videos} exams={exams} schedule={schedule} />}
 
       <Modal
         open={editing !== null}

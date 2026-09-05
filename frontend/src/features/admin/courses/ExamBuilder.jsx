@@ -12,7 +12,8 @@ import {
   updateQuestion,
 } from '../api/admin.api.js';
 import { computeTotalMarks, deductionPerWrong, marksPerQuestionTotal, stemsPerQuestion } from '../utils/marking.js';
-import { adminExamsKey, TYPE_LABELS } from './CourseExamsTab.jsx';
+import { adminExamKey, adminExamsKey } from './keys.js';
+import { TYPE_LABELS } from './CourseExamsTab.jsx';
 import QuestionCard, { isQuestionComplete } from './QuestionCard.jsx';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
@@ -23,8 +24,6 @@ import Spinner from '@/components/ui/Spinner.jsx';
 import Input, { Select } from '@/components/ui/Input.jsx';
 import { QUESTION_TYPES } from '@/constants';
 import { cn } from '@/lib/utils';
-
-export const adminExamKey = (examId) => ['admin', 'exam', examId];
 
 /** ISO -> value for <input type="datetime-local"> in the admin's own zone. */
 function toLocalInput(iso) {

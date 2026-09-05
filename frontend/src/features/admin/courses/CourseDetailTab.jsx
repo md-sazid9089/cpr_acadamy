@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaCheck, FaPlus, FaXmark } from 'react-icons/fa6';
 import { updateCourse } from '../api/admin.api.js';
-import { adminCourseKey } from './CourseShell.jsx';
+import { adminCourseKey } from './keys.js';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input, { Select, Textarea } from '@/components/ui/Input.jsx';

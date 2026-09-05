@@ -566,9 +566,60 @@ const SEED_COURSES = [
  * features/admin/api/admin.api.js edits it in place so changes made in the
  * admin panel show up on the public course page within the same session.
  *
+ * Admin changes are also persisted to localStorage so they survive a reload
+ * and are visible in a second tab — without that, "View public page" (which
+ * opens a new tab) would show the seed data and the new course would seem to
+ * have vanished. Untouched seed courses still come from this file.
+ *
  * @type {import('@/types').Course[]}
  */
-export const MOCK_COURSES = SEED_COURSES.map(withDefaults);
+const STORAGE_KEY = 'cpr-mock-courses';
+const SEED_IDS = new Set(SEED_COURSES.map((course) => course.id));
+
+function loadStore() {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    const parsed = raw ? JSON.parse(raw) : null;
+    return { created: parsed?.created ?? [], edits: parsed?.edits ?? {} };
+  } catch {
+    return { created: [], edits: {} };
+  }
+}
+
+function saveStore(store) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    /* Storage full or unavailable — the in-memory copy still works for this tab. */
+  }
+}
+
+function buildCatalogue() {
+  const { created, edits } = loadStore();
+  const seeded = SEED_COURSES.map(withDefaults).map((course) => (edits[course.id] ? { ...course, ...edits[course.id] } : course));
+  return [...created, ...seeded];
+}
+
+export const MOCK_COURSES = buildCatalogue();
+
+/**
+ * Record an admin create/edit so it outlives this tab. Called by the admin
+ * mock API after every course mutation.
+ * TODO: delete along with this file once the real API owns the data.
+ *
+ * @param {import('@/types').Course} course
+ */
+export function commitCourse(course) {
+  const store = loadStore();
+  if (SEED_IDS.has(course.id)) {
+    store.edits[course.id] = course;
+  } else {
+    const index = store.created.findIndex((item) => item.id === course.id);
+    if (index >= 0) store.created[index] = course;
+    else store.created.unshift(course);
+  }
+  saveStore(store);
+}
 
 /** Curriculum shown on the course detail page. */
 export const MOCK_CURRICULUM = [

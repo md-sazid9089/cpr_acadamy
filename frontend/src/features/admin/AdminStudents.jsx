@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStudents, updateStudentStatus } from './api/admin.api.js';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
@@ -20,6 +21,7 @@ const FILTERS = [
 export default function AdminStudents() {
   const [filter, setFilter] = useState(ACCOUNT_STATUS.AWAITING_APPROVAL);
   const [confirming, setConfirming] = useState(null);
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: students = [], isLoading } = useQuery({
@@ -36,6 +38,12 @@ export default function AdminStudents() {
     },
   });
 
+  // Row click opens the record; the action buttons stop propagation so they don't.
+  const stop = (handler) => (event) => {
+    event.stopPropagation();
+    handler();
+  };
+
   const columns = [
     {
       key: 'fullName',
@@ -49,6 +57,12 @@ export default function AdminStudents() {
     },
     { key: 'institution', header: 'Institution' },
     { key: 'interest', header: 'Track' },
+    {
+      key: 'enrolments',
+      header: 'Courses',
+      align: 'right',
+      render: (row) => <span className="text-slate-700 dark:text-slate-300">{row.enrolments?.length ?? 0}</span>,
+    },
     { key: 'createdAt', header: 'Registered', render: (row) => formatDate(row.createdAt) },
     { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
     {
@@ -61,14 +75,14 @@ export default function AdminStudents() {
             <>
               <Button
                 size="sm"
-                onClick={() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE })}
+                onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE }))}
               >
                 Approve
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setConfirming({ student: row, action: ACCOUNT_STATUS.REJECTED })}
+                onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.REJECTED }))}
               >
                 Reject
               </Button>
@@ -78,7 +92,7 @@ export default function AdminStudents() {
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setConfirming({ student: row, action: ACCOUNT_STATUS.SUSPENDED })}
+              onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.SUSPENDED }))}
             >
               Suspend
             </Button>
@@ -87,11 +101,14 @@ export default function AdminStudents() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE })}
+              onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE }))}
             >
               Reinstate
             </Button>
           )}
+          <Button size="sm" variant="ghost" to={`/admin/students/${row.id}`} onClick={(event) => event.stopPropagation()}>
+            View
+          </Button>
         </div>
       ),
     },
@@ -106,7 +123,7 @@ export default function AdminStudents() {
   return (
     <>
       <Card>
-        <CardHeader title="Students" description="Review registrations and manage account access." />
+        <CardHeader title="Students" description="Review registrations and manage account access. Click a row for details and payment history." />
 
         <div className="flex flex-wrap gap-2 px-5 pt-4">
           {FILTERS.map((option) => (
@@ -131,6 +148,7 @@ export default function AdminStudents() {
             columns={columns}
             rows={students}
             isLoading={isLoading}
+            onRowClick={(row) => navigate(`/admin/students/${row.id}`)}
             emptyTitle="No students in this view"
             emptyDescription="Try a different filter."
           />

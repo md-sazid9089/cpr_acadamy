@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FaFileLines, FaLink, FaPenToSquare, FaPlus, FaTrash } from 'react-icons/fa6';
 import { createVideo, deleteVideo, fetchAdminVideos, updateVideo } from '../api/admin.api.js';
+import { adminVideosKey } from './keys.js';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -27,8 +28,6 @@ const EMPTY_FORM = {
   videoUrl: '',
   notesUrl: '',
 };
-
-export const adminVideosKey = (courseId) => ['admin', 'videos', courseId];
 
 /** Lecture list for one course. Rows are grouped by the date they are scheduled for. */
 export default function CourseVideosTab() {

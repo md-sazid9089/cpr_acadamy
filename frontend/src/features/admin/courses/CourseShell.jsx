@@ -9,6 +9,8 @@ import {
   FaPlay,
 } from 'react-icons/fa6';
 import { fetchAdminCourse } from '../api/admin.api.js';
+import { adminCourseKey } from './keys.js';
+import { PublishControl } from './PublishGate.jsx';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -22,9 +24,6 @@ const TABS = [
   { to: 'exams', label: 'Exams', icon: FaClipboardList },
   { to: 'schedule', label: 'Schedule', icon: FaCalendarDays },
 ];
-
-/** Query key for one course in the admin panel; tabs invalidate it after saving. */
-export const adminCourseKey = (id) => ['admin', 'course', id];
 
 /**
  * Wraps every /admin/courses/:id/* route. Loads the course once, shows its
@@ -83,14 +82,22 @@ export default function CourseShell() {
           {course.subtitle && (
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{course.subtitle}</p>
           )}
+          {course.status !== COURSE_STATUS.PUBLISHED && (
+            <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+              Draft — not on the public site yet. Publish when you are ready.
+            </p>
+          )}
         </div>
 
-        {course.status === COURSE_STATUS.PUBLISHED && (
-          <Button variant="outline" size="sm" href={publicUrl} target="_blank" rel="noreferrer">
-            View public page
-            <FaArrowUpRightFromSquare aria-hidden="true" className="h-3 w-3" />
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {course.status === COURSE_STATUS.PUBLISHED && (
+            <Button variant="outline" size="sm" href={publicUrl} target="_blank" rel="noreferrer">
+              View public page
+              <FaArrowUpRightFromSquare aria-hidden="true" className="h-3 w-3" />
+            </Button>
+          )}
+          <PublishControl course={course} />
+        </div>
       </div>
 
       <nav

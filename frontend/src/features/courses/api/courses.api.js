@@ -23,6 +23,11 @@ function matchesFacet(selected, value) {
   return selected.includes(value);
 }
 
+/** Only published courses reach the public catalogue; drafts are admin-only. */
+function publicCourses() {
+  return MOCK_COURSES.filter((course) => course.status !== 'draft');
+}
+
 /**
  * @param {Object} [params]
  * @param {string} [params.category]     'FCPS' | 'BCS' | 'MBBS' | 'ALL'
@@ -36,7 +41,7 @@ export async function fetchCourses(params = {}) {
   await sleep(350);
 
   const { category, group, batchTypes, sessions, branches, search } = params;
-  let courses = [...MOCK_COURSES];
+  let courses = publicCourses();
 
   if (category && category !== 'ALL') {
     courses = courses.filter((course) => course.category === category);
@@ -67,13 +72,13 @@ export async function fetchCourses(params = {}) {
 
 export async function fetchFeaturedCourses() {
   await sleep(250);
-  return MOCK_COURSES.filter((course) => course.isFeatured);
+  return publicCourses().filter((course) => course.isFeatured);
 }
 
 /** @param {string} slug */
 export async function fetchCourseBySlug(slug) {
   await sleep(300);
-  const course = MOCK_COURSES.find((item) => item.slug === slug);
+  const course = publicCourses().find((item) => item.slug === slug);
   if (!course) {
     throw { status: 404, code: 'COURSE_NOT_FOUND', message: 'This course could not be found.' };
   }

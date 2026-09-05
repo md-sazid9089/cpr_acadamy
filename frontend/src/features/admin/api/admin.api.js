@@ -1,6 +1,6 @@
 import { ACCOUNT_STATUS, COURSE_STATUS, QUESTION_TYPES } from '@/constants';
 import { sleep } from '@/lib/utils';
-import { MOCK_COURSES } from '@/features/courses/api/mock-courses.js';
+import { MOCK_COURSES, commitCourse } from '@/features/courses/api/mock-courses.js';
 import { computeTotalMarks } from '../utils/marking.js';
 // import apiClient from '@/lib/api-client';
 
@@ -32,27 +32,109 @@ export async function fetchAdminStats() {
   };
 }
 
+// ─── Students ──────────────────────────────────────────────────────────────
+
+let MOCK_STUDENTS = [
+  { id: 'u-11', fullName: 'Dr. Sadia Rahman', mobile: '01712345678', email: 'sadia.rahman@example.com', bmdcNumber: 'A-78412', institution: 'Dhaka Medical College', interest: 'FCPS', status: ACCOUNT_STATUS.AWAITING_APPROVAL, createdAt: '2026-08-12T08:20:00.000Z', lastLoginAt: null, enrolments: [] },
+  { id: 'u-12', fullName: 'Dr. Imran Kabir', mobile: '01812345678', email: 'imran.kabir@example.com', bmdcNumber: 'A-80115', institution: 'Chittagong Medical College', interest: 'BCS', status: ACCOUNT_STATUS.AWAITING_APPROVAL, createdAt: '2026-08-12T11:05:00.000Z', lastLoginAt: null, enrolments: [] },
+  { id: 'u-13', fullName: 'Dr. Nusrat Jahan', mobile: '01912345678', email: 'nusrat.jahan@example.com', bmdcNumber: 'A-69230', institution: 'BSMMU', interest: 'FCPS', status: ACCOUNT_STATUS.ACTIVE, createdAt: '2026-06-01T09:00:00.000Z', lastLoginAt: '2026-09-04T18:42:00.000Z', enrolments: [
+    { courseId: 'c-1', courseTitle: 'FCPS Part-1 Medicine — January Batch', enrolledAt: '2026-06-02T10:15:00.000Z', status: 'active', progress: 62 },
+    { courseId: 'c-8', courseTitle: 'FCPS Part-1 Medicine — Mock Plus Batch', enrolledAt: '2026-08-20T14:00:00.000Z', status: 'active', progress: 18 },
+  ] },
+  { id: 'u-14', fullName: 'Dr. Tanvir Ahmed', mobile: '01612345678', email: 'tanvir.ahmed@example.com', bmdcNumber: 'A-91004', institution: 'Rajshahi Medical College', interest: 'MBBS', status: ACCOUNT_STATUS.ACTIVE, createdAt: '2026-05-18T14:30:00.000Z', lastLoginAt: '2026-09-03T09:10:00.000Z', enrolments: [
+    { courseId: 'c-4', courseTitle: 'MBBS 3rd Professional — Final Revision', enrolledAt: '2026-05-19T08:00:00.000Z', status: 'active', progress: 88 },
+  ] },
+  { id: 'u-15', fullName: 'Dr. Farhana Akter', mobile: '01512345678', email: 'farhana.akter@example.com', bmdcNumber: 'A-72651', institution: 'Sylhet MAG Osmani', interest: 'BCS', status: ACCOUNT_STATUS.SUSPENDED, createdAt: '2026-02-09T10:15:00.000Z', lastLoginAt: '2026-07-30T20:05:00.000Z', enrolments: [
+    { courseId: 'c-3', courseTitle: 'BCS (Health) Cadre — Full Preparation', enrolledAt: '2026-02-10T11:00:00.000Z', status: 'expired', progress: 41 },
+  ] },
+];
+
+function findStudent(id) {
+  const student = MOCK_STUDENTS.find((s) => s.id === id);
+  if (!student) {
+    throw { status: 404, code: 'STUDENT_NOT_FOUND', message: 'This student could not be found.' };
+  }
+  return student;
+}
+
 export async function fetchStudents({ status } = {}) {
   await sleep(400);
-
-  const students = [
-    { id: 'u-11', fullName: 'Dr. Sadia Rahman', mobile: '01712345678', institution: 'Dhaka Medical College', interest: 'FCPS', status: ACCOUNT_STATUS.AWAITING_APPROVAL, createdAt: '2026-08-12T08:20:00.000Z' },
-    { id: 'u-12', fullName: 'Dr. Imran Kabir', mobile: '01812345678', institution: 'Chittagong Medical College', interest: 'BCS', status: ACCOUNT_STATUS.AWAITING_APPROVAL, createdAt: '2026-08-12T11:05:00.000Z' },
-    { id: 'u-13', fullName: 'Dr. Nusrat Jahan', mobile: '01912345678', institution: 'BSMMU', interest: 'FCPS', status: ACCOUNT_STATUS.ACTIVE, createdAt: '2026-06-01T09:00:00.000Z' },
-    { id: 'u-14', fullName: 'Dr. Tanvir Ahmed', mobile: '01612345678', institution: 'Rajshahi Medical College', interest: 'MBBS', status: ACCOUNT_STATUS.ACTIVE, createdAt: '2026-05-18T14:30:00.000Z' },
-    { id: 'u-15', fullName: 'Dr. Farhana Akter', mobile: '01512345678', institution: 'Sylhet MAG Osmani', interest: 'BCS', status: ACCOUNT_STATUS.SUSPENDED, createdAt: '2026-02-09T10:15:00.000Z' },
-  ];
-
   return status && status !== 'ALL'
-    ? students.filter((student) => student.status === status)
-    : students;
+    ? MOCK_STUDENTS.filter((student) => student.status === status)
+    : [...MOCK_STUDENTS];
+}
+
+/** @param {string} id */
+export async function fetchStudent(id) {
+  await sleep(350);
+  return { ...findStudent(id) };
 }
 
 /** @param {{ studentId: string, status: string }} args */
 export async function updateStudentStatus({ studentId, status }) {
   await sleep(400);
   // TODO: PATCH /admin/students/:id/status — triggers the activation SMS.
+  findStudent(studentId).status = status;
   return { ok: true, studentId, status };
+}
+
+// ─── Payments / revenue ────────────────────────────────────────────────────
+
+const MOCK_PAYMENTS = [
+  { id: 'pay-1', invoiceNo: 'CPR-2026-001842', studentId: 'u-13', studentName: 'Dr. Nusrat Jahan', courseId: 'c-1', courseTitle: 'FCPS Part-1 Medicine — January Batch', amount: 13500, method: 'bkash', transactionId: 'BKH8ZQ11X4', status: 'paid', paidAt: '2026-06-02T10:14:00.000Z' },
+  { id: 'pay-2', invoiceNo: 'CPR-2026-002310', studentId: 'u-13', studentName: 'Dr. Nusrat Jahan', courseId: 'c-8', courseTitle: 'FCPS Part-1 Medicine — Mock Plus Batch', amount: 4500, method: 'nagad', transactionId: 'NGD5TR88K2', status: 'paid', paidAt: '2026-08-20T13:58:00.000Z' },
+  { id: 'pay-3', invoiceNo: 'CPR-2026-001590', studentId: 'u-14', studentName: 'Dr. Tanvir Ahmed', courseId: 'c-4', courseTitle: 'MBBS 3rd Professional — Final Revision', amount: 5900, method: 'card', transactionId: 'CRD77A1B9Q', status: 'paid', paidAt: '2026-05-19T07:58:00.000Z' },
+  { id: 'pay-4', invoiceNo: 'CPR-2026-000117', studentId: 'u-15', studentName: 'Dr. Farhana Akter', courseId: 'c-3', courseTitle: 'BCS (Health) Cadre — Full Preparation', amount: 8900, method: 'rocket', transactionId: 'RKT2MN90LP', status: 'paid', paidAt: '2026-02-10T10:59:00.000Z' },
+  { id: 'pay-5', invoiceNo: 'CPR-2026-002415', studentId: 'u-15', studentName: 'Dr. Farhana Akter', courseId: 'c-15', courseTitle: 'BCS Written & Viva — Intensive Batch', amount: 9500, method: 'bkash', transactionId: null, status: 'failed', paidAt: '2026-07-28T19:40:00.000Z' },
+  { id: 'pay-6', invoiceNo: 'CPR-2026-002501', studentId: 'u-14', studentName: 'Dr. Tanvir Ahmed', courseId: 'c-16', courseTitle: 'MBBS Final Professional — SBA Batch', amount: 4200, method: 'bkash', transactionId: null, status: 'pending', paidAt: '2026-09-03T09:12:00.000Z' },
+  { id: 'pay-7', invoiceNo: 'CPR-2026-002488', studentId: 'u-13', studentName: 'Dr. Nusrat Jahan', courseId: 'c-2', courseTitle: 'FCPS Part-2 Surgery — Clinical Intensive', amount: 25000, method: 'card', transactionId: 'CRD11ZX40PL', status: 'refunded', paidAt: '2026-08-30T16:20:00.000Z' },
+];
+
+/** @param {string} studentId */
+export async function fetchStudentPayments(studentId) {
+  await sleep(350);
+  return MOCK_PAYMENTS.filter((payment) => payment.studentId === studentId).sort((a, b) => b.paidAt.localeCompare(a.paidAt));
+}
+
+export async function fetchAdminRevenue() {
+  await sleep(450);
+  const paid = MOCK_PAYMENTS.filter((payment) => payment.status === 'paid');
+  const byCourse = Object.values(
+    paid.reduce((acc, payment) => {
+      const entry = acc[payment.courseId] ?? { courseId: payment.courseId, courseTitle: payment.courseTitle, amount: 0, count: 0 };
+      entry.amount += payment.amount;
+      entry.count += 1;
+      acc[payment.courseId] = entry;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b.amount - a.amount);
+
+  return {
+    summary: {
+      thisMonth: 1842000,
+      lastMonth: 1755000,
+      yearToDate: 12480000,
+      pendingAmount: MOCK_PAYMENTS.filter((p) => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0),
+      refundedAmount: MOCK_PAYMENTS.filter((p) => p.status === 'refunded').reduce((sum, p) => sum + p.amount, 0),
+      paidCount: 1486,
+    },
+    byMonth: [
+      { month: 'Mar', amount: 1240000 },
+      { month: 'Apr', amount: 1385000 },
+      { month: 'May', amount: 1120000 },
+      { month: 'Jun', amount: 1690000 },
+      { month: 'Jul', amount: 1755000 },
+      { month: 'Aug', amount: 1842000 },
+    ],
+    byMethod: [
+      { method: 'bkash', amount: 985000, share: 53 },
+      { method: 'nagad', amount: 412000, share: 22 },
+      { method: 'card', amount: 298000, share: 16 },
+      { method: 'rocket', amount: 147000, share: 9 },
+    ],
+    byCourse,
+    transactions: [...MOCK_PAYMENTS].sort((a, b) => b.paidAt.localeCompare(a.paidAt)),
+  };
 }
 
 // ─── Courses ───────────────────────────────────────────────────────────────
@@ -121,6 +203,7 @@ export async function createCourse(input) {
     status: COURSE_STATUS.DRAFT,
   };
   MOCK_COURSES.unshift(course);
+  commitCourse(course);
   return { ...course };
 }
 
@@ -129,6 +212,7 @@ export async function updateCourse({ id, ...updates }) {
   await sleep(400);
   const course = findCourse(id);
   Object.assign(course, updates);
+  commitCourse(course);
   return { ...course };
 }
 
@@ -137,6 +221,7 @@ export async function setCourseStatus({ id, status }) {
   await sleep(400);
   const course = findCourse(id);
   course.status = status;
+  commitCourse(course);
   return { ...course };
 }
 

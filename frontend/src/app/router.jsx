@@ -67,7 +67,9 @@ const Invoice = lazy(() => import('@/features/payments/Invoice.jsx'));
 // Admin
 const AdminOverview = lazy(() => import('@/features/admin/AdminOverview.jsx'));
 const AdminStudents = lazy(() => import('@/features/admin/AdminStudents.jsx'));
+const AdminStudentDetail = lazy(() => import('@/features/admin/AdminStudentDetail.jsx'));
 const AdminCourses = lazy(() => import('@/features/admin/AdminCourses.jsx'));
+const AdminRevenue = lazy(() => import('@/features/admin/AdminRevenue.jsx'));
 const AdminReports = lazy(() => import('@/features/admin/AdminReports.jsx'));
 // One course, built from tabs. Videos, exams and the routine hang off the course
 // so the admin never picks "which course?" from a dropdown.
@@ -169,6 +171,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: suspend(<AdminOverview />) },
       { path: 'students', element: suspend(<AdminStudents />) },
+      { path: 'students/:studentId', element: suspend(<AdminStudentDetail />) },
       { path: 'courses', element: suspend(<AdminCourses />) },
       {
         path: 'courses/:id',
@@ -187,6 +190,7 @@ const router = createBrowserRouter([
       { path: 'videos', element: <Navigate to="/admin/courses" replace /> },
       { path: 'exams', element: <Navigate to="/admin/courses" replace /> },
       { path: 'schedules', element: <Navigate to="/admin/courses" replace /> },
+      { path: 'revenue', element: suspend(<AdminRevenue />) },
       { path: 'reports', element: suspend(<AdminReports />) },
       { path: '*', element: <Navigate to="/admin" replace /> },
     ],
