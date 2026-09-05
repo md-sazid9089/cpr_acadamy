@@ -46,7 +46,8 @@ chat bubble). Everything under `/dashboard` and `/admin` sits behind
 | Student   | `/dashboard`, `/dashboard/courses`, `/dashboard/course/:slug`, `/dashboard/progress`, `/dashboard/exams(/:examId[/result])`, `/dashboard/payments`, `/dashboard/invoices/:id`   |
 |           | `/dashboard/account`, `/dashboard/complaints(/:id)`, `/dashboard/subscriptions(/:batchId[/add])`, `/dashboard/checkout/:slug`, `/dashboard/learn/:slug`                         |
 | Player    | `/learn/:courseSlug/:lessonId` — full-bleed, outside `PublicLayout`, own auth guard                                                                                            |
-| Admin     | `/admin`, `/admin/students`, `/admin/courses`, `/admin/videos`, `/admin/exams`, `/admin/schedules`, `/admin/reports`                                                            |
+| Admin     | `/admin`, `/admin/students`, `/admin/courses`, `/admin/reports`                                                                                                              |
+|           | `/admin/courses/:id/{detail,videos,exams,schedule}`, `/admin/courses/:id/exams/:examId` — one course, built from tabs; the old `/admin/{videos,exams,schedules}` redirect here |
 
 ## Conventions
 

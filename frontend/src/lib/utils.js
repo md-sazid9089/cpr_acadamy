@@ -1,5 +1,6 @@
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { CLASS_DAYS } from '@/constants';
 
 /** Merge conditional class names, letting later Tailwind classes win. */
 export function cn(...inputs) {
@@ -60,6 +61,30 @@ export function formatDuration(totalSeconds) {
   const seconds = s % 60;
   const pad = (n) => String(n).padStart(2, '0');
   return hours > 0 ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
+}
+
+/** 'HH:mm' (24h, as a <input type="time"> emits) -> '08:00 PM'. */
+export function formatClockTime(hhmm) {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${String(hour12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+/** { start: '20:00', end: '22:00' } -> '08:00 PM - 10:00 PM'. */
+export function formatTimeRange(range) {
+  if (!range?.start || !range?.end) return '—';
+  return `${formatClockTime(range.start)} - ${formatClockTime(range.end)}`;
+}
+
+/** ['sat','tue','thu'] -> 'SAT, TUE & THU', in week order regardless of input order. */
+export function formatClassDays(days) {
+  if (!days?.length) return '—';
+  const shorts = CLASS_DAYS.filter((day) => days.includes(day.id)).map((day) => day.short);
+  if (shorts.length <= 1) return shorts.join('');
+  return `${shorts.slice(0, -1).join(', ')} & ${shorts[shorts.length - 1]}`;
 }
 
 /** Mask a mobile number for display: '01712345678' -> '017****5678'. */

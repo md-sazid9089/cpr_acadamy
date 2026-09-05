@@ -8,8 +8,40 @@
  * BATCH_SESSIONS and BATCH_BRANCHES in src/constants.
  */
 
+/**
+ * Default long-form description, stored per course so the admin can rewrite it.
+ * Blank lines separate paragraphs on the public page.
+ */
+function defaultDescription({ category, lessonCount }) {
+  return [
+    `কাদের জন্য এই ব্যাচ: যারা আগামী ${category} পরীক্ষায় প্রথমবার অংশগ্রহণ করতে যাচ্ছেন অথবা পূর্ববর্তী পরীক্ষায় কাঙ্খিত ফলাফল অর্জন করতে পারেননি, তাদের জন্য সাজানো হয়েছে এই পূর্ণাঙ্গ প্রস্তুতি ব্যাচ।`,
+    'CPR Medical Academy-র বিশেষজ্ঞ মেন্টর প্যানেল দ্বারা পরিচালিত এই ব্যাচে রয়েছে প্রতিটি বিষয়ের ওপর ইন্টারেক্টিভ লাইভ ক্লাস, বিগত বছরের প্রশ্নের পুঙ্খানুপুঙ্খ ব্যাখ্যা, অধ্যায়ভিত্তিক পরীক্ষা এবং ফাইনাল মডেল টেস্ট।',
+    `${lessonCount} টি লাইভ ইন্টারেক্টিভ ক্লাস ও রেকর্ড ব্যাকআপ অ্যাক্সেস। অধ্যায়ভিত্তিক SBA এবং MTF প্রশ্ন সমাধান ও র্যাঙ্ক লিস্ট। বিশেষজ্ঞ চিকিৎসকদের তত্ত্বাবধানে নিয়মিত ডাউট সলভিং সেশন। মুদ্রিত এবং ডিজিটাল পিডিএফ লেকচার নোট বান্ডেল।`,
+  ].join('\n\n');
+}
+
+/**
+ * Fills the editable fields the admin Detail tab owns. Existing fixtures were
+ * written before those fields existed, so they pick up sensible defaults here
+ * — the same values the public page used to hardcode.
+ *
+ * @param {import('@/types').Course} course
+ * @returns {import('@/types').Course}
+ */
+function withDefaults(course) {
+  const isFriday = course.batchType === 'friday-mega';
+  return {
+    description: defaultDescription(course),
+    classTime: course.branch === 'online' ? { start: '20:00', end: '22:00' } : { start: '14:30', end: '16:30' },
+    classDays: isFriday ? ['fri'] : ['sat', 'tue', 'thu'],
+    offer: course.discountPrice ? { label: 'Special Discount Offer', endsAt: course.startsOn ?? null } : null,
+    status: 'published',
+    ...course,
+  };
+}
+
 /** @type {import('@/types').Course[]} */
-export const MOCK_COURSES = [
+const SEED_COURSES = [
   {
     id: 'c-1',
     slug: 'fcps-part-1-medicine-january-batch',
@@ -528,6 +560,15 @@ export const MOCK_COURSES = [
     isFeatured: false,
   },
 ];
+
+/**
+ * The live catalogue. A mutable array on purpose: the admin mock API in
+ * features/admin/api/admin.api.js edits it in place so changes made in the
+ * admin panel show up on the public course page within the same session.
+ *
+ * @type {import('@/types').Course[]}
+ */
+export const MOCK_COURSES = SEED_COURSES.map(withDefaults);
 
 /** Curriculum shown on the course detail page. */
 export const MOCK_CURRICULUM = [

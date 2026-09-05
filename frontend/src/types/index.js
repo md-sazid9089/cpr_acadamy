@@ -46,10 +46,15 @@
  * @property {'online' | 'offline'} [branch]
  * @property {string} subtitle
  * @property {string} thumbnailUrl
- * @property {string[]} highlights    4–5 short USP bullets rendered on the card.
+ * @property {string} [description]  Long-form prose for the public page; blank lines separate paragraphs.
+ * @property {string[]} highlights    Course outline bullets. (The admin UI calls this "Outline".)
  * @property {number} price           BDT.
  * @property {number} [discountPrice] BDT; when present the card shows both.
+ * @property {{ label: string, endsAt?: string }} [offer]  Label printed beside the discount, e.g. 'Early-bird offer'.
  * @property {string} duration        Human readable, e.g. '6 months'.
+ * @property {{ start: string, end: string }} [classTime]  24h 'HH:mm' pair.
+ * @property {string[]} [classDays]   CLASS_DAYS ids, e.g. ['sat','tue','thu'].
+ * @property {'draft' | 'published'} [status]
  * @property {number} lessonCount
  * @property {number} enrolledCount
  * @property {number} [rating]        0–5.
@@ -79,9 +84,12 @@
  * @property {'upcoming' | 'running' | 'submitted' | 'missed' | 'published'} status
  * @property {string} scheduledAt     ISO 8601.
  * @property {number} durationMinutes
- * @property {number} questionCount
- * @property {number} totalMarks
+ * @property {number} questionCount   Target paper length; the builder shows progress against it.
+ * @property {number} totalMarks      Derived: questionCount × marksPerQuestion (× 5 stems for MTF). Never typed.
+ * @property {number} [marksPerQuestion]  Per SBA question, or per MTF stem.
+ * @property {number} [deductionPercent]  0–100; deduction per wrong answer = percent × marksPerQuestion.
  * @property {number} [negativeMarking] Fraction deducted per wrong answer, e.g. 0.25.
+ * @property {Question[]} [questions]
  */
 
 /**
@@ -89,7 +97,10 @@
  * @property {string} id
  * @property {'sba' | 'mtf'} type
  * @property {string} stem
- * @property {QuestionOption[]} options
+ * @property {string} [imageUrl]
+ * @property {QuestionOption[]} options  Always five, ids 'a'–'e'.
+ * @property {string} [correctOptionId]  SBA answer key. Stripped before the paper reaches a student.
+ * @property {Record<string, boolean>} [correctAnswer]  MTF answer key, optionId -> true/false. Stripped likewise.
  * @property {string} [explanation]   Revealed only after submission.
  */
 

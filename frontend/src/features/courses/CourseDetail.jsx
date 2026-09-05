@@ -5,11 +5,9 @@ import {
   FaClock,
   FaPhone,
   FaWhatsapp,
-  FaCheck,
   FaCalendarCheck,
   FaCircle,
   FaCircleInfo,
-  FaThumbtack,
   FaAngleRight,
   FaArrowRightLong,
 } from 'react-icons/fa6';
@@ -19,7 +17,15 @@ import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { CONTACT, CATEGORY_SLUGS } from '@/constants';
-import { formatBDT, formatDate, formatNumber } from '@/lib/utils';
+import { formatBDT, formatClassDays, formatDate, formatNumber, formatTimeRange } from '@/lib/utils';
+
+/** Blank lines in the stored description separate paragraphs. */
+function paragraphs(text) {
+  return (text ?? '')
+    .split(/\n\s*\n/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
 
 export default function CourseDetail() {
   const { slug } = useParams();
@@ -49,6 +55,9 @@ export default function CourseDetail() {
   const categorySlug = CATEGORY_SLUGS[course.category] || 'fcps';
   const scheduleUrl = `/courses/${categorySlug}/${course.slug}/schedule`;
   const hasDiscount = Boolean(course.discountPrice);
+  const startsOnLabel = course.startsOn ? formatDate(course.startsOn) : 'To be announced';
+  const description = paragraphs(course.description);
+  const outline = course.highlights ?? [];
 
   const scrollToSection = (id) => {
     setActiveSection(id);
@@ -98,7 +107,7 @@ export default function CourseDetail() {
                       Starting Date
                     </span>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                      {course.startsOn ? formatDate(course.startsOn) : '20-Jan-2026'}
+                      {startsOnLabel}
                     </p>
                   </div>
                 </div>
@@ -112,7 +121,7 @@ export default function CourseDetail() {
                       Time
                     </span>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                      08:00 PM - 10:00 PM
+                      {formatTimeRange(course.classTime)}
                     </p>
                   </div>
                 </div>
@@ -126,7 +135,7 @@ export default function CourseDetail() {
                       Class Days
                     </span>
                     <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                      SAT, TUE &amp; THU
+                      {formatClassDays(course.classDays)}
                     </p>
                   </div>
                 </div>
@@ -205,47 +214,30 @@ export default function CourseDetail() {
 
                 <div className="flex items-start gap-2.5 font-bold text-slate-900 dark:text-white">
                   <FaCircle aria-hidden="true" className="mt-1.5 h-2 w-2 shrink-0 text-accent-500" />
-                  <span>Orientation &amp; First Class: {course.startsOn ? formatDate(course.startsOn) : '20-Jan-2026'}</span>
+                  <span>Orientation &amp; First Class: {startsOnLabel}</span>
                 </div>
 
-                <div className="rounded-xl bg-amber-50/60 p-4 border border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-900/40">
-                  <p className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-300" lang="bn">
-                    <FaCircleInfo aria-hidden="true" className="h-4 w-4 shrink-0" />
-                    কাদের জন্য এই ব্যাচ:
-                  </p>
-                  <p className="mt-1 text-slate-700 dark:text-slate-300" lang="bn">
-                    যারা আগামী {course.category} পরীক্ষায় প্রথমবার অংশগ্রহণ করতে যাচ্ছেন অথবা পূর্ববর্তী পরীক্ষায় কাঙ্ক্ষিত ফলাফল অর্জন করতে পারেননি, তাদের জন্য সাজানো হয়েছে এই পূর্ণাঙ্গ কম্বাইন্ড প্রস্তুতি ব্যাচ।
-                  </p>
-                </div>
-
-                <p className="text-slate-700 dark:text-slate-300" lang="bn">
-                  CPR Medical Academy-র বিশেষজ্ঞ মেন্টর প্যানেল দ্বারা পরিচালিত এই ব্যাচে রয়েছে প্রতিটি বিষয়ের ওপর ইন্টারেক্টিভ লাইভ ক্লাস, বিগত বছরের প্রশ্নের পুঙ্খানুপুঙ্খ ব্যাখ্যা, অধ্যায়ভিত্তিক পরীক্ষা এবং ফাইনাল মডেল টেস্ট।
-                </p>
-
-                <div className="space-y-2 pt-2">
-                  <h3 className="flex items-center gap-2 font-bold text-slate-900 dark:text-white" lang="bn">
-                    <FaThumbtack aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
-                    ব্যাচের প্রধান বৈশিষ্ট্যসমূহ:
-                  </h3>
-                  <ul className="space-y-2 pl-2">
-                    <li className="flex items-start gap-2">
-                      <FaCheck className="mt-1 h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
-                      <span>{course.lessonCount} টি লাইভ ইন্টারেক্টিভ ক্লাস ও রেকর্ড ব্যাকআপ অ্যাক্সেস।</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <FaCheck className="mt-1 h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
-                      <span>অধ্যায়ভিত্তিক SBA এবং MTF প্রশ্ন সমাধান ও র্যাঙ্ক লিস্ট।</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <FaCheck className="mt-1 h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
-                      <span>বিশেষজ্ঞ চিকিৎসকদের তত্ত্বাবধানে নিয়মিত ডাউট সলভিং সেশন।</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <FaCheck className="mt-1 h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
-                      <span>মুদ্রিত এবং ডিজিটাল পিডিএফ লেকচার নোট বান্ডেল।</span>
-                    </li>
-                  </ul>
-                </div>
+                {description.length > 0 ? (
+                  description.map((paragraph, index) =>
+                    index === 0 ? (
+                      <div
+                        key={index}
+                        className="rounded-xl border border-amber-200/60 bg-amber-50/60 p-4 dark:border-amber-900/40 dark:bg-amber-950/30"
+                      >
+                        <p className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
+                          <FaCircleInfo aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-amber-900 dark:text-amber-300" />
+                          <span>{paragraph}</span>
+                        </p>
+                      </div>
+                    ) : (
+                      <p key={index} className="text-slate-700 dark:text-slate-300">
+                        {paragraph}
+                      </p>
+                    ),
+                  )
+                ) : (
+                  course.subtitle && <p className="text-slate-700 dark:text-slate-300">{course.subtitle}</p>
+                )}
               </div>
             </div>
 
@@ -258,25 +250,21 @@ export default function CourseDetail() {
               </div>
 
               <div className="p-6">
-                <ul className="grid gap-3 sm:grid-cols-2">
-                  {course.highlights.map((highlight, index) => (
-                    <li
-                      key={index}
-                      className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200"
-                    >
-                      <FaAngleRight aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
-                      <span>{highlight}</span>
-                    </li>
-                  ))}
-                  <li className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
-                    <FaAngleRight aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
-                    <span>National Merit Ranking with every central assessment exam</span>
-                  </li>
-                  <li className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
-                    <FaAngleRight aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
-                    <span>Special OSPE / Clinical Case discussion webinars</span>
-                  </li>
-                </ul>
+                {outline.length > 0 ? (
+                  <ul className="grid gap-3 sm:grid-cols-2">
+                    {outline.map((item, index) => (
+                      <li
+                        key={index}
+                        className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 text-sm font-medium text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200"
+                      >
+                        <FaAngleRight aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Outline to be announced.</p>
+                )}
               </div>
             </div>
 
@@ -302,11 +290,16 @@ export default function CourseDetail() {
                   {hasDiscount && (
                     <div className="text-right">
                       <span className="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                        Special Discount Offer
+                        {course.offer?.label || 'Special Discount Offer'}
                       </span>
                       <p className="mt-1 text-2xl font-extrabold text-brand-700 dark:text-brand-400">
                         {formatBDT(course.discountPrice)}
                       </p>
+                      {course.offer?.endsAt && (
+                        <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          Offer ends {formatDate(course.offer.endsAt)}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

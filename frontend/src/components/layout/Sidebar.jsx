@@ -30,13 +30,15 @@ export const STUDENT_NAV = [
   { to: '/dashboard/payments', label: 'Payment History', icon: 'wallet' },
 ];
 
+/**
+ * Admin navigation. Videos, exams and schedules are not top-level: they live in
+ * tabs under each course at /admin/courses/:id, so the admin never has to pick
+ * a course from a dropdown.
+ */
 export const ADMIN_NAV = [
   { to: '/admin', label: 'Dashboard', icon: 'grid', end: true },
   { to: '/admin/students', label: 'Students', icon: 'users' },
   { to: '/admin/courses', label: 'Courses', icon: 'book' },
-  { to: '/admin/videos', label: 'Videos', icon: 'play' },
-  { to: '/admin/exams', label: 'Exams', icon: 'clipboard' },
-  { to: '/admin/schedules', label: 'Schedules', icon: 'calendar' },
   { to: '/admin/reports', label: 'Reports', icon: 'report' },
 ];
 

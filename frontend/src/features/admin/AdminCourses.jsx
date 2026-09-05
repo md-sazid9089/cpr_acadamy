@@ -1,58 +1,118 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { FaPlus } from 'react-icons/fa6';
 import { fetchAdminCourses } from './api/admin.api.js';
+import NewCourseDialog from './courses/NewCourseDialog.jsx';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
-import Badge from '@/components/ui/Badge.jsx';
+import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
-import { formatBDT, formatDate, formatNumber } from '@/lib/utils';
+import { BATCH_GROUPS, COURSE_STATUS } from '@/constants';
+import { cn, formatBDT, formatDate, formatNumber } from '@/lib/utils';
+
+const FILTERS = [
+  { id: 'ALL', label: 'All' },
+  { id: COURSE_STATUS.PUBLISHED, label: 'Published' },
+  { id: COURSE_STATUS.DRAFT, label: 'Draft' },
+];
+
+const GROUP_LABELS = Object.fromEntries(BATCH_GROUPS.map((group) => [group.id, group.label]));
 
 export default function AdminCourses() {
+  const [filter, setFilter] = useState('ALL');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const navigate = useNavigate();
+
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ['admin', 'courses'],
     queryFn: fetchAdminCourses,
   });
 
+  const rows = filter === 'ALL' ? courses : courses.filter((course) => course.status === filter);
+
   const columns = [
     {
       key: 'title',
       header: 'Course',
-      render: (row) => <span className="font-medium text-slate-900 dark:text-white">{row.title}</span>,
+      render: (row) => (
+        <div className="max-w-md">
+          <p className="font-medium text-slate-900 dark:text-white">{row.title}</p>
+          {row.batchGroup && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">{GROUP_LABELS[row.batchGroup] ?? row.batchGroup}</p>
+          )}
+        </div>
+      ),
     },
     { key: 'category', header: 'Category', render: (row) => <Badge tone="brand">{row.category}</Badge> },
     { key: 'startsOn', header: 'Starts', render: (row) => formatDate(row.startsOn) },
-    { key: 'enrolled', header: 'Enrolled', align: 'right', render: (row) => formatNumber(row.enrolled) },
-    { key: 'price', header: 'Price', align: 'right', render: (row) => formatBDT(row.price) },
+    { key: 'enrolledCount', header: 'Enrolled', align: 'right', render: (row) => formatNumber(row.enrolledCount) },
     {
-      key: 'isPublished',
-      header: 'Status',
+      key: 'price',
+      header: 'Fee',
       align: 'right',
       render: (row) => (
-        <Badge tone={row.isPublished ? 'success' : 'neutral'}>
-          {row.isPublished ? 'Published' : 'Draft'}
-        </Badge>
+        <span>
+          {formatBDT(row.discountPrice ?? row.price)}
+          {row.discountPrice && (
+            <span className="ml-1.5 text-xs text-slate-400 line-through dark:text-slate-500">{formatBDT(row.price)}</span>
+          )}
+        </span>
       ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      align: 'right',
+      render: (row) => <StatusBadge status={row.status} />,
     },
   ];
 
   return (
-    <Card>
-      <CardHeader
-        title="Courses"
-        description="Batches, pricing and publication state."
-        action={
-          // TODO: build the course editor once the admin API is defined.
-          <Button size="sm" disabled>
-            New course
-          </Button>
-        }
-      />
-      <Table
-        columns={columns}
-        rows={courses}
-        isLoading={isLoading}
-        emptyTitle="No courses yet"
-        emptyDescription="Create the first batch to get started."
-      />
-    </Card>
+    <>
+      <Card>
+        <CardHeader
+          title="Courses"
+          description="Create a course once, then fill in its details, videos, exams and routine from its tabs."
+          action={
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <FaPlus aria-hidden="true" className="h-3.5 w-3.5" />
+              New course
+            </Button>
+          }
+        />
+
+        <div className="flex flex-wrap gap-2 px-5 pt-4">
+          {FILTERS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setFilter(option.id)}
+              className={cn(
+                'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                filter === option.id
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4">
+          <Table
+            columns={columns}
+            rows={rows}
+            isLoading={isLoading}
+            onRowClick={(row) => navigate(`/admin/courses/${row.id}`)}
+            emptyTitle="No courses yet"
+            emptyDescription="Create the first course to get started."
+          />
+        </div>
+      </Card>
+
+      <NewCourseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
+    </>
   );
 }

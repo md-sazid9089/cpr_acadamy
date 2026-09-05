@@ -68,10 +68,15 @@ const Invoice = lazy(() => import('@/features/payments/Invoice.jsx'));
 const AdminOverview = lazy(() => import('@/features/admin/AdminOverview.jsx'));
 const AdminStudents = lazy(() => import('@/features/admin/AdminStudents.jsx'));
 const AdminCourses = lazy(() => import('@/features/admin/AdminCourses.jsx'));
-const AdminVideos = lazy(() => import('@/features/admin/AdminVideos.jsx'));
-const AdminExams = lazy(() => import('@/features/admin/AdminExams.jsx'));
-const AdminSchedules = lazy(() => import('@/features/admin/AdminSchedules.jsx'));
 const AdminReports = lazy(() => import('@/features/admin/AdminReports.jsx'));
+// One course, built from tabs. Videos, exams and the routine hang off the course
+// so the admin never picks "which course?" from a dropdown.
+const CourseShell = lazy(() => import('@/features/admin/courses/CourseShell.jsx'));
+const CourseDetailTab = lazy(() => import('@/features/admin/courses/CourseDetailTab.jsx'));
+const CourseVideosTab = lazy(() => import('@/features/admin/courses/CourseVideosTab.jsx'));
+const CourseExamsTab = lazy(() => import('@/features/admin/courses/CourseExamsTab.jsx'));
+const ExamBuilder = lazy(() => import('@/features/admin/courses/ExamBuilder.jsx'));
+const CourseScheduleTab = lazy(() => import('@/features/admin/courses/CourseScheduleTab.jsx'));
 
 /**
  * Wraps a lazily-imported page in its own Suspense boundary so only the routed
@@ -165,9 +170,23 @@ const router = createBrowserRouter([
       { index: true, element: suspend(<AdminOverview />) },
       { path: 'students', element: suspend(<AdminStudents />) },
       { path: 'courses', element: suspend(<AdminCourses />) },
-      { path: 'videos', element: suspend(<AdminVideos />) },
-      { path: 'exams', element: suspend(<AdminExams />) },
-      { path: 'schedules', element: suspend(<AdminSchedules />) },
+      {
+        path: 'courses/:id',
+        element: suspend(<CourseShell />),
+        children: [
+          { index: true, element: <Navigate to="detail" replace /> },
+          { path: 'detail', element: suspend(<CourseDetailTab />) },
+          { path: 'videos', element: suspend(<CourseVideosTab />) },
+          { path: 'exams', element: suspend(<CourseExamsTab />) },
+          { path: 'exams/:examId', element: suspend(<ExamBuilder />) },
+          { path: 'schedule', element: suspend(<CourseScheduleTab />) },
+          { path: '*', element: <Navigate to="detail" replace /> },
+        ],
+      },
+      // Former top-level pages; anything bookmarked lands on the course list.
+      { path: 'videos', element: <Navigate to="/admin/courses" replace /> },
+      { path: 'exams', element: <Navigate to="/admin/courses" replace /> },
+      { path: 'schedules', element: <Navigate to="/admin/courses" replace /> },
       { path: 'reports', element: suspend(<AdminReports />) },
       { path: '*', element: <Navigate to="/admin" replace /> },
     ],

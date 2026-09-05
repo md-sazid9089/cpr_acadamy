@@ -86,6 +86,22 @@ export const BATCH_BRANCHES = Object.freeze([
   { id: 'offline', label: 'Offline' },
 ]);
 
+/** Days a batch can meet on. `short` is the form the public course page prints. */
+export const CLASS_DAYS = Object.freeze([
+  { id: 'sat', label: 'Saturday', short: 'SAT' },
+  { id: 'sun', label: 'Sunday', short: 'SUN' },
+  { id: 'mon', label: 'Monday', short: 'MON' },
+  { id: 'tue', label: 'Tuesday', short: 'TUE' },
+  { id: 'wed', label: 'Wednesday', short: 'WED' },
+  { id: 'thu', label: 'Thursday', short: 'THU' },
+  { id: 'fri', label: 'Friday', short: 'FRI' },
+]);
+
+export const COURSE_STATUS = Object.freeze({
+  DRAFT: 'draft',
+  PUBLISHED: 'published',
+});
+
 export const EXAM_TYPES = Object.freeze({
   LIVE: 'live',
   MOCK: 'mock',
