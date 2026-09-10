@@ -24,6 +24,14 @@ test('HTTP layer rejects malformed bodies, query bounds, path params, and tamper
     }
     let response = await raw('/auth/login', '{"mobile":"01712345678","password":"x","__proto__":{"polluted":true}}', { 'x-device-id': 'fixture-device' });
     assert.equal(response.status, 400);
+    // Browsers send body-less POSTs as an empty stream without a content type; Next.js hands that through as a non-null body.
+    const emptyStream = () => new ReadableStream({ start(controller) { controller.close(); } });
+    response = await send('/courses/00000000-0000-0000-0000-000000000000/enroll', { method: 'POST', headers: student.headers, body: emptyStream(), duplex: 'half' });
+    assert.equal(response.status, 404, 'an empty body-less POST must reach the handler');
+    response = await send('/admin/videos/00000000-0000-0000-0000-000000000000', { method: 'DELETE', headers: student.headers, body: emptyStream(), duplex: 'half' });
+    assert.equal(response.status, 403);
+    response = await send('/auth/login', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: 'mobile=x' });
+    assert.equal(response.status, 415);
     response = await raw('/me/profile', '{"section":"basic","values":{"__proto__":{"polluted":true},"gender":"F"}}', student.headers, 'PATCH');
     assert.equal(response.status, 200, 'record parsing silently drops the __proto__ key');
     assert.equal({}.polluted, undefined);

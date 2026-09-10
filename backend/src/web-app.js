@@ -6,9 +6,6 @@ const bodyLimit = 1048576;
 
 async function readBody(request) {
   if (!request.body) return undefined;
-  if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {
-    throw new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Use application/json.');
-  }
   const reader = request.body.getReader();
   const chunks = [];
   let size = 0;
@@ -26,7 +23,11 @@ async function readBody(request) {
   } finally {
     reader.releaseLock();
   }
+  // Browsers send body-less POST/DELETE with an empty stream and no content type.
   if (!size) return undefined;
+  if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {
+    throw new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Use application/json.');
+  }
   try {
     return JSON.parse(Buffer.concat(chunks).toString('utf8'));
   } catch {

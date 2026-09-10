@@ -6,7 +6,7 @@ import {
   FaMoneyBillWave,
   FaBell,
   FaComments,
-  FaBookBookmark,
+  FaClipboardList,
   FaIdCard,
 } from 'react-icons/fa6';
 import { useAuthStore } from '@/lib/auth';
@@ -34,8 +34,8 @@ const DASHBOARD_MENU = [
     iconColor: 'text-brand-600',
   },
   {
-    id: 'pay-now',
-    title: 'Pay Now',
+    id: 'payments',
+    title: 'Payments',
     to: '/dashboard/payments',
     icon: FaMoneyBillWave,
     iconColor: 'text-brand-600',
@@ -55,10 +55,10 @@ const DASHBOARD_MENU = [
     iconColor: 'text-brand-600',
   },
   {
-    id: 'publication',
-    title: 'Publication',
-    to: '/gallery',
-    icon: FaBookBookmark,
+    id: 'exams',
+    title: 'My Exams',
+    to: '/dashboard/exams',
+    icon: FaClipboardList,
     iconColor: 'text-brand-600',
   },
   {

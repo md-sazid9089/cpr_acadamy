@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { usePaymentHistory } from './api/dashboard.queries.js';
+import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
@@ -27,7 +28,7 @@ export default function PaymentHistory() {
     },
     { key: 'courseTitle', header: 'Course' },
     { key: 'method', header: 'Method', render: (row) => methodLabel(row.method) },
-    { key: 'paidAt', header: 'Date', render: (row) => formatDate(row.paidAt) },
+    { key: 'paidAt', header: 'Date', render: (row) => formatDate(row.paidAt ?? row.createdAt) },
     {
       key: 'amount',
       header: 'Amount',
@@ -45,13 +46,15 @@ export default function PaymentHistory() {
   ];
 
   return (
+    <div className="space-y-4">
+    <DashboardPageHeader title="Payment History" backTo="/dashboard" />
     <Card>
       <CardHeader
         title="Payment history"
         description="Every enrolment payment and its invoice."
         action={
-          <Button variant="ghost" size="sm" to="/courses">
-            Enrol in a course
+          <Button variant="ghost" size="sm" to="/batches">
+            Enrol in a batch
           </Button>
         }
       />
@@ -63,5 +66,6 @@ export default function PaymentHistory() {
         emptyDescription="Invoices appear here once you enrol in a course."
       />
     </Card>
+    </div>
   );
 }

@@ -3,6 +3,7 @@ import AnnouncementStrip from './AnnouncementStrip.jsx';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
 import ChatBubble from './ChatBubble.jsx';
+import usePageTitle from '@/hooks/usePageTitle.js';
 import { cn } from '@/lib/utils';
 
 /**
@@ -17,6 +18,7 @@ const OVERLAY_NAV_ROUTES = ['/'];
 export default function PublicLayout() {
   const { pathname } = useLocation();
   const overlayNav = OVERLAY_NAV_ROUTES.includes(pathname);
+  usePageTitle();
 
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-surface-dark">

@@ -6,6 +6,8 @@ import ExamTab from './tabs/ExamTab.jsx';
 import ScheduleTab from './tabs/ScheduleTab.jsx';
 import DashboardPageHeader from '@/features/student-dashboard/components/DashboardPageHeader.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
+import Button from '@/components/ui/Button.jsx';
 import { useMyCourses } from '@/features/student-dashboard/api/dashboard.queries.js';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +36,19 @@ export default function CourseHub() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Spinner size="lg" label="Loading course…" />
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="space-y-5">
+        <DashboardPageHeader title="Course" backTo="/dashboard/courses" />
+        <EmptyState
+          title="You are not enrolled in this batch"
+          description="Only batches you have enrolled in appear here. Browse the catalogue to find it."
+          action={<Button to="/batches">Browse batches</Button>}
+        />
       </div>
     );
   }
@@ -83,7 +98,8 @@ export default function CourseHub() {
               className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
             />
             <input
-              type="text"
+              type="search"
+              aria-label="Search schedule"
               placeholder="Search Schedule"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}

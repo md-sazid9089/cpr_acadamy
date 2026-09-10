@@ -164,7 +164,8 @@ export default function Footer() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Type your email add"
+                placeholder="Type your email address"
+                aria-label="Email address for newsletter"
                 required
                 className="w-full bg-transparent px-3.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none"
               />

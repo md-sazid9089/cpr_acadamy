@@ -5,6 +5,7 @@ import Card from '@/components/ui/Card.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import { PAYMENT_METHODS, CONTACT } from '@/constants';
 import { formatBDT, formatDate } from '@/lib/utils';
 
@@ -14,13 +15,24 @@ const methodLabel = (id) => PAYMENT_METHODS.find((method) => method.id === id)?.
 export default function Invoice() {
   const { invoiceId } = useParams();
 
-  const { data: invoice, isLoading } = useQuery({
+  const { data: invoice, isLoading, isError, error } = useQuery({
     queryKey: ['payments', 'invoice', invoiceId],
     queryFn: () => fetchInvoice(invoiceId),
     enabled: Boolean(invoiceId),
+    retry: (count, failure) => failure?.status !== 404 && count < 2,
   });
 
-  if (isLoading || !invoice) {
+  if (isError || (!isLoading && !invoice)) {
+    return (
+      <EmptyState
+        title="Invoice not found"
+        description={error?.status === 404 ? 'This invoice does not exist or belongs to another account.' : error?.message}
+        action={<Button to="/dashboard/payments">Payment history</Button>}
+      />
+    );
+  }
+
+  if (isLoading) {
     return (
       <div className="flex justify-center py-20">
         <Spinner size="lg" label="Loading invoice…" />

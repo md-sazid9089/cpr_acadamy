@@ -8,6 +8,7 @@ import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
+import DashboardPageHeader from '@/features/student-dashboard/components/DashboardPageHeader.jsx';
 import { QUESTION_TYPES } from '@/constants';
 import { formatDateTime } from '@/lib/utils';
 
@@ -44,6 +45,7 @@ export default function ExamResult() {
 
   return (
     <div className="space-y-6">
+      <DashboardPageHeader title="Exam Result" backTo="/dashboard/exams" />
       <Card className="p-6 text-center">
         <p className="text-sm text-slate-500 dark:text-slate-400">Your score</p>
         <p className="mt-1 text-4xl font-extrabold text-brand-700 dark:text-brand-400">

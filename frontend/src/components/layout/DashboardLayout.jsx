@@ -8,6 +8,7 @@ import Sidebar, { ADMIN_NAV } from './Sidebar.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useAuthStore } from '@/lib/auth';
 import { useForcedLogoutRedirect } from '@/hooks/useAuth';
+import usePageTitle from '@/hooks/usePageTitle.js';
 import { ROLES } from '@/constants';
 
 /**
@@ -24,6 +25,7 @@ export default function DashboardLayout({ variant = ROLES.STUDENT }) {
 
   // Sends the student to /login if the backend revokes this session mid-visit.
   useForcedLogoutRedirect();
+  usePageTitle();
 
   if (!isAdmin) {
     return (

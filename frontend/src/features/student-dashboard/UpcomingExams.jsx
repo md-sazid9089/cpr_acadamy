@@ -1,4 +1,5 @@
 import { useUpcomingExams } from './api/dashboard.queries.js';
+import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import Card from '@/components/ui/Card.jsx';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -20,17 +21,15 @@ export default function UpcomingExams() {
     );
   }
 
-  if (!exams.length) {
-    return (
-      <EmptyState
-        title="No exams scheduled"
-        description="Exams for your batch appear here as soon as they're published."
-      />
-    );
-  }
-
   return (
     <div className="space-y-4">
+      <DashboardPageHeader title="My Exams" backTo="/dashboard" />
+      {!exams.length && (
+        <EmptyState
+          title="No exams scheduled"
+          description="Exams for your batch appear here as soon as they're published."
+        />
+      )}
       {exams.map((exam) => {
         const isRunning = exam.status === EXAM_STATUS.RUNNING;
         return (

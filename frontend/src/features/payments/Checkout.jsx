@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FaCircleCheck, FaMobileScreen } from 'react-icons/fa6';
 import { initiatePayment } from './api/payments.api.js';
 import { fetchCourseBySlug } from '@/features/courses/api/courses.api.js';
-import { useSubscriptionPlans } from '@/features/student-dashboard/api/dashboard.queries.js';
+import { useSubscriptionPlans, useMyCourses } from '@/features/student-dashboard/api/dashboard.queries.js';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
@@ -39,6 +39,8 @@ export default function Checkout() {
   });
   const plansQuery = useSubscriptionPlans(planId ? batchId : undefined);
   const plan = planId ? plansQuery.data?.find((item) => item.id === planId) : null;
+  const enrollmentsQuery = useMyCourses();
+  const activeEnrollment = !planId && enrollmentsQuery.data?.find((item) => item.slug === slug && item.status === 'active');
 
   const payMutation = useMutation({
     mutationFn: initiatePayment,
@@ -49,11 +51,21 @@ export default function Checkout() {
     },
   });
 
-  if (isLoading || (planId && plansQuery.isLoading)) {
+  if (isLoading || (planId && plansQuery.isLoading) || (!planId && enrollmentsQuery.isLoading)) {
     return (
       <div className="flex justify-center py-20">
         <Spinner size="lg" label="Loading checkout…" />
       </div>
+    );
+  }
+
+  if (activeEnrollment) {
+    return (
+      <EmptyState
+        title="You're already enrolled"
+        description={`Your access to ${course?.title ?? 'this batch'} is active. Open the batch to continue, or add a subscription package from My Courses.`}
+        action={<Button to={`/dashboard/course/${slug}`}>Open batch</Button>}
+      />
     );
   }
 

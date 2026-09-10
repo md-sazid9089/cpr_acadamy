@@ -1,5 +1,6 @@
 import { useProgressSummary } from './api/dashboard.queries.js';
 import ProgressBar from './components/ProgressBar.jsx';
+import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 
@@ -15,10 +16,12 @@ export default function Progress() {
   }
 
   const peakMinutes = Math.max(...data.weeklyActivity.map((day) => day.minutes), 1);
-  const noTopics = <p className="text-sm text-slate-500 dark:text-slate-400">Topic analysis appears once you have sat a few exams.</p>;
+  // Topic analysis is not produced by the API yet; only show the cards once it is.
+  const hasTopics = data.weakTopics.length > 0 || data.strongTopics.length > 0;
 
   return (
     <div className="space-y-6">
+      <DashboardPageHeader title="My Progress" backTo="/dashboard" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Course completion" value={`${data.overallProgress}%`} />
         <StatCard label="Average exam score" value={`${Math.round(data.averageScore)}%`} />
@@ -50,11 +53,11 @@ export default function Progress() {
         </CardBody>
       </Card>
 
+      {hasTopics && (
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader title="Needs work" description="Accuracy below 60% in recent exams." />
           <CardBody className="space-y-4">
-            {data.weakTopics.length === 0 && noTopics}
             {data.weakTopics.map((topic) => (
               <ProgressBar key={topic.topic} value={topic.accuracy} label={topic.topic} />
             ))}
@@ -64,13 +67,13 @@ export default function Progress() {
         <Card>
           <CardHeader title="Your strengths" />
           <CardBody className="space-y-4">
-            {data.strongTopics.length === 0 && noTopics}
             {data.strongTopics.map((topic) => (
               <ProgressBar key={topic.topic} value={topic.accuracy} label={topic.topic} />
             ))}
           </CardBody>
         </Card>
       </div>
+      )}
     </div>
   );
 }

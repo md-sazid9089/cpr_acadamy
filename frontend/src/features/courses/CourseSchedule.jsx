@@ -1,120 +1,32 @@
-import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { FaPrint, FaArrowLeftLong } from 'react-icons/fa6';
 import { useCourse } from './api/courses.queries.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
+import { useCourseSchedule } from '@/features/course-hub/api/courseHub.queries.js';
 import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import { CONTACT, CATEGORY_SLUGS } from '@/constants';
 
-const ROUTINE_DATA = [
-  {
-    id: 1,
-    dateTime: '20 Jun 2026, Saturday\n02:30 PM',
-    exam: 'NO EXAM',
-    solveClass: 'NO CLASS',
-    lecture: 'Orientation Program',
-  },
-  {
-    id: 2,
-    dateTime: '20 Jun 2026, Saturday\n02:30 PM',
-    exam: 'NO EXAM',
-    solveClass: 'NO CLASS',
-    lecture: "Renal System Live class Dec'26",
-  },
-  {
-    id: 3,
-    dateTime: '27 Jun 2026, Saturday\n02:30 PM',
-    exam: 'Renal System (Regular Exam)',
-    solveClass: 'Renal System (Regular Solve Class)',
-    lecture: "Body fluid, Electrolytes, Acid Base Balance Live class Dec'26",
-  },
-  {
-    id: 4,
-    dateTime: '02 Jul 2026, Thursday\n04:00 PM',
-    exam: 'NO EXAM',
-    solveClass: 'NO CLASS',
-    lecture: "Principle of Surgery-I: [Chapter 1-5] (Bailey & Love's Regular Online Live Lecture)",
-  },
-  {
-    id: 5,
-    dateTime: '04 Jul 2026, Saturday\n02:30 PM',
-    exam: 'Body Fluid, Electrolytes, Acid Base Balance (Regular Exam)',
-    solveClass: 'Body Fluid, Electrolytes, Acid Base Balance (Regular Solve Class)',
-    lecture: "Respiratory & General Physiology Live class Dec'26",
-  },
-  {
-    id: 6,
-    dateTime: '07 Jul 2026, Tuesday\n02:30 PM',
-    exam: 'NO EXAM',
-    solveClass: 'NO CLASS',
-    lecture: "Cell Injury & Adaptation Live class Dec'26 (2)",
-  },
-  {
-    id: 7,
-    dateTime: '11 Jul 2026, Saturday\n02:30 PM',
-    exam: 'Respiratory & General Physiology (Regular Exam)',
-    solveClass: 'Respiratory & General Physiology (Regular Solve Class)',
-    lecture: "Cardiovascular System & Shock Live class Dec'26",
-  },
-  {
-    id: 8,
-    dateTime: '18 Jul 2026, Saturday\n02:30 PM',
-    exam: 'Cardiovascular System (Regular Exam)',
-    solveClass: 'Cardiovascular System (Regular Solve Class)',
-    lecture: "Gastrointestinal System & Nutrition Live class Dec'26",
-  },
-  {
-    id: 9,
-    dateTime: '31 Oct 2026, Saturday\n02:30 PM',
-    exam: "Review Exam: Biostatistics & Pharmacology Dec'26",
-    solveClass: "Review Exam: Biostatistics & Pharmacology Solve Class Dec'26",
-    lecture: 'NO CLASS',
-  },
-  {
-    id: 10,
-    dateTime: '14 Nov 2026, Saturday\n11:00 AM',
-    exam: "Pre Mock-1 (Anatomy) Surgery & Allied December'26",
-    solveClass: "Pre Mock-1 Solve Class Dec'26",
-    lecture: 'NO CLASS',
-  },
-  {
-    id: 11,
-    dateTime: '16 Nov 2026, Monday\n11:00 AM',
-    exam: "Pre Mock-2 (Physiology, Biochemistry, Biostatistics, Pharmacology) Surgery & Allied December'26",
-    solveClass: "Pre Mock-2 Solve Class Dec'26",
-    lecture: 'NO CLASS',
-  },
-  {
-    id: 12,
-    dateTime: '18 Nov 2026, Wednesday\n11:00 AM',
-    exam: "Pre Mock-3 (Pathology, Microbiology) Surgery & Allied December'26",
-    solveClass: "Pre Mock-3 Solve Class Dec'26",
-    lecture: 'NO CLASS',
-  },
-  {
-    id: 13,
-    dateTime: '21 Nov 2026, Saturday\n09:00 AM',
-    exam: "Final Mock-1 (Surgery & Allied) December'26",
-    solveClass: 'Mock-1 Paper-01 (Surgery & Allied) Solve Class Question MCQ (01-25) SBA (76-100)',
-    lecture: 'NO CLASS',
-  },
-  {
-    id: 14,
-    dateTime: '25 Nov 2026, Wednesday\n09:00 AM',
-    exam: "Final Mock-2 (Surgery & Allied) December'26",
-    solveClass: 'Mock-2 Paper-01 (Surgery & Allied) Solve Class Question MCQ (01-25) SBA (76-100)',
-    lecture: 'NO CLASS',
-  },
-];
-
 export default function CourseSchedule() {
-  const { slug, category } = useParams();
-  const targetSlug = slug || 'fcps-part-1-medicine-january-batch';
-  const { data: course, isLoading } = useCourse(targetSlug);
+  const { slug } = useParams();
+  const { data: course, isLoading, isError } = useCourse(slug);
+  const { data: routine = [], isLoading: routineLoading } = useCourseSchedule(course?.slug);
   const onEnroll = useEnrollAction();
 
-  if (isLoading) {
+  if (!slug || isError || (!isLoading && !course)) {
+    return (
+      <div className="container-page py-16">
+        <EmptyState
+          title="Batch not found"
+          description="Pick a batch to see its class and exam routine."
+          action={<Button to="/batches">Browse batches</Button>}
+        />
+      </div>
+    );
+  }
+
+  if (isLoading || routineLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white dark:bg-surface-dark">
         <Spinner size="lg" label="Loading schedule…" />
@@ -122,13 +34,7 @@ export default function CourseSchedule() {
     );
   }
 
-  const courseData = course || {
-    id: 'c-default',
-    title: "Online P-1 Surgery Live Batch-3 Dec'2026",
-    category: category ? category.toUpperCase() : 'FCPS Part-1',
-    session: "Dec'26 P-1 Candidate",
-    slug: targetSlug,
-  };
+  const courseData = course;
 
   const categorySlug = CATEGORY_SLUGS[courseData.category] || 'fcps';
   const detailUrl = `/courses/${categorySlug}/${courseData.slug}`;
@@ -193,13 +99,13 @@ export default function CourseSchedule() {
           {/* Details */}
           <div className="space-y-1.5 bg-brand-50 p-5 text-sm text-slate-800 dark:bg-slate-900/60 dark:text-slate-200">
             <p>
-              <strong className="font-bold text-slate-900 dark:text-white">Year:</strong> 2026
+              <strong className="font-bold text-slate-900 dark:text-white">Year:</strong> {new Date(courseData.startsOn || courseData.createdAt || Date.now()).getFullYear()}
             </p>
             <p>
               <strong className="font-bold text-slate-900 dark:text-white">Course:</strong> {courseData.category === 'FCPS' ? 'FCPS Part-1' : courseData.category}
             </p>
             <p>
-              <strong className="font-bold text-slate-900 dark:text-white">Session:</strong> {courseData.session || "Dec'26 P-1 Candidate"}
+              <strong className="font-bold text-slate-900 dark:text-white">Session:</strong> {courseData.session || '—'}
             </p>
           </div>
         </div>
@@ -217,7 +123,14 @@ export default function CourseSchedule() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-200 text-slate-800 dark:divide-slate-800 dark:text-slate-200">
-                {ROUTINE_DATA.map((row) => (
+                {routine.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                      The routine for this batch has not been published yet.
+                    </td>
+                  </tr>
+                )}
+                {routine.map((row) => (
                   <tr
                     key={row.id}
                     className="divide-x divide-brand-200 transition-colors hover:bg-brand-50/50 dark:divide-slate-800 dark:hover:bg-slate-900/40"
