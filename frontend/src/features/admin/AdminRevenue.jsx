@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { fetchAdminRevenue } from './api/admin.api.js';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { confirmPayment, fetchAdminRevenue, rejectPayment } from './api/admin.api.js';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
+import Button from '@/components/ui/Button.jsx';
+import Modal from '@/components/ui/Modal.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
+import Input, { Textarea } from '@/components/ui/Input.jsx';
 import { PAYMENT_METHODS, PAYMENT_STATUS } from '@/constants';
 import { cn, formatBDT, formatDateTime, formatNumber } from '@/lib/utils';
 
@@ -27,7 +30,7 @@ export const PAYMENT_COLUMNS = [
     render: (row) => (
       <div>
         <p className="font-mono text-xs font-semibold text-slate-900 dark:text-white">{row.invoiceNo}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">{formatDateTime(row.paidAt)}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{formatDateTime(row.paidAt ?? row.createdAt)}</p>
       </div>
     ),
   },
@@ -62,9 +65,119 @@ export const PAYMENT_COLUMNS = [
   { key: 'status', header: 'Status', align: 'right', render: (row) => <StatusBadge status={row.status} /> },
 ];
 
+/**
+ * Confirm / reject dialog for one pending manual payment. Confirming is what
+ * activates the student's enrolment, so it asks for the provider transaction
+ * ID and a note on how it was verified; both are written to the audit log.
+ */
+export function ReconcileDialog({ payment, onClose, onDone }) {
+  const [mode, setMode] = useState('confirm');
+  const [transactionId, setTransactionId] = useState('');
+  const [evidence, setEvidence] = useState('');
+  const [reason, setReason] = useState('');
+
+  const confirm = useMutation({ mutationFn: confirmPayment, onSuccess: onDone });
+  const reject = useMutation({ mutationFn: rejectPayment, onSuccess: onDone });
+  const error = confirm.error ?? reject.error;
+  const busy = confirm.isPending || reject.isPending;
+
+  const submit = (event) => {
+    event.preventDefault();
+    if (mode === 'confirm') confirm.mutate({ id: payment.id, transactionId: transactionId.trim(), amount: payment.amount, evidence: evidence.trim() });
+    else reject.mutate({ id: payment.id, reason: reason.trim() });
+  };
+
+  return (
+    <Modal
+      open={Boolean(payment)}
+      onClose={onClose}
+      title={mode === 'confirm' ? 'Confirm payment received' : 'Reject payment'}
+      description={payment ? `${payment.invoiceNo} · ${payment.courseTitle} · ${formatBDT(payment.amount)}` : ''}
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <div className="flex gap-2">
+          {[
+            { id: 'confirm', label: 'Payment received' },
+            { id: 'reject', label: 'Not received' },
+          ].map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setMode(option.id)}
+              className={cn(
+                'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                mode === option.id
+                  ? option.id === 'confirm' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+            {error.message}
+          </p>
+        )}
+
+        {mode === 'confirm' ? (
+          <>
+            <Input
+              label="Transaction ID"
+              required
+              minLength={3}
+              value={transactionId}
+              onChange={(event) => setTransactionId(event.target.value)}
+              placeholder="bKash / Nagad / bank reference"
+              hint={`Confirms exactly ${formatBDT(payment?.amount)} — the invoice amount cannot be changed here.`}
+            />
+            <Textarea
+              label="How was it verified?"
+              required
+              minLength={10}
+              rows={3}
+              value={evidence}
+              onChange={(event) => setEvidence(event.target.value)}
+              placeholder="e.g. Matched against the merchant statement on 12 Sep, sender 017…"
+            />
+          </>
+        ) : (
+          <Textarea
+            label="Reason"
+            required
+            minLength={5}
+            rows={3}
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="e.g. No matching transfer found after 7 days."
+          />
+        )}
+
+        <div className="flex justify-end gap-3 pt-2">
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button type="submit" variant={mode === 'confirm' ? 'primary' : 'danger'} isLoading={busy}>
+            {mode === 'confirm' ? 'Confirm & activate access' : 'Reject payment'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 export default function AdminRevenue() {
-  const [filter, setFilter] = useState('ALL');
+  const [filter, setFilter] = useState(PAYMENT_STATUS.PENDING);
+  const [reconciling, setReconciling] = useState(null);
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ['admin', 'revenue'], queryFn: fetchAdminRevenue });
+
+  const finishReconcile = () => {
+    setReconciling(null);
+    queryClient.invalidateQueries({ queryKey: ['admin'] });
+  };
 
   if (isLoading || !data) {
     return (
@@ -93,7 +206,18 @@ export default function AdminRevenue() {
       </Link>
     ),
   };
-  const columns = [PAYMENT_COLUMNS[0], studentColumn, ...PAYMENT_COLUMNS.slice(1)];
+  const columns = [PAYMENT_COLUMNS[0], studentColumn, ...PAYMENT_COLUMNS.slice(1), {
+    key: 'actions',
+    header: '',
+    align: 'right',
+    render: (row) =>
+      row.status === PAYMENT_STATUS.PENDING ? (
+        <Button size="sm" onClick={() => setReconciling(row)}>
+          Reconcile
+        </Button>
+      ) : null,
+  }];
+  const pendingCount = transactions.filter((payment) => payment.status === PAYMENT_STATUS.PENDING).length;
 
   return (
     <div className="space-y-6">
@@ -104,8 +228,8 @@ export default function AdminRevenue() {
           hint={`${monthChange >= 0 ? '+' : ''}${monthChange}% vs last month`}
         />
         <StatCard label="Year to date" value={formatBDT(summary.yearToDate)} hint={`${formatNumber(summary.paidCount)} paid invoices`} />
-        <StatCard label="Awaiting payment" value={formatBDT(summary.pendingAmount)} hint="Pending invoices" />
-        <StatCard label="Refunded" value={formatBDT(summary.refundedAmount)} hint="Last six months" />
+        <StatCard label="Awaiting payment" value={formatBDT(summary.pendingAmount)} hint={`${pendingCount} pending ${pendingCount === 1 ? 'invoice' : 'invoices'} to reconcile`} />
+        <StatCard label="Refunded" value={formatBDT(summary.refundedAmount)} hint="All time" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
@@ -132,7 +256,7 @@ export default function AdminRevenue() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardHeader title="By payment method" description="This month." />
+          <CardHeader title="By payment method" description="All paid invoices." />
           <CardBody className="space-y-4">
             {byMethod.map((item) => (
               <div key={item.method}>
@@ -180,7 +304,10 @@ export default function AdminRevenue() {
       </Card>
 
       <Card>
-        <CardHeader title="Transactions" description="Every invoice, newest first. Click a student to open their record." />
+        <CardHeader
+          title="Transactions"
+          description="Every invoice, newest first. Pending invoices are manual payments waiting for you to confirm the money arrived — confirming activates the student's access."
+        />
         <div className="flex flex-wrap gap-2 px-5 pt-4">
           {FILTERS.map((option) => (
             <button
@@ -202,6 +329,8 @@ export default function AdminRevenue() {
           <Table columns={columns} rows={rows} emptyTitle="No transactions" emptyDescription="Try a different filter." />
         </div>
       </Card>
+
+      {reconciling && <ReconcileDialog payment={reconciling} onClose={() => setReconciling(null)} onDone={finishReconcile} />}
     </div>
   );
 }

@@ -68,14 +68,14 @@ export default function CourseExamsTab() {
     createMutation.mutate({
       title: form.title.trim(),
       type: form.type,
+      kind: 'practice',
+      isPublished: false,
       courseId: course.id,
-      courseName: course.title,
       scheduledAt: new Date(Date.now() + 7 * 86400000).toISOString(),
       durationMinutes: 60,
       questionCount: form.type === QUESTION_TYPES.MTF ? 25 : 50,
       marksPerQuestion: 1,
       deductionPercent: 25,
-      status: 'upcoming',
     });
   };
 
@@ -99,11 +99,12 @@ export default function CourseExamsTab() {
       key: 'questions',
       header: 'Questions',
       render: (row) => {
-        const written = row.questions?.length ?? 0;
-        const complete = written >= row.questionCount;
+        const written = row.writtenCount ?? 0;
+        const complete = written >= row.questionCount && !row.incompleteCount;
         return (
           <span className={cn('text-xs font-semibold', complete ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400')}>
             {written} / {row.questionCount}
+            {row.incompleteCount > 0 && <span className="ml-1 font-normal text-amber-700 dark:text-amber-400">({row.incompleteCount} incomplete)</span>}
           </span>
         );
       },
@@ -196,6 +197,11 @@ export default function CourseExamsTab() {
         description="Name it and pick the question type. Schedule, duration and marking are set in the builder."
       >
         <form onSubmit={handleCreate} className="space-y-4">
+          {createMutation.isError && (
+            <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+              {createMutation.error.message}
+            </p>
+          )}
           <Input
             label="Exam title"
             required
@@ -239,8 +245,11 @@ export default function CourseExamsTab() {
       >
         <p className="text-sm text-slate-600 dark:text-slate-400">
           Delete <strong className="text-slate-900 dark:text-white">{deleting?.title}</strong> and its{' '}
-          {deleting?.questions?.length ?? 0} questions? This cannot be undone.
+          {deleting?.writtenCount ?? 0} questions? This cannot be undone.
         </p>
+        {deleteMutation.isError && (
+          <p role="alert" className="mt-3 text-sm font-medium text-red-600 dark:text-red-400">{deleteMutation.error.message}</p>
+        )}
       </Modal>
     </>
   );

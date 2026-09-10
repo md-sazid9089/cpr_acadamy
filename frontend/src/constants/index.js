@@ -141,6 +141,8 @@ export const PAYMENT_METHODS = Object.freeze([
   { id: 'nagad', label: 'Nagad' },
   { id: 'rocket', label: 'Rocket' },
   { id: 'card', label: 'Card / Bank' },
+  /** Student pays the academy directly; an administrator reconciles it. */
+  { id: 'manual', label: 'Manual transfer' },
 ]);
 
 /** Lifecycle of a signup, mobile-first with an admin gate at the end. */

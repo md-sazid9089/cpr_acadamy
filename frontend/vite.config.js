@@ -20,5 +20,27 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
+    // Same-origin /api in development too, so no CORS and the same relative
+    // base URL works locally and behind the production reverse proxy.
+    proxy: {
+      '/api': { target: process.env.VITE_DEV_API_ORIGIN || 'http://127.0.0.1:3001', changeOrigin: true },
+    },
+  },
+  preview: {
+    proxy: {
+      '/api': { target: process.env.VITE_DEV_API_ORIGIN || 'http://127.0.0.1:3001', changeOrigin: true },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // Long-lived vendor chunks stay cached across app deploys.
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          data: ['@tanstack/react-query', 'axios', 'zustand'],
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+        },
+      },
+    },
   },
 });

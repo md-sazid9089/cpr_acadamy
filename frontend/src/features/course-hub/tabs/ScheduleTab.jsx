@@ -29,22 +29,22 @@ export default function ScheduleTab({ courseSlug }) {
   return (
     <div className="space-y-3">
       {/* ── Routine Table ── */}
-      <div className="overflow-hidden rounded-xl border-2 border-brand-500 bg-white shadow-sm dark:border-brand-600 dark:bg-surface-dark-subtle">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-brand-600 text-white">
-              <tr className="divide-x divide-brand-400/50">
-                <th className="w-1/4 py-3 px-4 text-center font-bold">Date &amp; Time</th>
-                <th className="w-1/4 py-3 px-4 text-center font-bold">Exam</th>
-                <th className="w-1/4 py-3 px-4 text-center font-bold">Solve Class</th>
-                <th className="w-1/4 py-3 px-4 text-center font-bold">Lecture</th>
+            <thead className="border-b border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200">
+              <tr className="divide-x divide-slate-200 dark:divide-slate-800">
+                <th className="w-1/4 py-3 px-4 text-center font-semibold">Date &amp; Time</th>
+                <th className="w-1/4 py-3 px-4 text-center font-semibold">Exam</th>
+                <th className="w-1/4 py-3 px-4 text-center font-semibold">Solve Class</th>
+                <th className="w-1/4 py-3 px-4 text-center font-semibold">Lecture</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-brand-200 text-slate-800 dark:divide-slate-800 dark:text-slate-200">
+            <tbody className="divide-y divide-slate-100 text-slate-800 dark:divide-slate-800 dark:text-slate-200">
               {schedule.map((row) => (
                 <tr
                   key={row.id}
-                  className="divide-x divide-brand-200 transition-colors hover:bg-brand-50/50 dark:divide-slate-800 dark:hover:bg-slate-900/40"
+                  className="divide-x divide-slate-100 transition-colors hover:bg-slate-50 dark:divide-slate-800 dark:hover:bg-slate-900/40"
                 >
                   {/* Date & Time */}
                   <td className="whitespace-pre-line py-3 px-4 text-xs font-semibold sm:text-sm text-slate-800 dark:text-slate-200">
@@ -96,7 +96,7 @@ export default function ScheduleTab({ courseSlug }) {
         </div>
 
         {/* Bottom Banner */}
-        <div className="border-t border-brand-400 bg-white py-3 text-center text-sm font-bold text-slate-900 dark:border-slate-800 dark:bg-surface-dark-subtle dark:text-white">
+        <div className="border-t border-slate-200 bg-slate-50 py-3 text-center text-sm font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-200">
           To Be Continued...
         </div>
       </div>

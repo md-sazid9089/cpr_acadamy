@@ -6,6 +6,7 @@ import { fetchExamResult } from './api/exams.api.js';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import { QUESTION_TYPES } from '@/constants';
 import { formatDateTime } from '@/lib/utils';
@@ -14,11 +15,22 @@ import { formatDateTime } from '@/lib/utils';
 export default function ExamResult() {
   const { examId } = useParams();
 
-  const { data: result, isLoading } = useQuery({
+  const { data: result, isLoading, error } = useQuery({
     queryKey: ['exams', 'result', examId],
     queryFn: () => fetchExamResult(examId),
     enabled: Boolean(examId),
+    retry: false,
   });
+
+  if (error) {
+    return (
+      <EmptyState
+        title={error.code === 'RESULTS_NOT_RELEASED' ? 'Results are not out yet' : 'Result unavailable'}
+        description={error.message}
+        action={<Button to="/dashboard/exams">Back to exams</Button>}
+      />
+    );
+  }
 
   if (isLoading || !result) {
     return (
@@ -28,7 +40,7 @@ export default function ExamResult() {
     );
   }
 
-  const percentage = Math.round((result.score / result.totalMarks) * 100);
+  const percentage = result.totalMarks ? Math.round((result.score / result.totalMarks) * 100) : 0;
 
   return (
     <div className="space-y-6">

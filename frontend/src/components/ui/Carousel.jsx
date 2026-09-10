@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils';
  *   mixed or unknown aspect ratios — nothing is cropped, and the letterboxing is
  *   filled with a blurred copy of the same image.
  * @param {string} [props.className]
+ * @param {string} [props.frameClassName]  Overrides the slide-frame chrome
+ *   (rounding, border, shadow) so callers can give the carousel a custom shape.
  * @param {string} [props.label]  Accessible name for the carousel region.
  */
 export default function Carousel({
@@ -34,6 +36,7 @@ export default function Carousel({
   aspectClassName = 'aspect-[16/10]',
   fit = 'cover',
   className,
+  frameClassName = 'rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800',
   label = 'Promotional highlights',
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop, align: 'start', skipSnaps: false });
@@ -91,7 +94,7 @@ export default function Carousel({
     >
       {/* Card chrome matches the Card primitive used by the rest of the site. */}
       <div
-        className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800"
+        className={cn('overflow-hidden', frameClassName)}
         ref={emblaRef}
       >
         <div className="flex">

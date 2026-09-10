@@ -19,18 +19,30 @@ read the port off the banner rather than assuming it.
 there is no config, so the script fails. Nothing in CI or the Vercel build runs
 it; install `eslint` first if you want it.
 
-### Demo accounts
+### Backend
 
-Three accounts work against the mock API. **Login accepts any non-empty
-password** — the 8-character / one-letter / one-number rule applies to the
-registration form, not to signing in. Mobile numbers must match
-`01[3-9]` plus eight digits, or the form rejects them before the API is reached.
+The frontend talks to the real API in `../backend`. In development Vite proxies
+`/api` to `http://127.0.0.1:3001`, so run both:
 
-| Mobile        | Role    | Status            |
-| ------------- | ------- | ----------------- |
-| `01711111111` | Student | Active            |
-| `01799999999` | Admin   | Active            |
-| `01722222222` | Student | Awaiting approval |
+```bash
+cd backend && npm install && npm run dev      # API on :3001 (PGlite, migrations auto-applied)
+cd frontend && npm run dev                    # UI on :5173
+```
+
+Create the first administrator from the backend directory (the server must be
+stopped, since the embedded database is single-process):
+
+```bash
+ADMIN_MOBILE=017xxxxxxxx ADMIN_NAME="Academy Admin" ADMIN_PASSWORD="<12+ chars>" npm run admin:create
+```
+
+`backend/.env` ships with `SMS_MODE=console`, which prints OTP codes to the
+backend terminal instead of sending SMS. Student registrations wait for an
+administrator to approve them under **Admin → Students**; course fees are
+manual payments the administrator confirms under **Admin → Revenue**.
+
+For a full end-to-end check, `backend/scripts/smoke.ps1` and
+`smoke-student.ps1` drive the whole journey against a running backend.
 
 ## Routes
 
@@ -46,8 +58,7 @@ chat bubble). Everything under `/dashboard` and `/admin` sits behind
 | Student   | `/dashboard`, `/dashboard/courses`, `/dashboard/course/:slug`, `/dashboard/progress`, `/dashboard/exams(/:examId[/result])`, `/dashboard/payments`, `/dashboard/invoices/:id`   |
 |           | `/dashboard/account`, `/dashboard/complaints(/:id)`, `/dashboard/subscriptions(/:batchId[/add])`, `/dashboard/checkout/:slug`, `/dashboard/learn/:slug`                         |
 | Player    | `/learn/:courseSlug/:lessonId` — full-bleed, outside `PublicLayout`, own auth guard                                                                                            |
-| Admin     | `/admin`, `/admin/students(/:studentId)`, `/admin/courses`, `/admin/revenue`, `/admin/reports`                                                                                 |
-|           | `/admin/courses/:id/{detail,videos,exams,schedule}`, `/admin/courses/:id/exams/:examId` — one course, built from tabs; the old `/admin/{videos,exams,schedules}` redirect here |
+| Admin     | `/admin`, `/admin/students`, `/admin/courses`, `/admin/videos`, `/admin/exams`, `/admin/schedules`, `/admin/reports`                                                            |
 
 ## Conventions
 
@@ -157,13 +168,15 @@ once built. Never put a secret in one.
 
 ## Before going live
 
-The app currently runs entirely on mock data. Every data module carries a
-`TODO:` naming the endpoint that replaces it; `src/lib/api-client.js` already
-holds the auth-token and single-device-login interceptors and becomes live the
-moment those bodies are swapped.
+Every data module in `src/features/*/api/*.api.js` calls the real backend
+through `src/lib/api-client.js`, which handles the bearer token, the
+single-device header, transparent refresh-token retry and forced logout.
+Set `VITE_API_BASE_URL` when the API is not served from the same origin.
 
 Known items worth resolving first:
 
+- Online payment gateways (bKash/Nagad/Rocket/card) are shown as “coming soon”
+  on the checkout; only manual transfer + admin reconciliation is wired.
 - `public/assets/spotlight/cpr logo.png` (5.7 MB) and `profile.jpeg` (1.8 MB)
   are referenced nowhere — the navbar uses the 62 KB `cpr-logo.png`. Nothing
   fetches them, so they cost deploy size only, but they can be deleted.

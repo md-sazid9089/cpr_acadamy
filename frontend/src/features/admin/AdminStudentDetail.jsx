@@ -200,6 +200,9 @@ export default function AdminStudentDetail() {
             ? ' They will receive an activation SMS and can sign in immediately.'
             : ' They will lose access and be notified by SMS.'}
         </p>
+        {statusMutation.isError && (
+          <p role="alert" className="mt-3 text-sm font-medium text-red-600 dark:text-red-400">{statusMutation.error.message}</p>
+        )}
       </Modal>
     </div>
   );

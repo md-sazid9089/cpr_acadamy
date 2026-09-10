@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, useParams } from 'react-router-dom';
 
 import PublicLayout from '@/components/layout/PublicLayout.jsx';
 import DashboardLayout from '@/components/layout/DashboardLayout.jsx';
@@ -45,6 +45,7 @@ const Overview = lazy(() => import('@/features/student-dashboard/Overview.jsx'))
 const MyCourses = lazy(() => import('@/features/student-dashboard/MyCourses.jsx'));
 const Progress = lazy(() => import('@/features/student-dashboard/Progress.jsx'));
 const UpcomingExams = lazy(() => import('@/features/student-dashboard/UpcomingExams.jsx'));
+const Notices = lazy(() => import('@/features/student-dashboard/Notices.jsx'));
 const PaymentHistory = lazy(() => import('@/features/student-dashboard/PaymentHistory.jsx'));
 const Subscriptions = lazy(() => import('@/features/student-dashboard/Subscriptions.jsx'));
 const SubscriptionDetail = lazy(() => import('@/features/student-dashboard/SubscriptionDetail.jsx'));
@@ -57,8 +58,7 @@ const ComplaintDetail = lazy(() => import('@/features/student-dashboard/Complain
 const CourseHub = lazy(() => import('@/features/course-hub/CourseHub.jsx'));
 const CoursePlayer = lazy(() => import('@/pages/CoursePlayer.jsx'));
 
-// Learning, exams, payments
-const LessonPlayer = lazy(() => import('@/features/learning/LessonPlayer.jsx'));
+// Exams, payments
 const ExamRunner = lazy(() => import('@/features/exams/ExamRunner.jsx'));
 const ExamResult = lazy(() => import('@/features/exams/ExamResult.jsx'));
 const Checkout = lazy(() => import('@/features/payments/Checkout.jsx'));
@@ -71,6 +71,8 @@ const AdminStudentDetail = lazy(() => import('@/features/admin/AdminStudentDetai
 const AdminCourses = lazy(() => import('@/features/admin/AdminCourses.jsx'));
 const AdminRevenue = lazy(() => import('@/features/admin/AdminRevenue.jsx'));
 const AdminReports = lazy(() => import('@/features/admin/AdminReports.jsx'));
+const AdminComplaints = lazy(() => import('@/features/admin/AdminComplaints.jsx'));
+const AdminNotices = lazy(() => import('@/features/admin/AdminNotices.jsx'));
 // One course, built from tabs. Videos, exams and the routine hang off the course
 // so the admin never picks "which course?" from a dropdown.
 const CourseShell = lazy(() => import('@/features/admin/courses/CourseShell.jsx'));
@@ -86,6 +88,12 @@ const CourseScheduleTab = lazy(() => import('@/features/admin/courses/CourseSche
  */
 function suspend(element) {
   return <Suspense fallback={<PageSpinner />}>{element}</Suspense>;
+}
+
+/** Former module-based lesson list; classes now live on the course hub. */
+function LearnRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={`/dashboard/course/${slug}`} replace />;
 }
 
 /**
@@ -147,7 +155,8 @@ const router = createBrowserRouter([
       { path: 'exams', element: suspend(<UpcomingExams />) },
       { path: 'exams/:examId', element: suspend(<ExamRunner />) },
       { path: 'exams/:examId/result', element: suspend(<ExamResult />) },
-      { path: 'learn/:slug', element: suspend(<LessonPlayer />) },
+      { path: 'learn/:slug', element: <LearnRedirect /> },
+      { path: 'notice', element: suspend(<Notices />) },
       { path: 'payments', element: suspend(<PaymentHistory />) },
       { path: 'account', element: suspend(<MyAccount />) },
       { path: 'complaints', element: suspend(<Complaints />) },
@@ -172,6 +181,8 @@ const router = createBrowserRouter([
       { index: true, element: suspend(<AdminOverview />) },
       { path: 'students', element: suspend(<AdminStudents />) },
       { path: 'students/:studentId', element: suspend(<AdminStudentDetail />) },
+      { path: 'complaints', element: suspend(<AdminComplaints />) },
+      { path: 'notices', element: suspend(<AdminNotices />) },
       { path: 'courses', element: suspend(<AdminCourses />) },
       {
         path: 'courses/:id',

@@ -1,50 +1,32 @@
-import { sleep } from '@/lib/utils';
-// import apiClient from '@/lib/api-client';
+import apiClient from '@/lib/api-client';
 
 /**
- * Payments, mocked.
- * TODO: POST /payments/initiate (returns a gateway redirect URL for
- * bKash/Nagad/Rocket), GET /payments/:id, GET /invoices/:id.
- * Never trust a client-reported "paid" state — confirmation must come from the
- * gateway callback the backend verifies.
+ * Payments. Online gateways are not configured yet, so every purchase is a
+ * `manual` payment: the student pays the academy directly and an administrator
+ * reconciles it against the invoice, which activates the enrolment. The
+ * client never reports a "paid" state itself.
  */
 
-export async function initiatePayment({ courseSlug, method, amount }) {
-  await sleep(700);
-  return {
-    ok: true,
-    paymentId: `pay_${Date.now()}`,
-    courseSlug,
-    method,
-    amount,
-    // TODO: the real response carries `redirectUrl` to the gateway.
-    redirectUrl: null,
-  };
+/**
+ * @param {{ courseSlug: string, method: string, planId?: string, idempotencyKey: string }} payload
+ * `idempotencyKey` must stay the same across retries of one purchase so a
+ * double-click cannot create two invoices.
+ */
+export async function initiatePayment({ courseSlug, method, planId, idempotencyKey }) {
+  const { data } = await apiClient.post(
+    '/payments/initiate',
+    { courseSlug, method, ...(planId ? { planId } : {}) },
+    { headers: { 'Idempotency-Key': idempotencyKey } },
+  );
+  return data;
+}
+
+export async function fetchPayment(paymentId) {
+  const { data } = await apiClient.get(`/payments/${paymentId}`);
+  return data;
 }
 
 export async function fetchInvoice(invoiceId) {
-  await sleep(400);
-  return {
-    id: invoiceId,
-    invoiceNo: 'CPR-2025-001842',
-    issuedAt: '2025-12-28T09:12:00.000Z',
-    status: 'paid',
-    method: 'bkash',
-    transactionId: 'BKH8ZQ11X4',
-    billedTo: {
-      name: 'Dr. Rahim Uddin',
-      mobile: '01711111111',
-      institution: 'Dhaka Medical College',
-    },
-    lines: [
-      {
-        id: 'line-1',
-        description: 'FCPS Part-1 Medicine — January Batch (6 months)',
-        quantity: 1,
-        unitPrice: 18000,
-      },
-    ],
-    discount: 4500,
-    total: 13500,
-  };
+  const { data } = await apiClient.get(`/invoices/${invoiceId}`);
+  return data;
 }

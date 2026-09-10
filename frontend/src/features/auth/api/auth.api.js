@@ -1,124 +1,78 @@
-import { ACCOUNT_STATUS, ROLES } from '@/constants';
-import { sleep } from '@/lib/utils';
-// import apiClient from '@/lib/api-client';
+import apiClient from '@/lib/api-client';
 
 /**
- * Auth data access, mocked for now.
+ * Auth data access.
  *
- * TODO: replace each body with the real endpoint —
- *   POST /auth/login, /auth/register, /auth/otp/verify, /auth/otp/resend,
- *   POST /auth/password/forgot, /auth/password/reset, POST /auth/logout,
- *   GET  /auth/me
- * The backend is expected to enforce single-device login: a successful login
- * invalidates any token issued to a different X-Device-Id.
+ * The backend enforces single-device login: a successful login invalidates any
+ * token issued to a different X-Device-Id (sent by the api-client).
  */
 
-/** Two demo accounts so protected routes can be exercised before the API lands. */
-const MOCK_USERS = {
-  '01711111111': {
-    id: 'u-1',
-    fullName: 'Dr. Rahim Uddin',
-    mobile: '01711111111',
-    role: ROLES.STUDENT,
-    status: ACCOUNT_STATUS.ACTIVE,
-    institution: 'Dhaka Medical College',
-    bmdcNumber: 'A-12345',
-    createdAt: '2025-06-01T10:00:00.000Z',
-  },
-  '01799999999': {
-    id: 'u-2',
-    fullName: 'Academy Admin',
-    mobile: '01799999999',
-    role: ROLES.ADMIN,
-    status: ACCOUNT_STATUS.ACTIVE,
-    createdAt: '2025-01-01T10:00:00.000Z',
-  },
-  // Registered, OTP verified, still waiting for an administrator.
-  '01722222222': {
-    id: 'u-3',
-    fullName: 'Dr. Pending Account',
-    mobile: '01722222222',
-    role: ROLES.STUDENT,
-    status: ACCOUNT_STATUS.AWAITING_APPROVAL,
-    createdAt: '2025-09-10T10:00:00.000Z',
-  },
-};
-
-/** @param {{ mobile: string, password: string }} credentials */
-export async function login({ mobile }) {
-  await sleep(600);
-
-  const user = MOCK_USERS[mobile];
-  if (!user) {
-    throw {
-      status: 401,
-      code: 'INVALID_CREDENTIALS',
-      message: 'No account matches that mobile number and password.',
-      fieldErrors: {},
-    };
-  }
-
-  return {
-    user,
-    accessToken: `mock-token-${user.id}`,
-    refreshToken: `mock-refresh-${user.id}`,
-  };
+/** @param {{ mobile: string, password: string, rememberMe?: boolean }} credentials */
+export async function login({ mobile, password, rememberMe }) {
+  const { data } = await apiClient.post('/auth/login', { mobile, password, rememberMe: Boolean(rememberMe) });
+  return data;
 }
 
-/** @param {Object} payload Registration form values. */
+/** @param {Object} payload Registration form values. Sends an OTP by SMS. */
 export async function register(payload) {
-  await sleep(700);
-  // The API sends an OTP by SMS and returns nothing sensitive.
-  return { ok: true, mobile: payload.mobile, otpSentAt: new Date().toISOString() };
+  const { data } = await apiClient.post('/auth/register', {
+    fullName: payload.fullName,
+    mobile: payload.mobile,
+    email: payload.email || '',
+    bmdcNumber: payload.bmdcNumber || '',
+    institution: payload.institution,
+    interest: payload.interest,
+    password: payload.password,
+    confirmPassword: payload.confirmPassword,
+    acceptTerms: true,
+  });
+  return data;
 }
 
-/** @param {{ mobile: string, otp: string }} args */
+/**
+ * Verifies the signup code. The account becomes `awaiting_approval` and the
+ * response carries a session so the pending screen can poll its status.
+ *
+ * @param {{ mobile: string, otp: string }} args
+ */
 export async function verifyOtp({ mobile, otp }) {
-  await sleep(600);
-
-  if (otp === '000000') {
-    throw { status: 400, code: 'INVALID_OTP', message: 'That code is incorrect or has expired.' };
-  }
-
-  // Verification never grants access on its own — an admin still has to approve.
-  return {
-    ok: true,
-    user: {
-      id: `u-${mobile.slice(-4)}`,
-      fullName: 'New Student',
-      mobile,
-      role: ROLES.STUDENT,
-      status: ACCOUNT_STATUS.AWAITING_APPROVAL,
-      createdAt: new Date().toISOString(),
-    },
-  };
+  const { data } = await apiClient.post('/auth/otp/verify', { mobile, otp });
+  return data;
 }
 
 /** @param {string} mobile */
 export async function resendOtp(mobile) {
-  await sleep(400);
-  return { ok: true, mobile, otpSentAt: new Date().toISOString() };
+  const { data } = await apiClient.post('/auth/otp/resend', { mobile });
+  return data;
 }
 
-/** Poll target for the pending-approval screen. */
-export async function fetchApprovalStatus(mobile) {
-  await sleep(500);
-  // TODO: GET /auth/approval-status?mobile=… — returns the current ACCOUNT_STATUS.
-  return { status: ACCOUNT_STATUS.AWAITING_APPROVAL, mobile };
+/** Poll target for the pending-approval screen (requires the pending session). */
+export async function fetchApprovalStatus() {
+  const { data } = await apiClient.get('/auth/approval-status');
+  return data;
+}
+
+export async function fetchMe() {
+  const { data } = await apiClient.get('/auth/me');
+  return data;
 }
 
 export async function forgotPassword(mobile) {
-  await sleep(500);
-  return { ok: true, mobile };
+  const { data } = await apiClient.post('/auth/password/forgot', { mobile });
+  return data;
 }
 
-export async function resetPassword({ mobile, otp, password }) {
-  await sleep(600);
-  return { ok: true, mobile, otp: Boolean(otp), passwordChanged: Boolean(password) };
+export async function resetPassword({ mobile, otp, password, confirmPassword }) {
+  const { data } = await apiClient.post('/auth/password/reset', { mobile, otp, password, confirmPassword });
+  return data;
 }
 
+/** Releases the device lock server-side; local state is cleared by the caller. */
 export async function logout() {
-  await sleep(200);
-  // TODO: POST /auth/logout so the backend releases the device lock.
+  try {
+    await apiClient.post('/auth/logout');
+  } catch {
+    // The session may already be gone; signing out locally is what matters.
+  }
   return { ok: true };
 }

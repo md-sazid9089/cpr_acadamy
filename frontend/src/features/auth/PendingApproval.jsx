@@ -23,6 +23,7 @@ const STEPS = [
  */
 export default function PendingApproval() {
   const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const pendingMobile = useAuthStore((s) => s.pendingMobile);
   const logout = useAuthStore((s) => s.logout);
   const setUser = useAuthStore((s) => s.setUser);
@@ -35,11 +36,11 @@ export default function PendingApproval() {
   const { refetch, isFetching } = useQuery({
     queryKey: ['auth', 'approval-status', mobile],
     queryFn: async () => {
-      const result = await fetchApprovalStatus(mobile);
+      const result = await fetchApprovalStatus();
       if (user && result.status !== user.status) setUser({ ...user, status: result.status });
       return result;
     },
-    enabled: Boolean(mobile) && !isRejected,
+    enabled: Boolean(accessToken && user) && !isRejected && status !== ACCOUNT_STATUS.ACTIVE,
     refetchInterval: 30_000,
   });
 

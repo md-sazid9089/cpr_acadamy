@@ -90,10 +90,8 @@ export default function CourseScheduleTab() {
     event.preventDefault();
     const payload = {
       courseId: course.id,
-      courseName: course.title,
       date: form.date,
       time: form.time,
-      dateTime: routineLabel(form.date, form.time),
       examId: form.examId || null,
       exam: examTitle(form.examId) ?? NO_EXAM,
       solveClassVideoId: form.solveClassVideoId || null,
@@ -104,6 +102,8 @@ export default function CourseScheduleTab() {
     if (editing === 'new') createMutation.mutate(payload);
     else updateMutation.mutate({ id: editing.id, ...payload });
   };
+
+  const saveError = createMutation.error ?? updateMutation.error;
 
   const cell = (id, fallbackLabel, resolve) => {
     const title = id ? resolve(id) : null;
@@ -183,9 +183,14 @@ export default function CourseScheduleTab() {
         description={course.title}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          {saveError && (
+            <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+              {saveError.message}
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <Input label="Date" type="date" required value={form.date} onChange={set('date')} />
-            <Input label="Time" type="time" required value={form.time} onChange={set('time')} />
+            <Input label="Time" type="time" required value={form.time} onChange={set('time')} hint="Bangladesh time." />
           </div>
 
           <Select label="Exam" value={form.examId} onChange={set('examId')}>

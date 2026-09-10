@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { FaCheck } from 'react-icons/fa6';
-import { useSubscriptionPlans } from './api/dashboard.queries.js';
+import { useSubscriptionBatches, useSubscriptionPlans } from './api/dashboard.queries.js';
 import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import DashboardPanel from './components/DashboardPanel.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
@@ -8,15 +8,14 @@ import { formatBDT } from '@/lib/utils';
 
 /**
  * /dashboard/subscriptions/:batchId/add — the packages still purchasable for a
- * batch.
- *
- * NOTE: the reference screenshots stop at the "Add Subscriptions" button, so
- * this screen is inferred rather than copied. Confirm the real plan fields with
- * the client before wiring the backend.
+ * batch. Subscribing opens the checkout for the batch's course with the plan
+ * pre-selected.
  */
 export default function AddSubscription() {
   const { batchId } = useParams();
   const { data: plans = [], isLoading } = useSubscriptionPlans(batchId);
+  const { data: batches = [] } = useSubscriptionBatches();
+  const batch = batches.find((item) => item.id === batchId);
 
   return (
     <div className="space-y-6">
@@ -31,6 +30,10 @@ export default function AddSubscription() {
           <div className="flex justify-center py-10">
             <Spinner size="lg" label="Loading packages…" />
           </div>
+        ) : plans.length === 0 ? (
+          <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+            No subscription packages are on offer for this batch right now.
+          </p>
         ) : (
           <ul className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {plans.map((plan) => (
@@ -65,8 +68,9 @@ export default function AddSubscription() {
                 </ul>
 
                 <Link
-                  to={`/dashboard/checkout/${batchId}`}
-                  className="mt-5 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 sm:text-sm"
+                  to={batch ? `/dashboard/checkout/${batch.slug}?batchId=${batchId}&planId=${plan.id}` : '#'}
+                  aria-disabled={!batch}
+                  className="mt-5 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 aria-disabled:pointer-events-none aria-disabled:opacity-50 sm:text-sm"
                 >
                   Subscribe
                 </Link>

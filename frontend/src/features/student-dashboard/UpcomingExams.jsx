@@ -55,6 +55,10 @@ export default function UpcomingExams() {
             <div className="shrink-0">
               {isRunning ? (
                 <Button to={`/dashboard/exams/${exam.id}`}>Start exam</Button>
+              ) : exam.status === EXAM_STATUS.SUBMITTED || exam.status === EXAM_STATUS.PUBLISHED ? (
+                <Button variant="outline" to={`/dashboard/exams/${exam.id}/result`}>
+                  View result
+                </Button>
               ) : (
                 <Button variant="outline" disabled>
                   Opens {formatDateTime(exam.scheduledAt)}

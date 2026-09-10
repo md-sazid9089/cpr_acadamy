@@ -3,7 +3,6 @@ import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { FaCheck, FaCircleExclamation, FaEye, FaEyeSlash, FaTriangleExclamation } from 'react-icons/fa6';
 import { fetchAdminExams, fetchAdminSchedules, fetchAdminVideos, setCourseStatus } from '../api/admin.api.js';
 import { adminCourseKey, adminExamsKey, adminScheduleKey, adminVideosKey } from './keys.js';
-import { isQuestionComplete } from './QuestionCard.jsx';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Modal from '@/components/ui/Modal.jsx';
@@ -21,7 +20,7 @@ import { cn } from '@/lib/utils';
 export function publishChecks({ course, videos, exams, schedule }) {
   const publishedVideos = videos.filter((video) => video.status === 'published');
   const incompleteExams = exams.filter(
-    (exam) => exam.questions.length < exam.questionCount || exam.questions.some((q) => !isQuestionComplete(q)),
+    (exam) => (exam.writtenCount ?? 0) < exam.questionCount || (exam.incompleteCount ?? 0) > 0,
   );
 
   return [

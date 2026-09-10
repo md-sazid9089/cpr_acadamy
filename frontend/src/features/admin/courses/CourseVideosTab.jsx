@@ -91,13 +91,14 @@ export default function CourseVideosTab() {
       ...form,
       title: form.title.trim(),
       videoUrl: form.videoUrl.trim(),
-      notesUrl: form.notesUrl.trim() || null,
+      notesUrl: form.notesUrl.trim(),
       courseId: course.id,
-      courseName: course.title,
     };
     if (editing === 'new') createMutation.mutate(payload);
     else updateMutation.mutate({ id: editing.id, ...payload });
   };
+
+  const saveError = createMutation.error ?? updateMutation.error;
 
   return (
     <>
@@ -224,6 +225,11 @@ export default function CourseVideosTab() {
         description={course.title}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          {saveError && (
+            <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+              {saveError.message}
+            </p>
+          )}
           <Input
             label="Title"
             required
@@ -234,7 +240,7 @@ export default function CourseVideosTab() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input label="Scheduled date" type="date" required value={form.scheduledDate} onChange={set('scheduledDate')} />
-            <Input label="Scheduled time" required value={form.scheduledTime} onChange={set('scheduledTime')} placeholder="e.g. 02:30 PM" />
+            <Input label="Scheduled time" required value={form.scheduledTime} onChange={set('scheduledTime')} placeholder="e.g. 02:30 PM" hint="Bangladesh time." />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -253,7 +259,7 @@ export default function CourseVideosTab() {
             value={form.videoUrl}
             onChange={set('videoUrl')}
             placeholder="https://vimeo.com/…"
-            hint="Paste the hosted video link. Uploading from here is not available yet."
+            hint="Paste the hosted video link (HTTPS). Required before a lecture can be published."
           />
           <Input
             label="Lecture notes URL"

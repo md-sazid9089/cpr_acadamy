@@ -43,7 +43,7 @@ const DASHBOARD_MENU = [
   {
     id: 'notice',
     title: 'Notice',
-    to: '/class',
+    to: '/dashboard/notice',
     icon: FaBell,
     iconColor: 'text-brand-600',
   },

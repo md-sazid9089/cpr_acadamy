@@ -15,12 +15,13 @@ export default function Progress() {
   }
 
   const peakMinutes = Math.max(...data.weeklyActivity.map((day) => day.minutes), 1);
+  const noTopics = <p className="text-sm text-slate-500 dark:text-slate-400">Topic analysis appears once you have sat a few exams.</p>;
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Course completion" value={`${data.overallProgress}%`} />
-        <StatCard label="Average exam score" value={`${data.averageScore}%`} />
+        <StatCard label="Average exam score" value={`${Math.round(data.averageScore)}%`} />
         <StatCard label="Exams taken" value={data.examsTaken} />
         <StatCard label="Study hours" value={data.studyHours} />
       </div>
@@ -28,7 +29,9 @@ export default function Progress() {
       <Card>
         <CardHeader title="This week" description="Minutes studied per day." />
         <CardBody>
-          {/* Simple CSS bar chart — no charting library needed at this size. */}
+          {data.weeklyActivity.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Nothing watched in the last seven days yet.</p>
+          ) : (
           <div className="flex h-40 items-end justify-between gap-3">
             {data.weeklyActivity.map((day) => (
               <div key={day.day} className="flex flex-1 flex-col items-center gap-2">
@@ -43,6 +46,7 @@ export default function Progress() {
               </div>
             ))}
           </div>
+          )}
         </CardBody>
       </Card>
 
@@ -50,6 +54,7 @@ export default function Progress() {
         <Card>
           <CardHeader title="Needs work" description="Accuracy below 60% in recent exams." />
           <CardBody className="space-y-4">
+            {data.weakTopics.length === 0 && noTopics}
             {data.weakTopics.map((topic) => (
               <ProgressBar key={topic.topic} value={topic.accuracy} label={topic.topic} />
             ))}
@@ -59,6 +64,7 @@ export default function Progress() {
         <Card>
           <CardHeader title="Your strengths" />
           <CardBody className="space-y-4">
+            {data.strongTopics.length === 0 && noTopics}
             {data.strongTopics.map((topic) => (
               <ProgressBar key={topic.topic} value={topic.accuracy} label={topic.topic} />
             ))}

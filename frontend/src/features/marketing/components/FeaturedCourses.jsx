@@ -30,7 +30,21 @@ export default function FeaturedCourses() {
   );
 
   return (
-    <section className="bg-white py-12 dark:bg-surface-dark">
+    <section className="relative isolate overflow-hidden bg-white py-12 dark:bg-surface-dark">
+      {/* Full-width background image, clearly visible behind the content. */}
+      <img
+        src="/assets/bg/1149786_5650.jpg"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover"
+      />
+      {/* Soft scrim: keeps the molecular art visible while lifting text and
+          letting the white course cards read cleanly against it. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 bg-white/45 dark:bg-surface-dark/70"
+      />
+
       <div className="container-page">
         <div className="text-center">
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white" lang="bn">
@@ -60,7 +74,7 @@ export default function FeaturedCourses() {
               action={<Button to="/batches">Browse all batches</Button>}
             />
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
               {visible.map((course) => (
                 <CourseCard key={course.id} course={course} onEnroll={onEnroll} />
               ))}

@@ -18,7 +18,7 @@ function ExamCard({ exam }) {
   const isPublished = exam.status === 'published';
 
   return (
-    <div className="flex flex-col justify-between rounded-xl border border-brand-200 bg-white p-5 shadow-sm transition-all hover:border-brand-400 hover:shadow-md dark:border-slate-700 dark:bg-surface-dark-subtle dark:hover:border-slate-600">
+    <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-brand-700">
       <div>
         {/* Title */}
         <h3 className="text-sm font-bold text-slate-900 dark:text-white">
@@ -96,17 +96,17 @@ export default function ExamTab({ courseSlug }) {
   return (
     <div className="space-y-5">
       {/* ── Sub-tab toggle: SBA | MCQ ── */}
-      <div className="flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50/60 p-1.5 dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {EXAM_TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActiveType(tab.id)}
             className={cn(
-              'flex-1 rounded-lg px-4 py-2.5 text-center text-xs font-bold transition-all sm:text-sm',
+              'flex-1 rounded-lg px-4 py-2.5 text-center text-xs font-semibold transition-all sm:text-sm',
               activeType === tab.id
-                ? 'bg-brand-600 text-white shadow-md'
-                : 'bg-white/80 text-slate-700 hover:bg-white dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800',
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
             )}
           >
             <span className="block">{tab.label}</span>
@@ -117,7 +117,7 @@ export default function ExamTab({ courseSlug }) {
 
       {/* ── Exam cards ── */}
       {currentExams.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center dark:border-slate-800 dark:bg-surface-dark-subtle">
+        <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center dark:border-slate-800 dark:bg-slate-900">
           <FaClipboardList aria-hidden="true" className="mx-auto h-8 w-8 text-slate-300 dark:text-slate-600" />
           <p className="mt-3 text-sm font-semibold text-slate-500 dark:text-slate-400">
             No {activeType === 'sba' ? 'SBA' : 'MCQ'} exams available yet.

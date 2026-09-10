@@ -125,11 +125,6 @@ export default function Login() {
         One device at a time: signing in here ends any session already open on another phone or
         computer.
       </p>
-
-      {/* Demo credentials while the backend is mocked — remove before launch. */}
-      <p className="mt-3 text-center text-xs text-slate-400">
-        Demo: 01711111111 (student) · 01799999999 (admin) · any password
-      </p>
     </AuthCard>
   );
 }

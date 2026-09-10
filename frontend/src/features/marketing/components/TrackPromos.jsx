@@ -58,7 +58,15 @@ const TRACK_CARDS = [
 
 export default function TrackPromos() {
   return (
-    <section className="bg-slate-50 py-10 sm:py-14 dark:bg-surface-dark/50">
+    <section className="relative isolate overflow-hidden bg-slate-50 py-10 sm:py-14 dark:bg-surface-dark/50">
+      {/* Full-width molecular background, clearly visible behind the content. */}
+      <img
+        src="/assets/bg/1103999_7626.jpg"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover"
+      />
+
       <div className="container-page">
         {/* 2 in a row on all viewports (grid-cols-2) */}
         <div className="grid grid-cols-2 gap-3 sm:gap-6">

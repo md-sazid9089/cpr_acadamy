@@ -100,7 +100,7 @@ export const Textarea = forwardRef(function Textarea(
 
 /** Native select styled to match Input. */
 export const Select = forwardRef(function Select(
-  { label, error, children, className, containerClassName, id, required, ...props },
+  { label, hint, error, children, className, containerClassName, id, required, ...props },
   ref,
 ) {
   const autoId = useId();
@@ -126,7 +126,11 @@ export const Select = forwardRef(function Select(
       >
         {children}
       </select>
-      {error && <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>}
+      {error ? (
+        <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>
+      ) : hint ? (
+        <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>
+      ) : null}
     </div>
   );
 });

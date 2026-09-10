@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { CATEGORY_SLUGS } from '@/constants';
+import { formatDate } from '@/lib/utils';
 
 const TABS = [
   { id: 'active', label: 'Active Batches', icon: FaCheck, iconColor: 'text-emerald-500' },
@@ -41,11 +42,17 @@ export default function MyCourses() {
 
       <DashboardTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
 
-      {/* ── Main Section Container with Blue Header Bar ── */}
-      <div className="overflow-hidden rounded-2xl border border-brand-400 bg-brand-50 shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle">
-        {/* Blue Title Header Strip */}
-        <div className="bg-brand-600 px-6 py-3 text-sm font-bold text-white sm:text-base">
-          {TABS.find((t) => t.id === activeTab)?.label}
+      {/* ── Main Section Container ── */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {/* Section title header */}
+        <div className="flex items-center gap-2.5 border-b border-slate-100 bg-slate-50/80 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+          {(() => {
+            const Icon = TABS.find((t) => t.id === activeTab)?.icon;
+            return Icon ? <Icon aria-hidden="true" className="h-4 w-4 text-brand-600 dark:text-brand-400" /> : null;
+          })()}
+          <span className="text-sm font-semibold text-slate-900 dark:text-white">
+            {TABS.find((t) => t.id === activeTab)?.label}
+          </span>
         </div>
 
         <div className="p-6">
@@ -68,32 +75,33 @@ export default function MyCourses() {
                 return (
                   <div
                     key={course.id}
-                    className="flex flex-col justify-between rounded-2xl border-2 border-brand-300 bg-white p-6 shadow-sm transition-all hover:border-brand-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
+                    className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-brand-700"
                   >
                     <div>
                       {/* Course / Batch Title */}
-                      <h2 className="text-center text-base font-bold text-brand-600 sm:text-lg dark:text-brand-300">
+                      <h2 className="text-base font-bold leading-snug text-slate-900 sm:text-lg dark:text-white">
                         {course.title}
                       </h2>
 
-                      {/* Discipline & Reg No Badge Box */}
-                      <div className="my-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-xl bg-emerald-50/80 px-4 py-2 text-xs font-semibold text-slate-700 border border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-900/40 dark:text-slate-300">
-                        <span>
-                          Discipline: <strong className="text-emerald-700 dark:text-emerald-400">{course.category || 'Medicine & Allied'}</strong>
+                      {/* Discipline & Reg No chips */}
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+                          Discipline:
+                          <strong className="font-semibold text-slate-800 dark:text-slate-200">{course.category || 'Medicine & Allied'}</strong>
                         </span>
-                        <span>•</span>
-                        <span>
-                          Reg No: <strong className="text-emerald-700 dark:text-emerald-400">2607{course.id.replace(/\D/g, '') || '6732'}</strong>
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+                          Reg No:
+                          <strong className="font-semibold text-slate-800 dark:text-slate-200">{course.regNo ?? '—'}</strong>
                         </span>
                       </div>
 
                       {/* Progress Bar */}
-                      <div className="mt-4 space-y-1.5">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <div className="mt-5 space-y-2">
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
                           <span>Progress</span>
-                          <span>{progressValue}%</span>
+                          <span className="text-slate-900 dark:text-white">{progressValue}%</span>
                         </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all duration-500"
                             style={{ width: `${progressValue}%` }}
@@ -102,21 +110,23 @@ export default function MyCourses() {
                       </div>
 
                       {/* Notice / Validity text */}
-                      <p className="mt-3 text-center text-[11px] font-semibold leading-relaxed text-accent-600 dark:text-accent-400">
-                        Your batch will remain active till "{course.category || 'FCPS P-I'}, December'26 final exam
-                        (Expected 3rd December'26. Date will be reviewed &amp; adjusted after exam circular)"
+                      <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-medium leading-relaxed text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                        {course.status === 'pending_payment'
+                          ? 'Access opens as soon as the academy confirms your course fee payment.'
+                          : course.status === 'expired'
+                            ? `Access to this batch ended on ${formatDate(course.expiresOn)}.`
+                            : `Your batch access remains active till ${formatDate(course.expiresOn)}. The date is reviewed after the exam circular.`}
                       </p>
                     </div>
 
-                    {/* Primary action — only for a running batch, and only when
-                        we know where the student left off. */}
-                    {isActive && course.nextLesson && (
+                    {/* Primary action — only for a running batch. */}
+                    {isActive && (
                       <Link
                         to={`/dashboard/course/${course.slug}`}
-                        className="mt-6 flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-center text-sm font-bold text-white shadow-sm transition hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                        className="mt-6 flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
                       >
                         <FaPlay aria-hidden="true" className="h-3 w-3" />
-                        Continue Course
+                        {course.nextLesson ? 'Continue Course' : 'Open Course'}
                       </Link>
                     )}
 
@@ -126,35 +136,44 @@ export default function MyCourses() {
                       </p>
                     )}
 
-                    {/* 4 Action Buttons in 2x2 Grid */}
-                    <div className="mt-4 grid grid-cols-2 gap-3">
+                    {/* Secondary actions */}
+                    <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-slate-100 pt-5 dark:border-slate-800">
                       <Link
                         to={scheduleUrl}
-                        className="flex items-center justify-center rounded-xl bg-brand-100 px-3 py-2.5 text-center text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-200 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
+                        className="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-center text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:border-brand-700 dark:hover:bg-slate-800"
                       >
                         View Schedule
                       </Link>
 
                       <Link
-                        to={`/dashboard/learn/${course.slug}`}
-                        className="flex items-center justify-center rounded-xl bg-brand-100 px-3 py-2.5 text-center text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-200 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
+                        to={`/dashboard/course/${course.slug}`}
+                        className="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-center text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:border-brand-700 dark:hover:bg-slate-800"
                       >
-                        Confusing Questions
+                        Course Hub
                       </Link>
 
                       <Link
                         to="/dashboard/exams"
-                        className="flex items-center justify-center rounded-xl bg-brand-100 px-3 py-2.5 text-center text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-200 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
+                        className="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-center text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:border-brand-700 dark:hover:bg-slate-800"
                       >
                         My Exam Performance
                       </Link>
 
-                      <Link
-                        to={`/dashboard/checkout/${course.slug}`}
-                        className="flex items-center justify-center rounded-xl bg-brand-100 px-3 py-2.5 text-center text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-200 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
-                      >
-                        Pay Course Fee
-                      </Link>
+                      {isActive ? (
+                        <Link
+                          to="/dashboard/subscriptions"
+                          className="flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-center text-xs font-semibold text-slate-700 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:border-brand-700 dark:hover:bg-slate-800"
+                        >
+                          Subscriptions
+                        </Link>
+                      ) : (
+                        <Link
+                          to={`/dashboard/checkout/${course.slug}`}
+                          className="flex items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-center text-xs font-semibold text-amber-800 transition hover:border-amber-300 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
+                        >
+                          {course.status === 'expired' ? 'Renew Access' : 'Pay Course Fee'}
+                        </Link>
+                      )}
                     </div>
                   </div>
                 );

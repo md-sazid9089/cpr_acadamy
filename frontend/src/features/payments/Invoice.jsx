@@ -29,6 +29,7 @@ export default function Invoice() {
   }
 
   const subtotal = invoice.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+  const isPending = invoice.status === 'pending';
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
@@ -38,6 +39,17 @@ export default function Invoice() {
         </Button>
         <Button onClick={() => window.print()}>Print / save PDF</Button>
       </div>
+
+      {isPending && (
+        <Card className="border-amber-200 bg-amber-50 p-5 text-sm text-amber-900 print:hidden dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+          <p className="font-semibold">Awaiting your payment</p>
+          <p className="mt-1">
+            Send <strong>{formatBDT(invoice.total)}</strong> to the academy ({CONTACT.phone}) by bKash, Nagad, Rocket or bank
+            transfer using <strong>{invoice.invoiceNo}</strong> as the reference, then share the transaction ID on WhatsApp
+            ({CONTACT.whatsapp}). Your access opens the moment an administrator confirms it.
+          </p>
+        </Card>
+      )}
 
       <Card className="p-8">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-6 dark:border-slate-800">
@@ -128,7 +140,7 @@ export default function Invoice() {
             </div>
           )}
           <div className="flex justify-between border-t border-slate-200 pt-2 text-base font-bold dark:border-slate-800">
-            <dt className="text-slate-900 dark:text-white">Total paid</dt>
+            <dt className="text-slate-900 dark:text-white">{invoice.status === 'paid' ? 'Total paid' : 'Total due'}</dt>
             <dd className="text-brand-700 dark:text-brand-400">{formatBDT(invoice.total)}</dd>
           </div>
         </dl>

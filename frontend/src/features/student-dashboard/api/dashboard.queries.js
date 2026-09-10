@@ -7,6 +7,7 @@ import {
   fetchComplaints,
   fetchDevices,
   fetchMyCourses,
+  fetchNotices,
   fetchPaymentHistory,
   fetchProgressSummary,
   fetchSubscriptionBatches,
@@ -22,6 +23,7 @@ export const dashboardKeys = {
   myCourses: ['dashboard', 'my-courses'],
   progress: ['dashboard', 'progress'],
   upcomingExams: ['dashboard', 'upcoming-exams'],
+  notices: ['dashboard', 'notices'],
   payments: ['dashboard', 'payments'],
   subscriptionBatches: ['dashboard', 'subscription-batches'],
   subscriptions: (batchId) => ['dashboard', 'subscriptions', batchId],
@@ -42,6 +44,10 @@ export function useProgressSummary() {
 
 export function useUpcomingExams() {
   return useQuery({ queryKey: dashboardKeys.upcomingExams, queryFn: fetchUpcomingExams });
+}
+
+export function useNotices() {
+  return useQuery({ queryKey: dashboardKeys.notices, queryFn: fetchNotices });
 }
 
 export function usePaymentHistory() {

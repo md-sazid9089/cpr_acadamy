@@ -343,7 +343,7 @@ export default function CourseDetailTab() {
           </span>
         )}
         {mutation.isError && (
-          <span className="text-sm font-medium text-red-600 dark:text-red-400">Could not save. Try again.</span>
+          <span className="text-sm font-medium text-red-600 dark:text-red-400">{mutation.error.message}</span>
         )}
         <Button type="submit" isLoading={mutation.isPending}>
           Save changes

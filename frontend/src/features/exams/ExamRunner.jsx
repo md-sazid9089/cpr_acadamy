@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { FaRegStar, FaStar } from 'react-icons/fa6';
@@ -9,6 +9,7 @@ import { fetchExamPaper, saveAnswer, submitExam } from './api/exams.api.js';
 import Card from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
 import { QUESTION_TYPES } from '@/constants';
@@ -31,18 +32,32 @@ export default function ExamRunner() {
   const [flagged, setFlagged] = useState(() => new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const { data: paper, isLoading } = useQuery({
+  const { data: paper, isLoading, error } = useQuery({
     queryKey: ['exams', 'paper', examId],
     queryFn: () => fetchExamPaper(examId),
     enabled: Boolean(examId),
     // A paper must not be refetched mid-attempt — that would reshuffle state.
     staleTime: Infinity,
     refetchOnWindowFocus: false,
+    retry: false,
   });
+
+  // Resuming an attempt restores the answers already autosaved server-side.
+  useEffect(() => {
+    if (paper?.answers) setAnswers(paper.answers);
+  }, [paper]);
+
+  // A paper that was already handed in has nothing left to answer.
+  useEffect(() => {
+    if (error?.code === 'ALREADY_SUBMITTED') navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+  }, [error, examId, navigate]);
 
   const submitMutation = useMutation({
     mutationFn: submitExam,
     onSuccess: () => navigate(`/dashboard/exams/${examId}/result`, { replace: true }),
+    onError: (failure) => {
+      if (failure.code === 'ALREADY_SUBMITTED') navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+    },
   });
 
   const questions = paper?.questions ?? [];
@@ -76,6 +91,16 @@ export default function ExamRunner() {
       return next;
     });
   };
+
+  if (error && error.code !== 'ALREADY_SUBMITTED') {
+    return (
+      <EmptyState
+        title="This exam is not available"
+        description={error.message}
+        action={<Button to="/dashboard/exams">Back to exams</Button>}
+      />
+    );
+  }
 
   if (isLoading || !current) {
     return (

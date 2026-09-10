@@ -61,7 +61,7 @@ export default function AdminStudents() {
       key: 'enrolments',
       header: 'Courses',
       align: 'right',
-      render: (row) => <span className="text-slate-700 dark:text-slate-300">{row.enrolments?.length ?? 0}</span>,
+      render: (row) => <span className="text-slate-700 dark:text-slate-300">{row.enrolmentCount ?? row.enrolments?.length ?? 0}</span>,
     },
     { key: 'createdAt', header: 'Registered', render: (row) => formatDate(row.createdAt) },
     { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
@@ -187,6 +187,9 @@ export default function AdminStudents() {
               ? ' They will receive an activation SMS and can sign in immediately.'
               : ' They will lose access and be notified by SMS.'}
           </p>
+        )}
+        {statusMutation.isError && (
+          <p role="alert" className="mt-3 text-sm font-medium text-red-600 dark:text-red-400">{statusMutation.error.message}</p>
         )}
       </Modal>
     </>

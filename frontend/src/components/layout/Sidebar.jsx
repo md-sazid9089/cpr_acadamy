@@ -12,6 +12,8 @@ const ICONS = {
   play: 'M6 4l14 8-14 8z',
   calendar: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
   taka: 'M12 3v18M7 8h10M7 14h6',
+  chat: 'M4 5h16v11H8l-4 4z',
+  bell: 'M6 16V11a6 6 0 0112 0v5l2 2H4zM10 21h4',
 };
 
 function Icon({ name }) {
@@ -41,6 +43,8 @@ export const ADMIN_NAV = [
   { to: '/admin/students', label: 'Students', icon: 'users' },
   { to: '/admin/courses', label: 'Courses', icon: 'book' },
   { to: '/admin/revenue', label: 'Revenue', icon: 'taka' },
+  { to: '/admin/complaints', label: 'Complain Box', icon: 'chat' },
+  { to: '/admin/notices', label: 'Notices', icon: 'bell' },
   { to: '/admin/reports', label: 'Reports', icon: 'report' },
 ];
 

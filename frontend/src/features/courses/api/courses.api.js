@@ -1,31 +1,12 @@
-import { sleep } from '@/lib/utils';
-import { MOCK_COURSES, MOCK_CURRICULUM } from './mock-courses.js';
-// import apiClient from '@/lib/api-client';
+import apiClient from '@/lib/api-client';
 
 /**
- * Course data access. Every function currently resolves mock data after a short
- * delay so loading states are exercised.
- *
- * TODO: swap each body for the real request, e.g.
- *   const { data } = await apiClient.get('/courses', { params });
- *   return data;
+ * Public course catalogue. Facet filters travel as comma-separated query
+ * values; the backend splits them.
  */
 
-/**
- * A facet matches when nothing is selected (no filter applied) or when the
- * course's value is one of the selected ids.
- *
- * @param {string[] | undefined} selected
- * @param {string | undefined} value
- */
-function matchesFacet(selected, value) {
-  if (!selected?.length) return true;
-  return selected.includes(value);
-}
-
-/** Only published courses reach the public catalogue; drafts are admin-only. */
-function publicCourses() {
-  return MOCK_COURSES.filter((course) => course.status !== 'draft');
+function facet(list) {
+  return list?.length ? list.join(',') : undefined;
 }
 
 /**
@@ -38,56 +19,33 @@ function publicCourses() {
  * @param {string} [params.search]
  */
 export async function fetchCourses(params = {}) {
-  await sleep(350);
-
-  const { category, group, batchTypes, sessions, branches, search } = params;
-  let courses = publicCourses();
-
-  if (category && category !== 'ALL') {
-    courses = courses.filter((course) => course.category === category);
-  }
-
-  if (group) {
-    courses = courses.filter((course) => course.batchGroup === group);
-  }
-
-  courses = courses.filter(
-    (course) =>
-      matchesFacet(batchTypes, course.batchType) &&
-      matchesFacet(sessions, course.session) &&
-      matchesFacet(branches, course.branch),
-  );
-
-  if (search) {
-    const needle = search.toLowerCase();
-    courses = courses.filter(
-      (course) =>
-        course.title.toLowerCase().includes(needle) ||
-        course.subtitle.toLowerCase().includes(needle),
-    );
-  }
-
-  return courses;
+  const { data } = await apiClient.get('/courses', {
+    params: {
+      category: params.category && params.category !== 'ALL' ? params.category : undefined,
+      group: params.group || undefined,
+      search: params.search?.trim() || undefined,
+      batchTypes: facet(params.batchTypes),
+      sessions: facet(params.sessions),
+      branches: facet(params.branches),
+      limit: 100,
+    },
+  });
+  return data;
 }
 
 export async function fetchFeaturedCourses() {
-  await sleep(250);
-  return publicCourses().filter((course) => course.isFeatured);
+  const { data } = await apiClient.get('/courses', { params: { featured: 'true', limit: 12 } });
+  return data;
 }
 
 /** @param {string} slug */
 export async function fetchCourseBySlug(slug) {
-  await sleep(300);
-  const course = publicCourses().find((item) => item.slug === slug);
-  if (!course) {
-    throw { status: 404, code: 'COURSE_NOT_FOUND', message: 'This course could not be found.' };
-  }
-  return { ...course, curriculum: MOCK_CURRICULUM };
+  const { data } = await apiClient.get(`/courses/${encodeURIComponent(slug)}`);
+  return data;
 }
 
-/** @param {string} courseId */
+/** @param {string} courseId Creates the pending enrolment and returns where to pay. */
 export async function enrollInCourse(courseId) {
-  await sleep(400);
-  // TODO: POST /courses/:id/enroll — returns the checkout/invoice payload.
-  return { ok: true, courseId, redirectTo: '/dashboard/payments' };
+  const { data } = await apiClient.post(`/courses/${courseId}/enroll`);
+  return data;
 }

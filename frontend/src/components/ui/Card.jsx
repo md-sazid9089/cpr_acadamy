@@ -44,13 +44,13 @@ export function CardFooter({ className, children }) {
 /** Compact metric tile for dashboards. */
 export function StatCard({ label, value, hint, icon }) {
   return (
-    <Card className="p-5">
+    <Card className="border-2 p-6 shadow-md">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
-        {icon && <span className="text-brand-600 dark:text-brand-400">{icon}</span>}
+        <p className="text-base font-semibold text-slate-600 dark:text-slate-300">{label}</p>
+        {icon && <span className="text-2xl text-brand-600 dark:text-brand-400">{icon}</span>}
       </div>
-      <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
-      {hint && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
+      <p className="mt-3 text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">{value}</p>
+      {hint && <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">{hint}</p>}
     </Card>
   );
 }
