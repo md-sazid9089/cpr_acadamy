@@ -1,0 +1,28 @@
+{
+  "name": "cpr-academy-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "next dev --webpack --hostname 127.0.0.1 --port 3001",
+    "build": "next build --webpack",
+    "postbuild": "node scripts/prepare-standalone.js",
+    "start": "node --env-file-if-exists=.env scripts/start.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js",
+    "worker": "node --env-file-if-exists=.env scripts/worker.js",
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.js",
+    "admin:create": "node --env-file-if-exists=.env scripts/create-admin.js"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.3.16",
+    "next": "^16.3.4",
+    "pg": "^8.23.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.25.2"
+  }
+}
