@@ -1,14 +1,10 @@
 import { Link } from 'react-router-dom';
-
-/**
- * Promotional track cards — 2-in-a-row on mobile and 2-column on desktop.
- */
+import { FaArrowRightLong } from 'react-icons/fa6';
 
 const TRACK_CARDS = [
   {
     id: 'fcps',
     badge: 'FCPS',
-    badgeColor: 'bg-brand-600 text-white',
     headline: 'FCPS Part-1 ও Residency-র প্রস্তুতি নিতে চান?',
     subtitle: 'Phase A & B, Combined Batch — Online & Offline',
     cta: 'See Batches',
@@ -17,7 +13,7 @@ const TRACK_CARDS = [
   {
     id: 'bcs',
     badge: 'BCS Health',
-    badgeColor: 'bg-brand-500 text-white',
+    illustration: '/assets/bg/Doctors-amico.svg',
     headline: 'আপনি কি বিসিএস নিয়ে ভাবছেন?',
     subtitle: 'BCS (Health) written & viva preparation',
     cta: 'See Batches',
@@ -26,7 +22,7 @@ const TRACK_CARDS = [
   {
     id: 'mbbs',
     badge: 'MBBS',
-    badgeColor: 'bg-brand-100 text-brand-700',
+    illustration: '/assets/bg/Medical%20prescription-amico.svg',
     headline: 'MBBS Professional পরীক্ষার প্রস্তুতি নিন',
     subtitle: '1st–4th professional exam coaching',
     cta: 'See Batches',
@@ -35,7 +31,7 @@ const TRACK_CARDS = [
   {
     id: 'guidance',
     badge: 'Career',
-    badgeColor: 'bg-brand-800 text-white',
+    illustration: '/assets/bg/Online%20Doctor-rafiki.svg',
     headline: 'ক্যারিয়ার গাইডলাইন নিয়ে চিন্তিত?',
     subtitle: 'Free consultation with our expert mentors',
     cta: 'পরামর্শ নিন',
@@ -57,67 +53,46 @@ export default function TrackPromos() {
         className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-40 dark:opacity-20"
       />
       <div className="container-page">
-        {/* 2 in a row on all viewports (grid-cols-2) */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 sm:gap-6">
           {TRACK_CARDS.map((card) => (
             <Link
               key={card.id}
               to={card.ctaTo}
-              className="group relative flex min-h-[170px] flex-col justify-between overflow-hidden rounded-card bg-white p-4 border border-stone-200 transition-colors duration-300 sm:min-h-[260px] sm:p-8 lg:p-10 dark:bg-surface-dark"
+              className="group relative grid min-h-[260px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-center gap-3 overflow-hidden rounded-[6px] rounded-tl-[44px] rounded-br-[44px] border border-emerald-100 bg-[linear-gradient(115deg,#e5fff7_0%,#efffe9_55%,#cff7e2_100%)] p-5 transition-shadow duration-300 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700 sm:min-h-[300px] sm:gap-5 sm:p-8 xl:p-10"
             >
-              {/* Text content */}
-              <div className="relative z-10 flex flex-1 flex-col">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span
-                    className={`w-fit rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:px-3.5 sm:py-1 sm:text-xs ${card.badgeColor}`}
-                  >
-                    {card.badge}
-                  </span>
-                  <img
-                    src="/assets/bg/Medicine-amico.svg"
-                    alt=""
-                    aria-hidden="true"
-                    width={500}
-                    height={500}
-                    loading="lazy"
-                    decoding="async"
-                    className="pointer-events-none h-16 w-16 shrink-0 object-contain sm:h-24 sm:w-24"
-                  />
-                </div>
+              <div className="relative z-10 flex min-w-0 flex-col items-start">
+                <span className="rounded-full bg-[#ff3f87] px-3 py-1 text-xs font-bold leading-none text-white">
+                  {card.badge}
+                </span>
 
                 <h3
-                  className="mt-2.5 text-xs font-extrabold leading-tight tracking-tight text-stone-800 sm:mt-4 sm:text-xl lg:text-2xl dark:text-white"
+                  className="mt-4 text-lg font-extrabold leading-snug tracking-normal text-[#143b81] sm:text-xl xl:text-2xl"
                   lang="bn"
                 >
                   {card.headline}
                 </h3>
 
                 {card.subtitle && (
-                  <p className="mt-1 hidden text-[11px] font-medium tracking-wide text-stone-500 sm:mt-2 sm:block sm:text-sm lg:text-base dark:text-brand-200">
+                  <p className="mt-2 text-xs leading-relaxed text-[#365574] sm:text-sm">
                     {card.subtitle}
                   </p>
                 )}
-              </div>
 
-              {/* CTA button */}
-              <div className="relative z-10 mt-3 sm:mt-6">
-                <span className="inline-flex w-fit items-center gap-1.5 rounded-control bg-brand-700 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors group-hover:bg-brand-800 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm">
+                <span className="mt-5 inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-md border border-[#19479c] bg-[linear-gradient(135deg,#2452ad,#347deb)] px-3 py-2 text-xs font-semibold text-white transition-shadow group-hover:shadow-md sm:mt-6 sm:px-4 sm:text-sm">
                   <span>{card.cta}</span>
-                  <svg
-                    className="h-3 w-3 sm:h-4 sm:w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
+                  <FaArrowRightLong aria-hidden="true" className="h-3 w-3 shrink-0" />
                 </span>
               </div>
-
+              <img
+                src={card.illustration ?? '/assets/bg/Medicine-amico.svg'}
+                alt=""
+                aria-hidden="true"
+                width={500}
+                height={500}
+                loading="lazy"
+                decoding="async"
+                className="pointer-events-none aspect-square w-full object-contain"
+              />
             </Link>
           ))}
         </div>
