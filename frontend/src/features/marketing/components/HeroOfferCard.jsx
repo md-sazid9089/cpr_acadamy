@@ -32,11 +32,11 @@ export default function HeroOfferCard({
 }) {
   return (
     <Card className={cn('flex h-full w-full flex-col p-6', className)}>
-      <span className="inline-flex w-fit items-center rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 ring-1 ring-inset ring-brand-600/20 dark:bg-brand-950 dark:text-brand-300 dark:ring-brand-400/20">
+      <span className="inline-flex w-fit items-center rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 border border-stone-200 dark:bg-brand-950 dark:text-brand-300 ">
         {badge}
       </span>
 
-      <p className="mt-4 text-xl font-bold leading-snug text-slate-900 dark:text-white">{title}</p>
+      <p className="mt-4 text-xl font-bold leading-snug text-stone-900 dark:text-white">{title}</p>
 
       {highlight && (
         <p className="mt-2 text-base font-semibold text-brand-700 dark:text-brand-400">{highlight}</p>
@@ -44,7 +44,7 @@ export default function HeroOfferCard({
 
       {bullets.length > 0 && (
         // flex-1 lets the CTA sit against the bottom edge on tall layouts.
-        <ul className="mt-5 flex-1 space-y-2.5 text-sm text-slate-600 dark:text-slate-300">
+        <ul className="mt-5 flex-1 space-y-2.5 text-sm text-stone-600 dark:text-brand-200">
           {bullets.map((item) => (
             <li key={item} className="flex items-start gap-2">
               {/* Same checkmark treatment as the hero trust row. */}
@@ -66,12 +66,12 @@ export default function HeroOfferCard({
 
       {/* Button renders a router <Link> when given `to` — the codebase's
           standard internal-navigation pattern. */}
-      <Button to={ctaTo} size="lg" fullWidth className="mt-6">
+      <Button to={ctaTo} fullWidth className="mt-6">
         {ctaLabel}
       </Button>
 
       {footnote && (
-        <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-400">{footnote}</p>
+        <p className="mt-3 text-center text-xs text-stone-500 dark:text-brand-200">{footnote}</p>
       )}
     </Card>
   );

@@ -13,13 +13,13 @@ export default function ChatBubble() {
   return (
     <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
       {open && (
-        <div className="w-72 animate-fade-in overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-200 dark:bg-surface-dark-subtle dark:ring-slate-800">
+        <div className="w-72 animate-fade-in overflow-hidden rounded-2xl bg-white border border-stone-200 dark:bg-surface-dark-subtle ">
           <div className="bg-brand-600 px-4 py-3 text-white">
             <p className="text-sm font-semibold">CPR Medical Academy</p>
             <p className="text-xs text-brand-100">Typically replies within a few minutes</p>
           </div>
           <div className="space-y-3 p-4">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
+            <p className="text-sm text-stone-600 dark:text-brand-200">
               Questions about admission, batch timing or payment? Message us on WhatsApp or call the
               helpline.
             </p>
@@ -27,13 +27,13 @@ export default function ChatBubble() {
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-800"
             >
               Chat on WhatsApp
             </a>
             <a
               href={`tel:${CONTACT.phone.replace(/\s/g, '')}`}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-brand-500 hover:text-brand-700 dark:border-slate-700 dark:text-slate-200"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-semibold text-stone-700 transition-colors hover:border-stone-200 hover:text-brand-700 dark:border-stone-200 dark:text-brand-200"
             >
               Call {CONTACT.phone}
             </a>
@@ -46,7 +46,7 @@ export default function ChatBubble() {
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-label={open ? 'Close chat options' : 'Open chat options'}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+        className="flex h-14 w-14 items-center justify-center rounded-full border border-stone-200 bg-brand-600 text-white transition-colors hover:bg-brand-700"
       >
         {open ? (
           <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

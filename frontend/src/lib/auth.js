@@ -9,6 +9,20 @@ import {
 } from '@/constants';
 
 const isBrowser = typeof window !== 'undefined';
+const API_BASE = import.meta.env?.VITE_API_BASE_URL ?? '/api';
+
+/**
+ * Best-effort POST /auth/logout. Uses fetch rather than the axios client because
+ * api-client imports this module, and `keepalive` lets it finish during navigation.
+ */
+function revokeSession(token) {
+  if (!isBrowser) return;
+  fetch(`${API_BASE}/auth/logout`, {
+    method: 'POST',
+    keepalive: true,
+    headers: { Authorization: `Bearer ${token}`, 'X-Device-Id': getDeviceId(), 'Content-Type': 'application/json' },
+  }).catch(() => {});
+}
 
 /**
  * A stable per-browser id sent as `X-Device-Id`. The backend pins one active
@@ -65,7 +79,12 @@ export const useAuthStore = create(
 
       clearForcedLogout: () => set({ forcedLogoutReason: null }),
 
-      logout: () => set({ ...initialState }),
+      /** Clears local state at once and releases the server-side device lock in the background. */
+      logout: () => {
+        const token = get().accessToken;
+        set({ ...initialState });
+        if (token) revokeSession(token);
+      },
 
       /**
        * Called when the backend rejects our token because the account signed in

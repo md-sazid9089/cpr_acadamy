@@ -77,7 +77,7 @@ export default function ResetPassword() {
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
-        <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
+        <Button type="submit" fullWidth isLoading={isSubmitting}>
           Reset password
         </Button>
       </form>

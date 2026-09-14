@@ -1,5 +1,6 @@
 import Carousel from '@/components/ui/Carousel.jsx';
-import HeroRibbonBackground from '@/components/hero/HeroRibbonBackground.jsx';
+import Button from '@/components/ui/Button.jsx';
+import ValueProps from './ValueProps.jsx';
 
 /**
  * Promotional posters, served from `public/assets/carousel/`.
@@ -49,101 +50,76 @@ const CAROUSEL_SLIDES = [
   },
 ];
 
-/** Sub-heading shown above the carousel. Overridable via the `welcomeText` prop. */
-const WELCOME_TEXT = 'CPR Academy-তে আপনাকে স্বাগতম !';
-
-/** The word within WELCOME_TEXT picked out in brand green. */
-const WELCOME_HIGHLIGHT = 'স্বাগতম';
-
-/**
- * Splits `text` around the first occurrence of `highlight` so that one word can
- * carry the brand colour, keeping the heading a single translatable string.
- */
-function renderWelcome(text, highlight) {
-  if (!highlight || !text.includes(highlight)) return text;
-
-  const index = text.indexOf(highlight);
+export default function Hero() {
   return (
-    <>
-      {text.slice(0, index)}
-      <span className="text-brand-600 dark:text-brand-400">{highlight}</span>
-      {text.slice(index + highlight.length)}
-    </>
-  );
-}
-
-export default function Hero({
-  welcomeText = WELCOME_TEXT,
-  welcomeHighlight = WELCOME_HIGHLIGHT,
-  welcomeLang = 'bn',
-}) {
-  // `isolate` makes this section a stacking context, so the -z-10 decorative
-  // layers paint above its own background instead of disappearing behind it.
-  // The min-height fills the viewport below the announcement strip (~2.5rem);
-  // `svh` rather than `vh` so mobile browser chrome doesn't push the fold off.
-  return (
-    <section className="relative isolate min-h-[calc(88svh-2.5rem)] overflow-hidden bg-white dark:bg-surface-dark">
-      {/* Solid green panel + silk-ribbon swirls — the new component handles
-          its own mobile fallback (flat gradient) and dark-mode tuning. */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <HeroRibbonBackground className="h-full w-full" />
-      </div>
-
-      {/* pt-16 clears the navbar, which overlays this section (see
-          PublicLayout) so the ribbons run up behind the transparent bar. */}
-      <div className="container-page pb-6 pt-20 lg:pb-10 lg:pt-24">
+    <section className="homepage-hero hero-surface relative isolate flex flex-col items-center justify-center gap-6 overflow-hidden lg:gap-12">
+      <img
+        src="/assets/bg/Kerfin7-NEA-2128-1920.webp"
+        srcSet="/assets/bg/Kerfin7-NEA-2128-768.webp 768w, /assets/bg/Kerfin7-NEA-2128-1920.webp 1920w"
+        sizes="100vw"
+        alt=""
+        aria-hidden="true"
+        decoding="async"
+        className="pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover object-[70%_30%] opacity-20 dark:opacity-40"
+      />
+      <div className="container-page w-full pb-6 pt-20 lg:pb-10 lg:pt-24">
         {/* The visible hero is artwork, so the page's h1 is screen-reader only —
             without it the homepage would have no top-level heading at all. */}
         <h1 className="sr-only">
           CPR Medical Academy — FCPS, Residency, BCS and MBBS preparation in Chattogram
         </h1>
 
-        {/* Centred in the band above the carousel: the bottom margin matches the
-            section's top padding, so the line sits midway between the navbar and
-            the hero row. */}
-        {welcomeText && (
-          <h2
-            lang={welcomeLang}
-            className="mb-4 text-center text-2xl font-bold text-slate-800 sm:text-3xl lg:mb-6 dark:text-slate-200"
-          >
-            {renderWelcome(welcomeText, welcomeHighlight)}
-          </h2>
-        )}
+        {/* Two-column hero: marketing copy on the left, poster carousel card on
+            the right. Below lg the copy stacks above the card. */}
+        <div className="relative top-10 grid items-center gap-12 lg:top-16 lg:grid-cols-2 lg:gap-20">
+          <div className="text-center lg:text-left" lang="bn">
+            <h2 className="text-4xl font-extrabold leading-tight tracking-normal text-brand-900 sm:text-5xl lg:text-6xl dark:text-white">
+              আপনার সফলতার প্রস্তুতি শুরু হোক{' '}
+              <span className="text-brand-600 dark:text-brand-300">CPR</span>{' '}
+              থেকে
+            </h2>
 
-        {/* Primary row: mentor photo left, poster carousel right.
-            Below lg the photo is dropped and the carousel takes the full width —
-            stacking a tall portrait above the posters would push them off screen. */}
-        <div className="grid items-end gap-8 lg:grid-cols-2">
-          <div className="hidden lg:block">
-            <img
-              src="/assets/spotlight/profileb.png"
-              alt=""
-              aria-hidden="true"
-              // Negative bottom margin lets the portrait bleed into the
-              // section's padding; overflow-hidden on the section clips it.
-              // The photo is the tallest item in the row, so changing its
-              // margin resizes the row and drags the carousel with it.
-              // A transform lifts it on its own, leaving the layout alone.
-              className="-ml-4 -mb-10 max-h-[36rem] w-full -translate-y-8 object-contain object-left-bottom"
-            />
+            <p className="mx-auto mt-7 max-w-xl text-base font-medium text-stone-600 sm:text-lg lg:mx-0 dark:text-brand-200">
+              সরকারি চাকরি ও অন্যান্য প্রতিযোগিতামূলক পরীক্ষার জন্য সাজানো কোর্স থেকে আপনার
+              প্রয়োজন অনুযায়ী প্রস্তুতি শুরু করুন
+            </p>
+
+            <div className="button-group mt-10 items-stretch justify-center sm:items-center lg:justify-start">
+              <Button
+                to="/register"
+                variant="accent"
+                size="lg"
+                shape="pill"
+              >
+                প্রস্তুতি শুরু করুন
+              </Button>
+              <Button
+                to="/courses"
+                variant="outline"
+                size="lg"
+              >
+                কোর্সগুলো দেখুন
+              </Button>
+            </div>
           </div>
 
-          <div>
+          {/* Poster carousel card. */}
+          <div className="mx-auto w-full max-w-xl">
             <Carousel
               slides={CAROUSEL_SLIDES}
               interval={5000}
               fit="contain"
-              // Arrows off — the dots below still give manual control, so the
-              // posters aren't left autoplay-only.
-              showArrows={false}
-              // Portrait-ish on mobile where the column is full width, wider on
-              // desktop so the landscape brochure spreads stay legible.
-              aspectClassName="aspect-[3/4] sm:aspect-[4/3]"
+              // Landscape frame with side arrows, matching the reference card.
+              showArrows
+              frameClassName="rounded-2xl border border-stone-200 dark:border-stone-200"
+              // Wide landscape card on every viewport.
+              aspectClassName="aspect-[16/10]"
               label="Course promotions"
             />
           </div>
         </div>
       </div>
+      <ValueProps />
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { FaRegStar, FaStar } from 'react-icons/fa6';
@@ -6,20 +6,16 @@ import ExamTimer from './components/ExamTimer.jsx';
 import SbaQuestion from './components/SbaQuestion.jsx';
 import MtfQuestion from './components/MtfQuestion.jsx';
 import { fetchExamPaper, saveAnswer, submitExam } from './api/exams.api.js';
+import { answerState } from './answer-state.js';
+import { createAnswerQueue } from './answer-queue.js';
 import Card from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { QUESTION_TYPES } from '@/constants';
 import { cn } from '@/lib/utils';
-
-/** Has this question been answered at all? MTF counts any marked stem. */
-function isAnswered(answer) {
-  if (answer == null) return false;
-  if (typeof answer === 'string') return answer.length > 0;
-  return Object.keys(answer).length > 0;
-}
 
 /** Exam-taking screen at /dashboard/exams/:examId. */
 export default function ExamRunner() {
@@ -30,36 +26,74 @@ export default function ExamRunner() {
   const [index, setIndex] = useState(0);
   const [flagged, setFlagged] = useState(() => new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('saved');
+  const queue = useRef(null);
 
-  const { data: paper, isLoading } = useQuery({
+  useEffect(() => {
+    const autosave = createAnswerQueue(payload => saveAnswer({ examId, ...payload }), setSaveStatus);
+    queue.current = autosave;
+    const retry = () => { if (autosave.hasPending) void autosave.flush(); };
+    const warn = (event) => {
+      if (autosave.hasPending) { event.preventDefault(); event.returnValue = ''; }
+    };
+    const timer = window.setInterval(retry, 5000);
+    window.addEventListener('online', retry);
+    window.addEventListener('beforeunload', warn);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('online', retry);
+      window.removeEventListener('beforeunload', warn);
+      autosave.dispose();
+    };
+  }, [examId]);
+
+  const { data: paper, isLoading, error } = useQuery({
     queryKey: ['exams', 'paper', examId],
     queryFn: () => fetchExamPaper(examId),
     enabled: Boolean(examId),
     // A paper must not be refetched mid-attempt — that would reshuffle state.
     staleTime: Infinity,
     refetchOnWindowFocus: false,
+    retry: false,
   });
 
+  // Resuming an attempt restores the answers already autosaved server-side.
+  useEffect(() => {
+    if (paper?.answers) setAnswers(paper.answers);
+  }, [paper]);
+
+  // A paper that was already handed in has nothing left to answer.
+  useEffect(() => {
+    if (error?.code === 'ALREADY_SUBMITTED') navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+  }, [error, examId, navigate]);
+
   const submitMutation = useMutation({
-    mutationFn: submitExam,
-    onSuccess: () => navigate(`/dashboard/exams/${examId}/result`, { replace: true }),
+    mutationFn: async (payload) => {
+      await queue.current?.flush();
+      return submitExam(payload);
+    },
+    onSuccess: () => {
+      queue.current?.dispose();
+      navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+    },
+    onError: (failure) => {
+      if (failure.code === 'ALREADY_SUBMITTED') navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+    },
   });
 
   const questions = paper?.questions ?? [];
   const current = questions[index];
 
   const answeredCount = useMemo(
-    () => questions.filter((question) => isAnswered(answers[question.id])).length,
+    () => questions.filter((question) => answerState(question, answers[question.id]) === 'answered').length,
     [questions, answers],
   );
+  const partialCount = questions.filter(question => answerState(question, answers[question.id]) === 'partial').length;
 
   const handleAnswer = useCallback(
     (questionId, answer) => {
       setAnswers((previous) => ({ ...previous, [questionId]: answer }));
-      // Autosave so a dropped connection doesn't lose the attempt.
-      saveAnswer({ examId, questionId, answer }).catch(() => {
-        /* TODO: queue and retry once the API is real. */
-      });
+      queue.current?.enqueue(questionId, answer);
     },
     [examId],
   );
@@ -77,11 +111,19 @@ export default function ExamRunner() {
     });
   };
 
+  if (error && error.code !== 'ALREADY_SUBMITTED') {
+    return (
+      <EmptyState
+        title="This exam is not available"
+        description={error.message}
+        action={<Button to="/dashboard/exams">Back to exams</Button>}
+      />
+    );
+  }
+
   if (isLoading || !current) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading exam paper…" />
-      </div>
+      <ContentSkeleton variant="exam" label="Loading exam paper" />
     );
   }
 
@@ -90,10 +132,10 @@ export default function ExamRunner() {
       <div className="space-y-5 lg:col-span-3">
         <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
           <div>
-            <h1 className="text-base font-bold text-slate-900 dark:text-white">{paper.title}</h1>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <h1 className="text-base font-bold text-stone-900 dark:text-white">{paper.title}</h1>
+            <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">
               {questions.length} questions · {paper.totalMarks} marks
-              {paper.negativeMarking ? ` · −${paper.negativeMarking} per wrong answer` : ''}
+              {paper.negativeMarking ? ` · ${paper.negativeMarking}% deduction per wrong answer` : ' · No negative marking'}
             </p>
           </div>
 
@@ -104,6 +146,12 @@ export default function ExamRunner() {
             onExpire={handleSubmit}
           />
         </Card>
+
+        <div role="status" aria-live="polite" className={saveStatus === 'error' ? 'text-sm text-red-700' : 'text-sm text-stone-600 dark:text-brand-200'}>
+          {saveStatus === 'error' ? 'Answers not saved. Retrying...' : saveStatus === 'saving' ? 'Saving answers...' : 'All answers saved'}
+          {saveStatus === 'error' && <Button size="sm" variant="outline" onClick={() => queue.current?.flush()} className="ml-3">Retry now</Button>}
+        </div>
+        {submitMutation.isError && <p role="alert" className="text-sm text-red-700">Submission failed: {submitMutation.error.message}</p>}
 
         <Card className="p-6">
           <div className="flex items-start justify-between gap-4">
@@ -120,8 +168,8 @@ export default function ExamRunner() {
               className={cn(
                 'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors',
                 flagged.has(current.id)
-                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+                  ? 'bg-brand-100 text-brand-800 dark:bg-brand-950 dark:text-brand-300'
+                  : 'bg-stone-100 text-stone-600 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               <span className="flex items-center gap-1.5">
@@ -138,11 +186,12 @@ export default function ExamRunner() {
             </button>
           </div>
 
-          <p className="mt-4 text-sm leading-relaxed text-slate-800 dark:text-slate-200">
+          <p className="mt-4 text-sm leading-relaxed text-stone-800 dark:text-brand-200">
             {current.stem}
           </p>
+          {current.imageUrl && <a href={current.imageUrl} target="_blank" rel="noreferrer" className="mt-4 block"><img src={current.imageUrl} alt={`Question ${index + 1} clinical image`} className="max-h-[32rem] w-full object-contain" /></a>}
 
-          <div className="mt-5">
+          <fieldset disabled={submitMutation.isPending} className="mt-5">
             {current.type === QUESTION_TYPES.SBA ? (
               <SbaQuestion
                 question={current}
@@ -156,9 +205,9 @@ export default function ExamRunner() {
                 onChange={(next) => handleAnswer(current.id, next)}
               />
             )}
-          </div>
+          </fieldset>
 
-          <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-5 dark:border-slate-800">
+          <div className="mt-6 flex items-center justify-between gap-3 border-t border-stone-200 pt-5 dark:border-stone-200">
             <Button
               variant="outline"
               disabled={index === 0}
@@ -180,28 +229,32 @@ export default function ExamRunner() {
 
       <aside>
         <Card className="sticky top-24 p-5">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">Question palette</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            {answeredCount} of {questions.length} answered
+          <p className="text-sm font-semibold text-stone-900 dark:text-white">Question palette</p>
+          <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">
+            {answeredCount} of {questions.length} answered · {partialCount} partial
           </p>
 
           <div className="mt-4 grid grid-cols-5 gap-2">
             {questions.map((question, questionIndex) => {
-              const answered = isAnswered(answers[question.id]);
+              const state = answerState(question, answers[question.id]);
               return (
                 <button
                   key={question.id}
                   type="button"
+                  aria-label={`Question ${questionIndex + 1}: ${state}${flagged.has(question.id) ? ', flagged' : ''}`}
+                  aria-current={questionIndex === index ? 'step' : undefined}
+                  title={`${state}${flagged.has(question.id) ? ', flagged' : ''}`}
+                  data-answer-state={state}
                   onClick={() => setIndex(questionIndex)}
                   className={cn(
                     'flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold transition-colors',
-                    questionIndex === index
-                      ? 'bg-brand-600 text-white'
-                      : flagged.has(question.id)
-                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                        : answered
+                    questionIndex === index && 'ring-2 ring-brand-600 ring-offset-2',
+                    flagged.has(question.id) && 'underline decoration-2 underline-offset-4',
+                    state === 'partial'
+                      ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
+                      : state === 'answered'
                           ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
-                          : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+                          : 'bg-stone-100 text-stone-500 dark:bg-surface-dark dark:text-brand-200',
                   )}
                 >
                   {questionIndex + 1}
@@ -232,8 +285,9 @@ export default function ExamRunner() {
           </>
         }
       >
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-stone-600 dark:text-brand-200">
           You have answered <strong>{answeredCount}</strong> of {questions.length} questions
+          {partialCount > 0 && `, with ${partialCount} partially answered`}
           {flagged.size > 0 && `, with ${flagged.size} flagged for review`}.
         </p>
       </Modal>

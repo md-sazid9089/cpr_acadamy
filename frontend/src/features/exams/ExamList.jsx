@@ -3,7 +3,7 @@ import { fetchExamList } from './api/exams.api.js';
 import Card from '@/components/ui/Card.jsx';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { EXAM_STATUS } from '@/constants';
 import { formatDateTime } from '@/lib/utils';
@@ -19,9 +19,7 @@ export default function ExamList() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading exams…" />
-      </div>
+      <ContentSkeleton label="Loading exams" />
     );
   }
 
@@ -38,10 +36,10 @@ export default function ExamList() {
               <Badge tone="neutral">{TYPE_LABELS[exam.type]}</Badge>
               <StatusBadge status={exam.status} />
             </div>
-            <h2 className="mt-2 text-base font-semibold text-slate-900 dark:text-white">
+            <h2 className="mt-2 text-base font-semibold text-stone-900 dark:text-white">
               {exam.title}
             </h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">
               {formatDateTime(exam.scheduledAt)} · {exam.questionCount} questions ·{' '}
               {exam.durationMinutes} min · {exam.totalMarks} marks
             </p>

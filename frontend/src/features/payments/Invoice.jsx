@@ -1,12 +1,15 @@
 import { useParams } from 'react-router-dom';
+import { FaArrowLeft, FaPrint } from 'react-icons/fa6';
 import { useQuery } from '@tanstack/react-query';
 import { fetchInvoice } from './api/payments.api.js';
 import Card from '@/components/ui/Card.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import { PAYMENT_METHODS, CONTACT } from '@/constants';
 import { formatBDT, formatDate } from '@/lib/utils';
+import './payments.css';
 
 const methodLabel = (id) => PAYMENT_METHODS.find((method) => method.id === id)?.label ?? id;
 
@@ -14,101 +17,128 @@ const methodLabel = (id) => PAYMENT_METHODS.find((method) => method.id === id)?.
 export default function Invoice() {
   const { invoiceId } = useParams();
 
-  const { data: invoice, isLoading } = useQuery({
+  const { data: invoice, isLoading, isError, error } = useQuery({
     queryKey: ['payments', 'invoice', invoiceId],
     queryFn: () => fetchInvoice(invoiceId),
     enabled: Boolean(invoiceId),
+    retry: (count, failure) => failure?.status !== 404 && count < 2,
   });
 
-  if (isLoading || !invoice) {
+  if (isError || (!isLoading && !invoice)) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading invoice…" />
-      </div>
+      <EmptyState
+        title="Invoice not found"
+        description={error?.status === 404 ? 'This invoice does not exist or belongs to another account.' : error?.message}
+        action={<Button to="/dashboard/payments">Payment history</Button>}
+      />
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <ContentSkeleton variant="table" label="Loading invoice" />
     );
   }
 
   const subtotal = invoice.lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+  const isPending = invoice.status === 'pending';
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <div className="flex justify-end gap-3 print:hidden">
+    <div className="invoice-page mx-auto max-w-3xl space-y-4">
+      <div className="invoice-toolbar flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Button to="/dashboard/payments" variant="outline">
-          Back
+          <FaArrowLeft aria-hidden="true" /> Payment history
         </Button>
-        <Button onClick={() => window.print()}>Print / save PDF</Button>
+        <Button onClick={() => window.print()}><FaPrint aria-hidden="true" /> Print / save PDF</Button>
       </div>
 
-      <Card className="p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-6 dark:border-slate-800">
-          <div>
-            <p className="text-lg font-extrabold text-slate-900 dark:text-white">
+      {isPending && (
+        <Card className="invoice-payment-notice border-stone-200 bg-brand-50 p-5 text-sm text-brand-900 print:hidden dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-100">
+          <p className="font-semibold">Awaiting your payment</p>
+          <p className="mt-1">
+            Send <strong>{formatBDT(invoice.total)}</strong> to the academy ({CONTACT.phone}) by bKash, Nagad, Rocket or bank
+            transfer using <strong>{invoice.invoiceNo}</strong> as the reference, then share the transaction ID on WhatsApp
+            ({CONTACT.whatsapp}). Your access opens the moment an administrator confirms it.
+          </p>
+        </Card>
+      )}
+
+      <Card className="invoice-document p-5 sm:p-8">
+        <div className="invoice-heading flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 pb-6 dark:border-stone-200">
+          <div className="invoice-brand">
+            <img src="/assets/spotlight/cpr-logo.png" alt="CPR Medical Academy logo" width="52" height="52" className="invoice-logo" />
+            <div>
+            <p className="text-lg font-extrabold text-stone-900 dark:text-white">
               CPR <span className="text-brand-600 dark:text-brand-400">Medical Academy</span>
             </p>
-            <p className="mt-1 max-w-xs text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1 max-w-xs text-xs text-stone-500 dark:text-brand-200">
               {CONTACT.address}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{CONTACT.email}</p>
+            <p className="text-xs text-stone-500 dark:text-brand-200">{CONTACT.email}</p>
+            </div>
           </div>
 
-          <div className="text-right">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">
-              Invoice {invoice.invoiceNo}
+          <div className="invoice-reference">
+            <h1 className="text-lg font-bold">Invoice</h1>
+            <p className="invoice-full-id text-xs font-semibold text-stone-900 dark:text-white">
+              {invoice.invoiceNo}
             </p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">
               Issued {formatDate(invoice.issuedAt)}
             </p>
+            {invoice.paidAt && <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">Paid {formatDate(invoice.paidAt)}</p>}
             <div className="mt-2">
               <StatusBadge status={invoice.status} />
             </div>
           </div>
         </div>
 
-        <div className="grid gap-6 py-6 sm:grid-cols-2">
+        <div className="invoice-parties grid gap-6 py-6 sm:grid-cols-2">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Billed to</p>
-            <p className="mt-1 text-sm font-medium text-slate-900 dark:text-white">
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">Billed to</p>
+            <p className="mt-1 text-sm font-medium text-stone-900 dark:text-white">
               {invoice.billedTo.name}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{invoice.billedTo.mobile}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {invoice.billedTo.institution}
-            </p>
+            <p className="text-xs text-stone-500 dark:text-brand-200">{invoice.billedTo.mobile}</p>
+            {invoice.billedTo.institution && <p className="text-xs text-stone-500 dark:text-brand-200">
+              Institution: {invoice.billedTo.institution}
+            </p>}
           </div>
 
           <div className="sm:text-right">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Payment</p>
-            <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">Payment</p>
+            <p className="mt-1 text-sm text-stone-700 dark:text-brand-200">
               {methodLabel(invoice.method)}
             </p>
             {invoice.transactionId && (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Txn {invoice.transactionId}
+              <p className="text-xs text-stone-500 dark:text-brand-200">
+                Transaction ID: {invoice.transactionId}
               </p>
             )}
           </div>
         </div>
 
-        <table className="w-full text-sm">
+        <table className="invoice-lines w-full text-sm">
+          <colgroup><col /><col style={{ width: '3rem' }} /><col style={{ width: '30%' }} /></colgroup>
           <thead>
-            <tr className="border-y border-slate-200 text-left dark:border-slate-800">
-              <th className="py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <tr className="border-y border-stone-200 text-left dark:border-stone-200">
+              <th className="py-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
                 Description
               </th>
-              <th className="py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <th className="py-2 text-right text-xs font-semibold uppercase tracking-wide text-stone-500">
                 Qty
               </th>
-              <th className="py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <th className="py-2 text-right text-xs font-semibold uppercase tracking-wide text-stone-500">
                 Amount
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-stone-200 dark:divide-stone-200">
             {invoice.lines.map((line) => (
               <tr key={line.id}>
-                <td className="py-3 text-slate-700 dark:text-slate-300">{line.description}</td>
-                <td className="py-3 text-right text-slate-700 dark:text-slate-300">{line.quantity}</td>
-                <td className="py-3 text-right text-slate-700 dark:text-slate-300">
+                <td className="py-3 text-stone-700 dark:text-brand-200">{line.description}</td>
+                <td className="py-3 text-right text-stone-700 dark:text-brand-200">{line.quantity}</td>
+                <td className="py-3 text-right text-stone-700 dark:text-brand-200">
                   {formatBDT(line.unitPrice * line.quantity)}
                 </td>
               </tr>
@@ -118,22 +148,22 @@ export default function Invoice() {
 
         <dl className="mt-6 ml-auto max-w-xs space-y-2 text-sm">
           <div className="flex justify-between">
-            <dt className="text-slate-500 dark:text-slate-400">Subtotal</dt>
-            <dd className="text-slate-800 dark:text-slate-200">{formatBDT(subtotal)}</dd>
+            <dt className="text-stone-500 dark:text-brand-200">Subtotal</dt>
+            <dd className="text-stone-800 dark:text-brand-200">{formatBDT(subtotal)}</dd>
           </div>
           {invoice.discount > 0 && (
             <div className="flex justify-between">
-              <dt className="text-slate-500 dark:text-slate-400">Discount</dt>
-              <dd className="text-emerald-600 dark:text-emerald-400">−{formatBDT(invoice.discount)}</dd>
+              <dt className="text-stone-500 dark:text-brand-200">Discount</dt>
+              <dd className="text-brand-600 dark:text-brand-400">−{formatBDT(invoice.discount)}</dd>
             </div>
           )}
-          <div className="flex justify-between border-t border-slate-200 pt-2 text-base font-bold dark:border-slate-800">
-            <dt className="text-slate-900 dark:text-white">Total paid</dt>
+          <div className="flex justify-between border-t border-stone-200 pt-2 text-base font-bold dark:border-stone-200">
+            <dt className="text-stone-900 dark:text-white">{invoice.status === 'paid' ? 'Total paid' : invoice.status === 'refunded' ? 'Total refunded' : invoice.status === 'pending' ? 'Total due' : 'Invoice total'}</dt>
             <dd className="text-brand-700 dark:text-brand-400">{formatBDT(invoice.total)}</dd>
           </div>
         </dl>
 
-        <p className="mt-8 border-t border-slate-200 pt-4 text-center text-xs text-slate-400 dark:border-slate-800">
+        <p className="mt-8 border-t border-stone-200 pt-4 text-center text-xs text-stone-400 dark:border-stone-200">
           This is a computer-generated invoice and does not require a signature.
         </p>
       </Card>

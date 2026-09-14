@@ -51,7 +51,7 @@ export default function ForgotPassword() {
           error={errors.mobile?.message}
           {...register('mobile')}
         />
-        <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
+        <Button type="submit" fullWidth isLoading={isSubmitting}>
           Send reset code
         </Button>
       </form>

@@ -1,34 +1,24 @@
-import { forwardRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const VARIANTS = {
   primary:
-    'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 dark:bg-brand-500 dark:hover:bg-brand-600',
+    'bg-brand-700 text-white hover:bg-brand-800 active:bg-brand-950',
   secondary:
-    'bg-brand-50 text-brand-800 hover:bg-brand-100 dark:bg-brand-950 dark:text-brand-200 dark:hover:bg-brand-900',
+    'bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800',
   outline:
-    'border border-slate-300 bg-white text-slate-700 hover:border-brand-500 hover:text-brand-700 dark:border-slate-700 dark:bg-transparent dark:text-slate-200 dark:hover:border-brand-500 dark:hover:text-brand-300',
+    'border border-solid border-stone-200 bg-white text-brand-600 hover:border-stone-200 hover:text-brand-700 dark:border-stone-200 dark:bg-transparent dark:text-brand-200 dark:hover:border-stone-200 dark:hover:text-brand-300',
   ghost:
-    'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
-  danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
-  // Promo pair: a solid neutral and the warm `accent` token from the theme.
+    'text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-brand-200 dark:hover:bg-surface-dark dark:hover:text-white',
+  danger: 'border border-stone-200 bg-white text-red-600 hover:bg-red-50 dark:bg-surface-dark dark:text-brand-200',
   contrast:
-    'bg-slate-900 text-white hover:bg-slate-800 active:bg-slate-950 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white',
+    'bg-brand-700 text-white hover:bg-brand-800 active:bg-brand-950',
   accent:
-    'bg-accent-500 text-accent-950 hover:bg-accent-400 active:bg-accent-600 dark:bg-accent-500 dark:text-accent-950 dark:hover:bg-accent-400',
-  // For use on the dark green hero/CTA bands, where the surrounding colour is
-  // the same in both themes — so these must not flip with dark mode.
+    'ui-button-cta bg-accent-500 text-white hover:bg-accent-600 active:bg-accent-700',
   inverse: 'bg-white text-brand-800 hover:bg-brand-50 dark:bg-white dark:text-brand-800 dark:hover:bg-brand-50',
   'inverse-outline':
-    'border border-white/40 bg-transparent text-white hover:border-white dark:border-white/40 dark:bg-transparent dark:text-white dark:hover:border-white',
-};
-
-const SIZES = {
-  sm: 'h-9 px-3 text-sm gap-1.5',
-  md: 'h-10 px-4 text-sm gap-2',
-  lg: 'h-12 px-6 text-base gap-2',
-  icon: 'h-10 w-10',
+    'border border-stone-200 bg-transparent text-white hover:border-stone-200 dark:border-stone-200 dark:bg-transparent dark:text-white dark:hover:border-stone-200',
 };
 
 /**
@@ -39,6 +29,7 @@ const Button = forwardRef(function Button(
   {
     variant = 'primary',
     size = 'md',
+    shape = 'rounded',
     className,
     isLoading = false,
     disabled,
@@ -50,11 +41,30 @@ const Button = forwardRef(function Button(
   },
   ref,
 ) {
+  const elementRef = useRef(null);
+  const labelRef = useRef(null);
+  const [isPill, setIsPill] = useState(false);
+  useImperativeHandle(ref, () => elementRef.current);
+
+  useEffect(() => {
+    if (shape !== 'pill') return;
+    const label = labelRef.current;
+    const updateShape = () => {
+      const words = label.textContent.trim().split(/\s+/).filter(Boolean);
+      const lineHeight = parseFloat(getComputedStyle(label).lineHeight);
+      setIsPill(words.length <= 3 && label.getBoundingClientRect().height < lineHeight * 1.5);
+    };
+    const observer = new ResizeObserver(updateShape);
+    observer.observe(label);
+    updateShape();
+    return () => observer.disconnect();
+  }, [shape, children, isLoading, disabled]);
+
   const classes = cn(
-    'inline-flex items-center justify-center rounded-lg font-semibold transition-colors duration-150',
+    'ui-button inline-flex items-center justify-center border border-stone-200 text-center font-semibold transition-colors duration-150',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-light dark:focus-visible:ring-brand-300 dark:focus-visible:ring-offset-surface-dark',
     'disabled:pointer-events-none disabled:opacity-50',
     VARIANTS[variant] ?? VARIANTS.primary,
-    SIZES[size] ?? SIZES.md,
     fullWidth && 'w-full',
     className,
   );
@@ -71,7 +81,7 @@ const Button = forwardRef(function Button(
           />
         </svg>
       )}
-      {children}
+      {shape === 'pill' ? <span ref={labelRef} className="min-w-0">{children}</span> : children}
     </>
   );
 
@@ -80,7 +90,7 @@ const Button = forwardRef(function Button(
 
   if (to && !isInert) {
     return (
-      <Link ref={ref} to={to} className={classes} {...props}>
+      <Link ref={elementRef} to={to} className={classes} {...props} data-size={size} data-pill={shape === 'pill' && isPill}>
         {content}
       </Link>
     );
@@ -88,14 +98,14 @@ const Button = forwardRef(function Button(
 
   if (href && !isInert) {
     return (
-      <a ref={ref} href={href} className={classes} {...props}>
+      <a ref={elementRef} href={href} className={classes} {...props} data-size={size} data-pill={shape === 'pill' && isPill}>
         {content}
       </a>
     );
   }
 
   return (
-    <button ref={ref} className={classes} disabled={isInert} {...props}>
+    <button ref={elementRef} className={classes} disabled={isInert} {...props} data-size={size} data-pill={shape === 'pill' && isPill}>
       {content}
     </button>
   );

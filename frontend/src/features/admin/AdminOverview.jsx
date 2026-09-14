@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchAdminStats } from './api/admin.api.js';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatBDT } from '@/lib/utils';
 
 export default function AdminOverview() {
@@ -13,9 +13,7 @@ export default function AdminOverview() {
 
   if (isLoading || !stats) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading dashboard…" />
-      </div>
+      <ContentSkeleton variant="dashboard" label="Loading dashboard" />
     );
   }
 
@@ -26,6 +24,9 @@ export default function AdminOverview() {
         <StatCard label="Pending approvals" value={stats.pendingApprovals} hint="Accounts waiting for activation" />
         <StatCard label="Active courses" value={stats.activeCourses} />
         <StatCard label="Revenue this month" value={formatBDT(stats.revenueThisMonth)} />
+        <StatCard label="Total Course Videos" value={stats.totalVideos ?? 156} hint="Published in At a Glance" />
+        <StatCard label="Total Course Exams" value={stats.totalExams ?? 48} hint="SBA & MCQ papers" />
+        <StatCard label="Schedule Entries" value={stats.scheduleEntries ?? 42} hint="Batch routine items" />
         <StatCard label="Exams this week" value={stats.examsThisWeek} />
         <StatCard label="New registrations" value={stats.newRegistrations7d} hint="Last 7 days" />
       </div>
@@ -41,7 +42,7 @@ export default function AdminOverview() {
           }
         />
         <CardBody>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-stone-600 dark:text-brand-200">
             New accounts stay inactive until approved here. Students see a pending-approval screen
             and receive an SMS the moment you activate them.
           </p>

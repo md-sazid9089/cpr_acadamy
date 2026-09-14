@@ -1,15 +1,19 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { createBrowserRouter, Navigate, useParams } from 'react-router-dom';
 
 import PublicLayout from '@/components/layout/PublicLayout.jsx';
 import DashboardLayout from '@/components/layout/DashboardLayout.jsx';
 import ProtectedRoute from '@/features/auth/ProtectedRoute.jsx';
+// Straight from the module, not the barrel: importing from '@/components/ui'
+// pulls every primitive it re-exports into whichever chunk does the importing,
+// and this file is the entry chunk.
+import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import { ROLES } from '@/constants';
 
-// Marketing
+// Marketing pages stay in the entry chunk: they are what a first-time visitor
+// lands on, so splitting them would only add a round trip before first paint.
 import Home from '@/features/marketing/Home.jsx';
 import FAQ from '@/features/marketing/FAQ.jsx';
-import Contact from '@/features/marketing/Contact.jsx';
-import ClassRoutine from '@/features/marketing/ClassRoutine.jsx';
 import Gallery from '@/features/marketing/Gallery.jsx';
 import About from '@/features/marketing/About.jsx';
 import NotFound from '@/features/marketing/NotFound.jsx';
@@ -20,33 +24,77 @@ import CourseDetail from '@/features/courses/CourseDetail.jsx';
 import CourseSchedule from '@/features/courses/CourseSchedule.jsx';
 import Batches from '@/features/courses/Batches.jsx';
 
-// Auth
-import Login from '@/features/auth/Login.jsx';
-import Register from '@/features/auth/Register.jsx';
-import VerifyOtp from '@/features/auth/VerifyOtp.jsx';
-import PendingApproval from '@/features/auth/PendingApproval.jsx';
-import ForgotPassword from '@/features/auth/ForgotPassword.jsx';
-import ResetPassword from '@/features/auth/ResetPassword.jsx';
+// Contact is the one marketing page carrying a validated form, so it is the
+// only thing that pulled zod and react-hook-form — about 85 KB — into the entry
+// chunk that every visitor downloads. Split out, that cost falls on the people
+// who actually open it.
+const Contact = lazy(() => import('@/features/marketing/Contact.jsx'));
+
+// Everything below is behind a click — auth, the dashboards, the player — so it
+// is code-split and fetched only when the route is actually visited.
+const Login = lazy(() => import('@/features/auth/Login.jsx'));
+const Register = lazy(() => import('@/features/auth/Register.jsx'));
+const VerifyOtp = lazy(() => import('@/features/auth/VerifyOtp.jsx'));
+const PendingApproval = lazy(() => import('@/features/auth/PendingApproval.jsx'));
+const ForgotPassword = lazy(() => import('@/features/auth/ForgotPassword.jsx'));
+const ResetPassword = lazy(() => import('@/features/auth/ResetPassword.jsx'));
 
 // Student dashboard
-import Overview from '@/features/student-dashboard/Overview.jsx';
-import MyCourses from '@/features/student-dashboard/MyCourses.jsx';
-import Progress from '@/features/student-dashboard/Progress.jsx';
-import UpcomingExams from '@/features/student-dashboard/UpcomingExams.jsx';
-import PaymentHistory from '@/features/student-dashboard/PaymentHistory.jsx';
+const Overview = lazy(() => import('@/features/student-dashboard/Overview.jsx'));
+const MyCourses = lazy(() => import('@/features/student-dashboard/MyCourses.jsx'));
+const Progress = lazy(() => import('@/features/student-dashboard/Progress.jsx'));
+const UpcomingExams = lazy(() => import('@/features/student-dashboard/UpcomingExams.jsx'));
+const Notices = lazy(() => import('@/features/student-dashboard/Notices.jsx'));
+const PaymentHistory = lazy(() => import('@/features/student-dashboard/PaymentHistory.jsx'));
+const Subscriptions = lazy(() => import('@/features/student-dashboard/Subscriptions.jsx'));
+const SubscriptionDetail = lazy(() => import('@/features/student-dashboard/SubscriptionDetail.jsx'));
+const AddSubscription = lazy(() => import('@/features/student-dashboard/AddSubscription.jsx'));
+const MyAccount = lazy(() => import('@/features/student-dashboard/MyAccount.jsx'));
+const Complaints = lazy(() => import('@/features/student-dashboard/Complaints.jsx'));
+const ComplaintDetail = lazy(() => import('@/features/student-dashboard/ComplaintDetail.jsx'));
 
-// Learning, exams, payments
-import LessonPlayer from '@/features/learning/LessonPlayer.jsx';
-import ExamRunner from '@/features/exams/ExamRunner.jsx';
-import ExamResult from '@/features/exams/ExamResult.jsx';
-import Checkout from '@/features/payments/Checkout.jsx';
-import Invoice from '@/features/payments/Invoice.jsx';
+// Course hub & player
+const CourseHub = lazy(() => import('@/features/course-hub/CourseHub.jsx'));
+const CoursePlayer = lazy(() => import('@/pages/CoursePlayer.jsx'));
+
+// Exams, payments
+const ExamRunner = lazy(() => import('@/features/exams/ExamRunner.jsx'));
+const ExamResult = lazy(() => import('@/features/exams/ExamResult.jsx'));
+const ExamPositions = lazy(() => import('@/features/exams/ExamPositions.jsx'));
+const Checkout = lazy(() => import('@/features/payments/Checkout.jsx'));
+const Invoice = lazy(() => import('@/features/payments/Invoice.jsx'));
 
 // Admin
-import AdminOverview from '@/features/admin/AdminOverview.jsx';
-import AdminStudents from '@/features/admin/AdminStudents.jsx';
-import AdminCourses from '@/features/admin/AdminCourses.jsx';
-import AdminReports from '@/features/admin/AdminReports.jsx';
+const AdminOverview = lazy(() => import('@/features/admin/AdminOverview.jsx'));
+const AdminStudents = lazy(() => import('@/features/admin/AdminStudents.jsx'));
+const AdminStudentDetail = lazy(() => import('@/features/admin/AdminStudentDetail.jsx'));
+const AdminCourses = lazy(() => import('@/features/admin/AdminCourses.jsx'));
+const AdminRevenue = lazy(() => import('@/features/admin/AdminRevenue.jsx'));
+const AdminReports = lazy(() => import('@/features/admin/AdminReports.jsx'));
+const AdminComplaints = lazy(() => import('@/features/admin/AdminComplaints.jsx'));
+const AdminNotices = lazy(() => import('@/features/admin/AdminNotices.jsx'));
+// One course, built from tabs. Videos, exams and the routine hang off the course
+// so the admin never picks "which course?" from a dropdown.
+const CourseShell = lazy(() => import('@/features/admin/courses/CourseShell.jsx'));
+const CourseDetailTab = lazy(() => import('@/features/admin/courses/CourseDetailTab.jsx'));
+const CourseVideosTab = lazy(() => import('@/features/admin/courses/CourseVideosTab.jsx'));
+const CourseExamsTab = lazy(() => import('@/features/admin/courses/CourseExamsTab.jsx'));
+const ExamBuilder = lazy(() => import('@/features/admin/courses/ExamBuilder.jsx'));
+const CourseScheduleTab = lazy(() => import('@/features/admin/courses/CourseScheduleTab.jsx'));
+
+/**
+ * Wraps a lazily-imported page in its own Suspense boundary so only the routed
+ * page falls back to a skeleton — the surrounding layout stays on screen.
+ */
+function suspend(element, variant = 'list') {
+  return <Suspense fallback={<PageSkeleton variant={variant} />}>{element}</Suspense>;
+}
+
+/** Former module-based lesson list; classes now live on the course hub. */
+function LearnRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={`/dashboard/course/${slug}`} replace />;
+}
 
 /**
  * Route table.
@@ -55,7 +103,12 @@ import AdminReports from '@/features/admin/AdminReports.jsx';
  * chat bubble). /dashboard/* and /admin/* sit behind ProtectedRoute, which also
  * enforces the admin-approval gate before either shell mounts.
  */
-export const router = createBrowserRouter([
+const router = createBrowserRouter([
+  ...(import.meta.env.DEV ? [{
+    path: '/demo/exam-positions',
+    element: <DashboardLayout variant={ROLES.STUDENT} />,
+    children: [{ index: true, element: suspend(<ExamPositions demo />, 'table') }],
+  }] : []),
   {
     element: <PublicLayout />,
     errorElement: <NotFound />,
@@ -67,21 +120,27 @@ export const router = createBrowserRouter([
       { path: '/courses/:category/:slug/schedule', element: <CourseSchedule /> },
       { path: '/schedule', element: <CourseSchedule /> },
       { path: '/batches', element: <Batches /> },
-      { path: '/class', element: <ClassRoutine /> },
       { path: '/faq', element: <FAQ /> },
       { path: '/gallery', element: <Gallery /> },
       { path: '/about', element: <About /> },
-      { path: '/contact', element: <Contact /> },
+      { path: '/contact', element: suspend(<Contact />, 'form') },
 
-      { path: '/login', element: <Login /> },
-      { path: '/register', element: <Register /> },
-      { path: '/verify-otp', element: <VerifyOtp /> },
-      { path: '/pending-approval', element: <PendingApproval /> },
-      { path: '/forgot-password', element: <ForgotPassword /> },
-      { path: '/reset-password', element: <ResetPassword /> },
-
-      { path: '*', element: <NotFound /> },
+      { path: '/login', element: suspend(<Login />, 'form') },
+      { path: '/register', element: suspend(<Register />, 'form') },
+      { path: '/verify-otp', element: suspend(<VerifyOtp />, 'form') },
+      { path: '/pending-approval', element: suspend(<PendingApproval />, 'form') },
+      { path: '/forgot-password', element: suspend(<ForgotPassword />, 'form') },
+      { path: '/reset-password', element: suspend(<ResetPassword />, 'form') },
     ],
+  },
+  { path: '*', element: <NotFound /> },
+
+  // Full-bleed course player: the public chrome would only compete with the
+  // lesson, so it sits outside PublicLayout with its own auth guard.
+  {
+    path: '/learn/:courseSlug/:lessonId',
+    element: <ProtectedRoute role={ROLES.STUDENT}>{suspend(<CoursePlayer />, 'detail')}</ProtectedRoute>,
+    errorElement: <NotFound />,
   },
 
   {
@@ -92,16 +151,25 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Overview /> },
-      { path: 'courses', element: <MyCourses /> },
-      { path: 'progress', element: <Progress /> },
-      { path: 'exams', element: <UpcomingExams /> },
-      { path: 'exams/:examId', element: <ExamRunner /> },
-      { path: 'exams/:examId/result', element: <ExamResult /> },
-      { path: 'learn/:slug', element: <LessonPlayer /> },
-      { path: 'payments', element: <PaymentHistory /> },
-      { path: 'checkout/:slug', element: <Checkout /> },
-      { path: 'invoices/:invoiceId', element: <Invoice /> },
+      { index: true, element: suspend(<Overview />, 'dashboard') },
+      { path: 'courses', element: suspend(<MyCourses />, 'cards') },
+      { path: 'progress', element: suspend(<Progress />, 'dashboard') },
+      { path: 'course/:slug', element: suspend(<CourseHub />, 'detail') },
+      { path: 'exams', element: suspend(<UpcomingExams />) },
+      { path: 'exam-positions', element: suspend(<ExamPositions />, 'table') },
+      { path: 'exams/:examId', element: suspend(<ExamRunner />, 'exam') },
+      { path: 'exams/:examId/result', element: suspend(<ExamResult />) },
+      { path: 'learn/:slug', element: <LearnRedirect /> },
+      { path: 'notice', element: suspend(<Notices />) },
+      { path: 'payments', element: suspend(<PaymentHistory />, 'table') },
+      { path: 'account', element: suspend(<MyAccount />, 'form') },
+      { path: 'complaints', element: suspend(<Complaints />) },
+      { path: 'complaints/:complaintId', element: suspend(<ComplaintDetail />) },
+      { path: 'subscriptions', element: suspend(<Subscriptions />) },
+      { path: 'subscriptions/:batchId', element: suspend(<SubscriptionDetail />) },
+      { path: 'subscriptions/:batchId/add', element: suspend(<AddSubscription />) },
+      { path: 'checkout/:slug', element: suspend(<Checkout />, 'form') },
+      { path: 'invoices/:invoiceId', element: suspend(<Invoice />) },
       { path: '*', element: <Navigate to="/dashboard" replace /> },
     ],
   },
@@ -114,10 +182,31 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <AdminOverview /> },
-      { path: 'students', element: <AdminStudents /> },
-      { path: 'courses', element: <AdminCourses /> },
-      { path: 'reports', element: <AdminReports /> },
+      { index: true, element: suspend(<AdminOverview />, 'dashboard') },
+      { path: 'students', element: suspend(<AdminStudents />, 'table') },
+      { path: 'students/:studentId', element: suspend(<AdminStudentDetail />) },
+      { path: 'complaints', element: suspend(<AdminComplaints />) },
+      { path: 'notices', element: suspend(<AdminNotices />) },
+      { path: 'courses', element: suspend(<AdminCourses />, 'table') },
+      {
+        path: 'courses/:id',
+        element: suspend(<CourseShell />),
+        children: [
+          { index: true, element: <Navigate to="detail" replace /> },
+          { path: 'detail', element: suspend(<CourseDetailTab />) },
+          { path: 'videos', element: suspend(<CourseVideosTab />) },
+          { path: 'exams', element: suspend(<CourseExamsTab />) },
+          { path: 'exams/:examId', element: suspend(<ExamBuilder />) },
+          { path: 'schedule', element: suspend(<CourseScheduleTab />) },
+          { path: '*', element: <Navigate to="detail" replace /> },
+        ],
+      },
+      // Former top-level pages; anything bookmarked lands on the course list.
+      { path: 'videos', element: <Navigate to="/admin/courses" replace /> },
+      { path: 'exams', element: <Navigate to="/admin/courses" replace /> },
+      { path: 'schedules', element: <Navigate to="/admin/courses" replace /> },
+      { path: 'revenue', element: suspend(<AdminRevenue />, 'dashboard') },
+      { path: 'reports', element: suspend(<AdminReports />, 'dashboard') },
       { path: '*', element: <Navigate to="/admin" replace /> },
     ],
   },

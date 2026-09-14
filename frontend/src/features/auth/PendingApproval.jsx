@@ -23,6 +23,7 @@ const STEPS = [
  */
 export default function PendingApproval() {
   const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const pendingMobile = useAuthStore((s) => s.pendingMobile);
   const logout = useAuthStore((s) => s.logout);
   const setUser = useAuthStore((s) => s.setUser);
@@ -35,11 +36,11 @@ export default function PendingApproval() {
   const { refetch, isFetching } = useQuery({
     queryKey: ['auth', 'approval-status', mobile],
     queryFn: async () => {
-      const result = await fetchApprovalStatus(mobile);
+      const result = await fetchApprovalStatus();
       if (user && result.status !== user.status) setUser({ ...user, status: result.status });
       return result;
     },
-    enabled: Boolean(mobile) && !isRejected,
+    enabled: Boolean(accessToken && user) && !isRejected && status !== ACCOUNT_STATUS.ACTIVE,
     refetchInterval: 30_000,
   });
 
@@ -64,7 +65,7 @@ export default function PendingApproval() {
       }
     >
       <div className="mb-6 flex items-center gap-2">
-        <span className="text-sm text-slate-600 dark:text-slate-400">Status</span>
+        <span className="text-sm text-stone-600 dark:text-brand-200">Status</span>
         <Badge tone={isRejected ? 'danger' : 'warning'}>
           {isRejected ? 'Rejected' : 'Awaiting approval'}
         </Badge>
@@ -81,8 +82,8 @@ export default function PendingApproval() {
                   done
                     ? 'bg-brand-600 text-white'
                     : current
-                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                      : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
+                      ? 'bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
+                      : 'bg-stone-100 text-stone-400 dark:bg-surface-dark dark:text-brand-200'
                 }`}
               >
                 {done ? <FaCheck aria-hidden="true" className="h-3 w-3" /> : index + 1}
@@ -90,8 +91,8 @@ export default function PendingApproval() {
               <span
                 className={`text-sm ${
                   done || current
-                    ? 'font-medium text-slate-800 dark:text-slate-200'
-                    : 'text-slate-400 dark:text-slate-500'
+                    ? 'font-medium text-stone-800 dark:text-brand-200'
+                    : 'text-stone-400 dark:text-brand-200'
                 }`}
               >
                 {step.label}
@@ -102,7 +103,7 @@ export default function PendingApproval() {
       </ol>
 
       {!isRejected && (
-        <div className="mt-6 rounded-lg bg-surface-subtle p-4 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-400">
+        <div className="mt-6 rounded-lg bg-surface-subtle p-4 text-sm text-stone-600 dark:bg-surface-dark dark:text-brand-200">
           Approvals are usually completed within a few working hours (Saturday – Thursday,
           {` ${CONTACT.hours.split(', ')[1]}`}). You'll get an SMS as soon as your account is live.
         </div>
@@ -122,7 +123,7 @@ export default function PendingApproval() {
       <button
         type="button"
         onClick={logout}
-        className="mt-5 w-full text-center text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        className="mt-5 w-full text-center text-sm text-stone-500 hover:text-stone-700 dark:text-brand-200 dark:hover:text-brand-200"
       >
         Sign out
       </button>

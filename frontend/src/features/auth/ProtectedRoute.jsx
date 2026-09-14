@@ -12,9 +12,9 @@ import { ACCOUNT_STATUS } from '@/constants';
  *                               activated the account yet).
  *   3. Wrong role            -> bounced to that role's own home.
  *
- * Auth is intentionally thin for now: it trusts the persisted Zustand session.
- * TODO: revalidate against GET /auth/me on mount once the API exists, so a
- * revoked session is caught before any protected data is requested.
+ * Auth is intentionally thin: it trusts the persisted Zustand session for the
+ * first paint. AppProviders revalidates it against GET /auth/me on startup and
+ * the api-client logs out on any revoked-session response.
  *
  * @param {{ role?: 'student' | 'admin' | 'instructor', children?: import('react').ReactNode }} props
  */

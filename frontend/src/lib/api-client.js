@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FORCED_LOGOUT_REASONS } from '@/constants';
-import { getAccessToken, getDeviceId, handleForcedLogout } from '@/lib/auth';
+import { getAccessToken, getDeviceId, handleForcedLogout, useAuthStore } from '@/lib/auth';
 
 const BASE_URL = import.meta.env?.VITE_API_BASE_URL ?? '/api';
 
@@ -31,17 +31,51 @@ const SESSION_ENDING_CODES = {
   ACCOUNT_SUSPENDED: FORCED_LOGOUT_REASONS.ACCOUNT_SUSPENDED,
 };
 
+// One refresh in flight at a time; concurrent 401s all wait on the same promise.
+let refreshing = null;
+
+function refreshSession() {
+  refreshing ??= (async () => {
+    const { refreshToken } = useAuthStore.getState();
+    if (!refreshToken) throw new Error('No refresh token');
+    const { data } = await axios.post(
+      `${BASE_URL}/auth/refresh`,
+      { refreshToken },
+      { headers: { 'Content-Type': 'application/json', 'X-Device-Id': getDeviceId() }, timeout: 15000 },
+    );
+    useAuthStore.getState().setSession(data);
+    return data.accessToken;
+  })().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
     const code = error.response?.data?.code;
+    const config = error.config ?? {};
 
-    if (status === 401 || status === 419) {
-      handleForcedLogout(SESSION_ENDING_CODES[code] ?? FORCED_LOGOUT_REASONS.TOKEN_EXPIRED);
+    // An expired access token is transparently exchanged once; anything else
+    // that ends the session logs the user out. A 401 on the login form itself
+    // (INVALID_CREDENTIALS) is an ordinary error and must not trigger either.
+    if (status === 401 && code === 'TOKEN_EXPIRED' && !config._retried) {
+      try {
+        const token = await refreshSession();
+        config._retried = true;
+        config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
+        return apiClient.request(config);
+      } catch {
+        handleForcedLogout(FORCED_LOGOUT_REASONS.TOKEN_EXPIRED);
+      }
+    } else if (status === 401 && SESSION_ENDING_CODES[code]) {
+      handleForcedLogout(SESSION_ENDING_CODES[code]);
+    } else if (status === 401 && code === 'UNAUTHENTICATED' && getAccessToken()) {
+      handleForcedLogout(FORCED_LOGOUT_REASONS.TOKEN_EXPIRED);
     }
 
-    // TODO: add a refresh-token retry here once the backend exposes /auth/refresh.
     return Promise.reject(normalizeError(error));
   },
 );

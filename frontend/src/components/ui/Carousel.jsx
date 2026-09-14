@@ -22,6 +22,8 @@ import { cn } from '@/lib/utils';
  *   mixed or unknown aspect ratios — nothing is cropped, and the letterboxing is
  *   filled with a blurred copy of the same image.
  * @param {string} [props.className]
+ * @param {string} [props.frameClassName]  Overrides the slide-frame chrome
+ *   (rounding, border, shadow) so callers can give the carousel a custom shape.
  * @param {string} [props.label]  Accessible name for the carousel region.
  */
 export default function Carousel({
@@ -34,6 +36,7 @@ export default function Carousel({
   aspectClassName = 'aspect-[16/10]',
   fit = 'cover',
   className,
+  frameClassName = 'rounded-2xl border border-stone-200 dark:border-stone-200',
   label = 'Promotional highlights',
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop, align: 'start', skipSnaps: false });
@@ -91,7 +94,7 @@ export default function Carousel({
     >
       {/* Card chrome matches the Card primitive used by the rest of the site. */}
       <div
-        className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm dark:border-slate-800"
+        className={cn('overflow-hidden', frameClassName)}
         ref={emblaRef}
       >
         <div className="flex">
@@ -129,7 +132,7 @@ export default function Carousel({
                 'h-2 rounded-full transition-all duration-300',
                 index === selectedIndex
                   ? 'w-6 bg-brand-600 dark:bg-brand-400'
-                  : 'w-2 bg-slate-300 hover:bg-slate-400 dark:bg-slate-700 dark:hover:bg-slate-600',
+                  : 'w-2 bg-stone-300 hover:bg-stone-400 dark:bg-surface-dark dark:hover:bg-stone-600',
               )}
             />
           ))}
@@ -166,7 +169,7 @@ function CarouselSlide({ slide, aspectClassName, fit }) {
     return (
       <div
         className={cn(
-          'relative w-full overflow-hidden bg-slate-100 dark:bg-slate-900',
+          'relative w-full overflow-hidden bg-stone-100 dark:bg-surface-dark',
           aspectClassName,
         )}
       >
@@ -210,8 +213,8 @@ function CarouselArrow({ direction, onClick }) {
       className={cn(
         'absolute top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full',
         // Solid pill so the control stays legible over any poster artwork.
-        'bg-white/90 text-slate-700 shadow-sm ring-1 ring-slate-200 backdrop-blur transition-colors',
-        'hover:bg-white dark:bg-slate-900/80 dark:text-slate-200 dark:ring-slate-700 dark:hover:bg-slate-900',
+        'bg-white/90 text-stone-700 border border-stone-200 backdrop-blur transition-colors',
+        'hover:bg-white dark:bg-surface-dark dark:text-brand-200 dark:hover:bg-surface-dark',
         isPrev ? 'left-3' : 'right-3',
       )}
     >

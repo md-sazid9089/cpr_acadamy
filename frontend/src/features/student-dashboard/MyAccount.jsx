@@ -1,0 +1,33 @@
+import { useState } from 'react';
+import { FaUser, FaMobileScreen, FaShieldHalved } from 'react-icons/fa6';
+import DashboardPageHeader from './components/DashboardPageHeader.jsx';
+import DashboardTabs from './components/DashboardTabs.jsx';
+import ProfileTab from './components/account/ProfileTab.jsx';
+import DeviceTab from './components/account/DeviceTab.jsx';
+import SecurityTab from './components/account/SecurityTab.jsx';
+
+const TABS = [
+  { id: 'profile', label: 'My Profile', icon: FaUser, iconColor: 'text-brand-600' },
+  { id: 'device', label: 'My Device', icon: FaMobileScreen, iconColor: 'text-brand-600' },
+  { id: 'security', label: 'Security', icon: FaShieldHalved, iconColor: 'text-brand-600' },
+];
+
+const PANELS = { profile: ProfileTab, device: DeviceTab, security: SecurityTab };
+
+/** /dashboard/account — profile, bound devices and password, across three tabs. */
+export default function MyAccount() {
+  const [activeTab, setActiveTab] = useState('profile');
+  const Panel = PANELS[activeTab];
+
+  return (
+    <div className="space-y-6">
+      <DashboardPageHeader title="My Account" backTo="/dashboard" />
+
+      <DashboardTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
+
+      <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 dark:border-stone-200 dark:bg-surface-dark-subtle">
+        <Panel />
+      </div>
+    </div>
+  );
+}

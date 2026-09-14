@@ -16,11 +16,11 @@ export default function SecurePdfViewer({ title, pageCount = 14, watermark = 'CP
   const [page, setPage] = useState(1);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-surface-dark-subtle">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4 dark:border-slate-800">
+    <div className="rounded-xl border border-stone-200 bg-white dark:border-stone-200 dark:bg-surface-dark-subtle">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 p-4 dark:border-stone-200">
         <div>
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">{title}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-sm font-semibold text-stone-900 dark:text-white">{title}</p>
+          <p className="text-xs text-stone-500 dark:text-brand-200">
             Page {page} of {pageCount} · view only
           </p>
         </div>
@@ -50,7 +50,7 @@ export default function SecurePdfViewer({ title, pageCount = 14, watermark = 'CP
         onCopy={(event) => event.preventDefault()}
         className={cn(
           'relative flex aspect-[1/1.414] items-center justify-center overflow-hidden bg-surface-subtle',
-          'select-none-secure dark:bg-slate-900',
+          'select-none-secure dark:bg-surface-dark',
         )}
       >
         {/* Repeating diagonal watermark across the page area. */}
@@ -58,7 +58,7 @@ export default function SecurePdfViewer({ title, pageCount = 14, watermark = 'CP
           {Array.from({ length: 12 }).map((_, index) => (
             <span
               key={index}
-              className="whitespace-nowrap text-lg font-bold text-slate-900 dark:text-white"
+              className="whitespace-nowrap text-lg font-bold text-stone-900 dark:text-white"
               style={{ transform: 'rotate(-30deg)' }}
             >
               {watermark}
@@ -66,12 +66,12 @@ export default function SecurePdfViewer({ title, pageCount = 14, watermark = 'CP
           ))}
         </div>
 
-        <p className="relative text-sm text-slate-400">
+        <p className="relative text-sm text-stone-400">
           Secure PDF page {page} — renderer not connected yet
         </p>
       </div>
 
-      <p className="border-t border-slate-200 p-3 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+      <p className="border-t border-stone-200 p-3 text-center text-xs text-stone-500 dark:border-stone-200 dark:text-brand-200">
         This material is licensed to your account only. Sharing or redistributing it will suspend
         your access.
       </p>

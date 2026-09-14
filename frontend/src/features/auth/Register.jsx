@@ -55,6 +55,10 @@ export default function Register() {
     <AuthCard
       title="Create your account"
       description="Register with your mobile number. We'll send a verification code by SMS."
+      illustrations={[
+        { src: '/assets/bg/undraw_doctors_djoj.svg', width: 693, height: 597 },
+        { src: '/assets/bg/undraw_medicine_hqqg.svg', width: 1105, height: 783 },
+      ]}
       footer={
         <>
           Already registered?{' '}
@@ -142,10 +146,10 @@ export default function Register() {
           />
         </div>
 
-        <label className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-400">
+        <label className="flex items-start gap-2.5 text-sm text-stone-600 dark:text-brand-200">
           <input
             type="checkbox"
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800"
+            className="mt-0.5 h-4 w-4 rounded border-stone-200 text-brand-600 focus:ring-brand-500 dark:border-stone-200 dark:bg-surface-dark"
             {...register('acceptTerms')}
           />
           <span>
@@ -162,12 +166,12 @@ export default function Register() {
           </p>
         )}
 
-        <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
+        <Button type="submit" fullWidth isLoading={isSubmitting}>
           Send verification code
         </Button>
       </form>
 
-      <p className="mt-5 rounded-lg bg-surface-subtle p-3 text-xs text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+      <p className="mt-5 rounded-lg bg-surface-subtle p-3 text-xs text-stone-500 dark:bg-surface-dark dark:text-brand-200">
         After OTP verification an administrator reviews your registration. You'll receive an SMS
         once the account is activated — usually within a few working hours.
       </p>

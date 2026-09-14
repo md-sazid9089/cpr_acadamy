@@ -1,17 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchAdminReports } from './api/admin.api.js';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
-import { formatBDT } from '@/lib/utils';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
+import { formatBDT, formatNumber } from '@/lib/utils';
 
 export default function AdminReports() {
   const { data, isLoading } = useQuery({ queryKey: ['admin', 'reports'], queryFn: fetchAdminReports });
 
   if (isLoading || !data) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading reports…" />
-      </div>
+      <ContentSkeleton variant="dashboard" label="Loading reports" />
     );
   }
 
@@ -33,7 +31,7 @@ export default function AdminReports() {
           <div className="flex h-48 items-end justify-between gap-4">
             {data.revenueByMonth.map((month) => (
               <div key={month.month} className="flex flex-1 flex-col items-center gap-2">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                <span className="text-xs font-medium text-stone-500 dark:text-brand-200">
                   {Math.round(month.amount / 1000)}k
                 </span>
                 <div
@@ -41,7 +39,7 @@ export default function AdminReports() {
                   style={{ height: `${(month.amount / peakRevenue) * 100}%` }}
                   title={formatBDT(month.amount)}
                 />
-                <span className="text-xs text-slate-500 dark:text-slate-400">{month.month}</span>
+                <span className="text-xs text-stone-500 dark:text-brand-200">{month.month}</span>
               </div>
             ))}
           </div>
@@ -56,14 +54,14 @@ export default function AdminReports() {
             return (
               <div key={item.category}>
                 <div className="mb-1.5 flex justify-between text-sm">
-                  <span className="font-medium text-slate-700 dark:text-slate-300">
+                  <span className="font-medium text-stone-700 dark:text-brand-200">
                     {item.category}
                   </span>
-                  <span className="text-slate-500 dark:text-slate-400">
-                    {item.count.toLocaleString('en-BD')} ({share}%)
+                  <span className="text-stone-500 dark:text-brand-200">
+                    {formatNumber(item.count)} ({share}%)
                   </span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-surface-dark">
                   <div className="h-full rounded-full bg-brand-600" style={{ width: `${share}%` }} />
                 </div>
               </div>

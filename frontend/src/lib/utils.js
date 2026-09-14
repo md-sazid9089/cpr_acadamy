@@ -1,39 +1,56 @@
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { CLASS_DAYS } from '@/constants';
 
 /** Merge conditional class names, letting later Tailwind classes win. */
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
+// toLocaleString builds a fresh Intl formatter on every call, which is the
+// expensive part. A card grid calls these hundreds of times per render, so the
+// formatters are built once and reused.
+const BDT_FORMAT = new Intl.NumberFormat('en-BD');
+
+/** Group a plain count, e.g. 2140 -> '2,140'. Same formatter, no currency mark. */
+export function formatNumber(value) {
+  if (value == null) return '—';
+  return BDT_FORMAT.format(Number(value));
+}
+
 /** Format a number as Bangladeshi Taka, e.g. 4500 -> '৳4,500'. */
 export function formatBDT(amount) {
   if (amount == null) return '—';
-  return `৳${Number(amount).toLocaleString('en-BD')}`;
+  return `৳${BDT_FORMAT.format(Number(amount))}`;
 }
+
+const DATE_OPTIONS = { day: '2-digit', month: 'short', year: 'numeric' };
+const DATE_FORMAT = new Intl.DateTimeFormat('en-GB', DATE_OPTIONS);
 
 /** Format an ISO date as e.g. '12 Sep 2025'. */
 export function formatDate(iso, options) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    ...options,
-  });
+  // Only the default shape is cached; a caller passing overrides still gets a
+  // one-off formatter, which is rare enough not to matter.
+  const format = options
+    ? new Intl.DateTimeFormat('en-GB', { ...DATE_OPTIONS, ...options })
+    : DATE_FORMAT;
+  return format.format(new Date(iso));
 }
+
+const DATETIME_FORMAT = new Intl.DateTimeFormat('en-GB', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: true,
+});
 
 /** Format an ISO date-time as e.g. '12 Sep 2025, 08:00 PM'. */
 export function formatDateTime(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
+  return DATETIME_FORMAT.format(new Date(iso));
 }
 
 /** Seconds -> 'HH:MM:SS' (or 'MM:SS' under an hour), for exam timers. */
@@ -44,6 +61,30 @@ export function formatDuration(totalSeconds) {
   const seconds = s % 60;
   const pad = (n) => String(n).padStart(2, '0');
   return hours > 0 ? `${pad(hours)}:${pad(minutes)}:${pad(seconds)}` : `${pad(minutes)}:${pad(seconds)}`;
+}
+
+/** 'HH:mm' (24h, as a <input type="time"> emits) -> '08:00 PM'. */
+export function formatClockTime(hhmm) {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${String(hour12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
+/** { start: '20:00', end: '22:00' } -> '08:00 PM - 10:00 PM'. */
+export function formatTimeRange(range) {
+  if (!range?.start || !range?.end) return '—';
+  return `${formatClockTime(range.start)} - ${formatClockTime(range.end)}`;
+}
+
+/** ['sat','tue','thu'] -> 'SAT, TUE & THU', in week order regardless of input order. */
+export function formatClassDays(days) {
+  if (!days?.length) return '—';
+  const shorts = CLASS_DAYS.filter((day) => days.includes(day.id)).map((day) => day.short);
+  if (shorts.length <= 1) return shorts.join('');
+  return `${shorts.slice(0, -1).join(', ')} & ${shorts[shorts.length - 1]}`;
 }
 
 /** Mask a mobile number for display: '01712345678' -> '017****5678'. */

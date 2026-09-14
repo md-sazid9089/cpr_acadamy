@@ -50,7 +50,7 @@ export default function CourseSpotlight({
   return (
     <section
       className={cn(
-        'relative overflow-hidden bg-white dark:bg-surface-dark',
+        'relative overflow-hidden bg-surface-light dark:bg-surface-dark',
         className,
       )}
     >
@@ -85,20 +85,20 @@ export default function CourseSpotlight({
           )}
 
           <div className="py-10 lg:py-14">
-            <h2 className="text-2xl font-extrabold uppercase leading-tight tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+            <h2 className="text-2xl font-extrabold uppercase leading-tight tracking-tight text-stone-900 sm:text-3xl dark:text-white">
               {titleLine1}
               <span className="mt-1 block text-brand-600 dark:text-brand-400">{titleLine2}</span>
             </h2>
 
             {subtitle && (
-              <p className="mt-3 text-base text-slate-600 dark:text-slate-400">{subtitle}</p>
+              <p className="mt-3 text-base text-stone-600 dark:text-brand-200">{subtitle}</p>
             )}
 
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button to={signInHref} variant="contrast" size="lg">
+            <div className="button-group mt-6">
+              <Button to={signInHref} variant="outline" className="order-2 sm:order-1">
                 Sign In
               </Button>
-              <Button to={registerHref} size="lg">
+              <Button to={registerHref} className="order-1 sm:order-2">
                 Registration
               </Button>
             </div>
@@ -108,12 +108,12 @@ export default function CourseSpotlight({
                 {checklistItems.map((item) => (
                   <li
                     key={item}
-                    className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300"
+                    className="flex items-start gap-2.5 text-sm text-stone-700 dark:text-brand-200"
                   >
                     {/* Radio-style bullet rather than a checkmark. */}
                     <span
                       aria-hidden="true"
-                      className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-brand-600 dark:border-brand-400"
+                      className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-stone-200 dark:border-stone-200"
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-brand-600 dark:bg-brand-400" />
                     </span>
@@ -125,7 +125,7 @@ export default function CourseSpotlight({
 
             {price != null && (
               <div className="mt-8">
-                <p className="text-lg font-bold text-slate-900 dark:text-white">
+                <p className="text-lg font-bold text-stone-900 dark:text-white">
                   Available{' '}
                   <span className="text-brand-600 dark:text-brand-400">
                     {currency}
@@ -140,7 +140,7 @@ export default function CourseSpotlight({
               </div>
             )}
 
-            <Button to={enrollHref} size="lg" className="mt-6">
+            <Button to={enrollHref} className="mt-6 w-full sm:w-auto">
               Enroll Now
               <svg
                 className="h-4 w-4"

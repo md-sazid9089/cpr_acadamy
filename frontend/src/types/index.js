@@ -46,10 +46,15 @@
  * @property {'online' | 'offline'} [branch]
  * @property {string} subtitle
  * @property {string} thumbnailUrl
- * @property {string[]} highlights    4–5 short USP bullets rendered on the card.
+ * @property {string} [description]  Long-form prose for the public page; blank lines separate paragraphs.
+ * @property {string[]} highlights    Course outline bullets. (The admin UI calls this "Outline".)
  * @property {number} price           BDT.
  * @property {number} [discountPrice] BDT; when present the card shows both.
+ * @property {{ label: string, endsAt?: string }} [offer]  Label printed beside the discount, e.g. 'Early-bird offer'.
  * @property {string} duration        Human readable, e.g. '6 months'.
+ * @property {{ start: string, end: string }} [classTime]  24h 'HH:mm' pair.
+ * @property {string[]} [classDays]   CLASS_DAYS ids, e.g. ['sat','tue','thu'].
+ * @property {'draft' | 'published'} [status]
  * @property {number} lessonCount
  * @property {number} enrolledCount
  * @property {number} [rating]        0–5.
@@ -76,12 +81,17 @@
  * @property {string} title
  * @property {string} courseId
  * @property {'live' | 'mock' | 'practice'} type
+ * @property {'sba' | 'mtf' | 'mixed'} questionType
  * @property {'upcoming' | 'running' | 'submitted' | 'missed' | 'published'} status
  * @property {string} scheduledAt     ISO 8601.
  * @property {number} durationMinutes
- * @property {number} questionCount
- * @property {number} totalMarks
- * @property {number} [negativeMarking] Fraction deducted per wrong answer, e.g. 0.25.
+ * @property {number} questionCount   Target paper length; the builder shows progress against it.
+ * @property {number} totalMarks      Derived from the actual questions and their marks.
+ * @property {number} [marksPerQuestion]  Editor default for new questions or MTF statements.
+ * @property {number} [deductionPercent]  Editor alias for negativeMarking.
+ * @property {number} [negativeMarking] Percentage points, e.g. 25 deducts 25% of that question's marks. Defaults to zero.
+ * @property {number} passMark        Pass threshold in percent; defaults to 70.
+ * @property {Question[]} [questions]
  */
 
 /**
@@ -89,7 +99,11 @@
  * @property {string} id
  * @property {'sba' | 'mtf'} type
  * @property {string} stem
- * @property {QuestionOption[]} options
+ * @property {string} [imageUrl]
+ * @property {QuestionOption[]} options  Exactly five for published MTF; SBA accepts 2-10.
+ * @property {number} marks          Per SBA question or per MTF statement.
+ * @property {string} [correctOptionId]  SBA answer key. Stripped before the paper reaches a student.
+ * @property {string | Record<string, boolean> | null} [correctAnswer]  API SBA option ID or MTF boolean map. Hidden during an attempt.
  * @property {string} [explanation]   Revealed only after submission.
  */
 
@@ -97,13 +111,12 @@
  * @typedef {Object} QuestionOption
  * @property {string} id
  * @property {string} text
- * @property {boolean} [isCorrect]    Omitted by the API until results publish.
  */
 
 /**
  * SBA answers map questionId -> optionId.
  * MTF answers map questionId -> { [optionId]: true | false }.
- * @typedef {Record<string, string | Record<string, boolean>>} AnswerSheet
+ * @typedef {Record<string, string | Record<string, boolean> | null>} AnswerSheet
  */
 
 /**
@@ -114,6 +127,8 @@
  * @property {number} correctCount
  * @property {number} wrongCount
  * @property {number} skippedCount
+ * @property {number} passMark
+ * @property {boolean} passed
  * @property {number} [rank]
  * @property {number} [participants]
  * @property {string} submittedAt

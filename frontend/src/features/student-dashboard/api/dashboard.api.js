@@ -1,158 +1,121 @@
-import { sleep } from '@/lib/utils';
-// import apiClient from '@/lib/api-client';
+import apiClient from '@/lib/api-client';
 
-/**
- * Student dashboard data, mocked.
- * TODO: GET /me/enrollments, /me/progress, /me/exams, /me/payments.
- */
+/** Student dashboard data — everything under /me plus the notice feed. */
 
 export async function fetchMyCourses() {
-  await sleep(400);
-  return [
-    {
-      id: 'e-1',
-      courseId: 'c-1',
-      slug: 'fcps-part-1-medicine-january-batch',
-      title: 'FCPS Part-1 Medicine — January Batch',
-      category: 'FCPS',
-      status: 'active',
-      progress: 62,
-      completedLessons: 114,
-      lessonCount: 184,
-      nextLesson: { id: 'l-115', title: 'Renal physiology — tubular transport' },
-      expiresOn: '2026-07-01T00:00:00.000Z',
-    },
-    {
-      id: 'e-2',
-      courseId: 'c-3',
-      slug: 'bcs-health-cadre-full-preparation',
-      title: 'BCS (Health) Cadre — Full Preparation',
-      category: 'BCS',
-      status: 'active',
-      progress: 28,
-      completedLessons: 59,
-      lessonCount: 210,
-      nextLesson: { id: 'l-60', title: 'Bangladesh affairs — economy' },
-      expiresOn: '2026-03-01T00:00:00.000Z',
-    },
-    {
-      id: 'e-3',
-      courseId: 'c-4',
-      slug: 'mbbs-3rd-professional-medicine-final-revision',
-      title: 'MBBS 3rd Professional — Final Revision',
-      category: 'MBBS',
-      status: 'pending_payment',
-      progress: 0,
-      completedLessons: 0,
-      lessonCount: 128,
-      nextLesson: null,
-      expiresOn: null,
-    },
-  ];
+  const { data } = await apiClient.get('/me/enrollments');
+  return data;
 }
 
 export async function fetchProgressSummary() {
-  await sleep(350);
-  return {
-    overallProgress: 45,
-    lessonsCompleted: 173,
-    lessonsTotal: 394,
-    studyHours: 128,
-    examsTaken: 24,
-    averageScore: 71.5,
-    bestRank: 12,
-    weakTopics: [
-      { topic: 'Acid–base balance', accuracy: 42 },
-      { topic: 'Pharmacokinetics', accuracy: 51 },
-      { topic: 'Immunology basics', accuracy: 58 },
-    ],
-    strongTopics: [
-      { topic: 'Cardiac physiology', accuracy: 92 },
-      { topic: 'Respiratory system', accuracy: 88 },
-    ],
-    weeklyActivity: [
-      { day: 'Sat', minutes: 95 },
-      { day: 'Sun', minutes: 60 },
-      { day: 'Mon', minutes: 120 },
-      { day: 'Tue', minutes: 45 },
-      { day: 'Wed', minutes: 80 },
-      { day: 'Thu', minutes: 30 },
-      { day: 'Fri', minutes: 140 },
-    ],
-  };
+  const { data } = await apiClient.get('/me/progress');
+  return data;
 }
 
+/** Every exam the student can see; the page groups them by status. */
 export async function fetchUpcomingExams() {
-  await sleep(350);
-  return [
-    {
-      id: 'ex-1',
-      title: 'FCPS Part-1 — Weekly SBA Exam 14',
-      courseTitle: 'FCPS Part-1 Medicine',
-      type: 'live',
-      status: 'upcoming',
-      scheduledAt: '2026-08-15T14:00:00.000Z',
-      durationMinutes: 60,
-      questionCount: 50,
-      totalMarks: 50,
-    },
-    {
-      id: 'ex-2',
-      title: 'BCS Health — Model Test 13',
-      courseTitle: 'BCS (Health) Cadre',
-      type: 'mock',
-      status: 'upcoming',
-      scheduledAt: '2026-08-17T15:30:00.000Z',
-      durationMinutes: 90,
-      questionCount: 100,
-      totalMarks: 100,
-    },
-    {
-      id: 'ex-3',
-      title: 'FCPS Part-1 — MTF Practice Set 08',
-      courseTitle: 'FCPS Part-1 Medicine',
-      type: 'practice',
-      status: 'running',
-      scheduledAt: '2026-08-13T10:00:00.000Z',
-      durationMinutes: 45,
-      questionCount: 25,
-      totalMarks: 125,
-    },
-  ];
+  const { data } = await apiClient.get('/me/exams', { params: { limit: 100 } });
+  return data;
+}
+
+/** Academy-wide notices, pinned first. */
+export async function fetchNotices({ signal } = {}) {
+  const notices = new Map();
+  const limit = 50;
+  for (let offset = 0; ; offset += limit) {
+    const { data } = await apiClient.get('/announcements', { params: { limit, offset }, signal });
+    for (const notice of data) notices.set(notice.id, notice);
+    if (data.length < limit) return [...notices.values()];
+  }
 }
 
 export async function fetchPaymentHistory() {
-  await sleep(350);
-  return [
-    {
-      id: 'p-1',
-      invoiceNo: 'CPR-2025-001842',
-      courseTitle: 'FCPS Part-1 Medicine — January Batch',
-      amount: 13500,
-      status: 'paid',
-      method: 'bkash',
-      transactionId: 'BKH8ZQ11X4',
-      paidAt: '2025-12-28T09:12:00.000Z',
-    },
-    {
-      id: 'p-2',
-      invoiceNo: 'CPR-2025-002310',
-      courseTitle: 'BCS (Health) Cadre — Full Preparation',
-      amount: 8900,
-      status: 'paid',
-      method: 'nagad',
-      transactionId: 'NGD5TR88K2',
-      paidAt: '2025-09-30T17:40:00.000Z',
-    },
-    {
-      id: 'p-3',
-      invoiceNo: 'CPR-2026-000117',
-      courseTitle: 'MBBS 3rd Professional — Final Revision',
-      amount: 5900,
-      status: 'pending',
-      method: 'card',
-      transactionId: null,
-      paidAt: '2026-08-10T11:05:00.000Z',
-    },
-  ];
+  const { data } = await apiClient.get('/me/payments', { params: { limit: 100 } });
+  return data;
+}
+
+/** Active enrolments that can carry subscriptions. */
+export async function fetchSubscriptionBatches() {
+  const { data } = await apiClient.get('/me/subscriptions/batches');
+  return data;
+}
+
+/** `{ active, unpaid, previous }` for one enrolment. */
+export async function fetchSubscriptions(batchId) {
+  const { data } = await apiClient.get('/me/subscriptions', { params: { batchId } });
+  return data;
+}
+
+/** Packages still purchasable for one enrolment. */
+export async function fetchSubscriptionPlans(batchId) {
+  const { data } = await apiClient.get('/subscription-plans', { params: { batchId } });
+  return data;
+}
+
+export async function fetchAccountProfile() {
+  const { data } = await apiClient.get('/me/profile');
+  return data;
+}
+
+/**
+ * Patch one section of the profile; only the changed section is sent.
+ * @param {{ section: 'basic' | 'contact' | 'address', values: Record<string, string> }} payload
+ */
+export async function updateAccountProfile({ section, values }) {
+  const { data } = await apiClient.patch('/me/profile', { section, values });
+  return data;
+}
+
+/** Devices bound to this account; the backend identifies them by X-Device-Id. */
+export async function fetchDevices() {
+  const { data } = await apiClient.get('/me/devices');
+  return data;
+}
+
+/** Ask an administrator to move the verified device to this browser. */
+export async function requestDeviceVerification({ reason }) {
+  const { data } = await apiClient.post('/me/devices/verify-request', { reason });
+  return data;
+}
+
+/** Changing the password revokes every session, including this one. */
+export async function changePassword({ currentPassword, newPassword }) {
+  const { data } = await apiClient.post('/me/password', { currentPassword, newPassword });
+  return data;
+}
+
+/**
+ * Support complaints ("Complain Box"). A complaint is a thread: the student
+ * opens it, the academy replies, and it is closed once resolved. `status`
+ * drives the whole UI — 'solved' locks the thread and shows the closing banner.
+ */
+export const COMPLAINT_TOPICS = Object.freeze([
+  'Lecture Sheet / Books',
+  'Class & Schedule',
+  'Exam & Result',
+  'Payment & Invoice',
+  'Device / Login Problem',
+  'Other',
+]);
+
+export async function fetchComplaints() {
+  const { data } = await apiClient.get('/me/complaints', { params: { limit: 100 } });
+  return data;
+}
+
+export async function fetchComplaint(id) {
+  const { data } = await apiClient.get(`/me/complaints/${id}`);
+  return data;
+}
+
+/** @param {{ relatedTo: string, batchTitle: string, body: string }} payload */
+export async function createComplaint({ relatedTo, batchTitle, body }) {
+  const { data } = await apiClient.post('/me/complaints', { relatedTo, batchTitle: batchTitle ?? '', body });
+  return data;
+}
+
+/** @param {{ id: string, body: string }} payload */
+export async function replyToComplaint({ id, body }) {
+  const { data } = await apiClient.post(`/me/complaints/${id}/replies`, { body });
+  return data;
 }

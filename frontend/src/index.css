@@ -1,41 +1,182 @@
-/* Self-hosted Bengali face. Latin text keeps the existing stack — this only
-   catches the Bengali glyphs, which no font in that stack provides, so the
-   Bangla copy renders the same on every device instead of falling back to
-   whatever the OS ships. */
-@import '@fontsource/noto-sans-bengali/400.css';
-@import '@fontsource/noto-sans-bengali/600.css';
-@import '@fontsource/noto-sans-bengali/700.css';
+@import '@fontsource/hind-siliguri/300.css';
+@import '@fontsource/hind-siliguri/400.css';
+@import '@fontsource/hind-siliguri/500.css';
+@import '@fontsource/hind-siliguri/600.css';
+@import '@fontsource/hind-siliguri/700.css';
+@import '@fontsource-variable/anek-bangla';
+@import '../public/theme-tokens.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --font-body: 'Hind Siliguri', 'Inter', system-ui, sans-serif;
+    --font-heading: 'Anek Bangla Variable', 'Hind Siliguri', sans-serif;
+    --radius-control: 11px;
+    --radius-card: 16px;
+    --radius-image: 12px;
+    --radius-pill: 9999px;
+    --control-height-large: 54px;
+    --control-height-medium: 48px;
+    --control-height-small: 38px;
+    --control-gap: 12px;
+    --color-blue: var(--blue-500);
+    --color-blue-deep: var(--blue-700);
+    --color-display: var(--blue-800);
+    --color-red: var(--red);
+    --color-red-deep: var(--red-text);
+    --color-urgency: var(--red-50);
+    --color-neutral-badge: var(--blue-100);
+    --color-body: var(--n-900);
+    --color-secondary: var(--n-700);
+    --color-muted: var(--n-500);
+    --color-section: var(--n-100);
+    --color-page: var(--n-50);
+    --color-white: var(--white);
+    --color-border: var(--n-200);
+    --color-dark: var(--blue-900);
+    --color-dark-panel: var(--blue-900);
+
+    --color-brand-50: var(--blue-50);
+    --color-brand-100: var(--blue-100);
+    --color-brand-200: var(--blue-200);
+    --color-brand-300: var(--blue-200);
+    --color-brand-400: var(--blue-400);
+    --color-brand-500: var(--blue-500);
+    --color-brand-600: var(--blue-500);
+    --color-brand-700: var(--blue-700);
+    --color-brand-800: var(--blue-800);
+    --color-brand-900: var(--blue-800);
+    --color-brand-950: var(--blue-900);
+
+    --color-accent-50: var(--red-50);
+    --color-accent-100: var(--red-50);
+    --color-accent-200: var(--red-50);
+    --color-accent-300: var(--red-50);
+    --color-accent-400: var(--red-text);
+    --color-accent-500: var(--red);
+    --color-accent-600: var(--red-text);
+    --color-accent-700: var(--red-text);
+    --color-accent-800: var(--red-text);
+    --color-accent-900: var(--red-text);
+    --color-accent-950: var(--blue-900);
+
+    --color-stone-50: var(--n-50);
+    --color-stone-100: var(--n-100);
+    --color-stone-200: var(--n-200);
+    --color-stone-300: var(--n-200);
+    --color-stone-400: var(--n-500);
+    --color-stone-500: var(--n-500);
+    --color-stone-600: var(--n-700);
+    --color-stone-700: var(--n-700);
+    --color-stone-800: var(--n-900);
+    --color-stone-900: var(--n-900);
+    --color-stone-950: var(--n-900);
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
   }
 
   body {
-    @apply bg-white text-slate-800 antialiased dark:bg-surface-dark dark:text-slate-200;
+    @apply bg-surface-light text-stone-800 antialiased dark:bg-surface-dark dark:text-brand-200;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+    color: var(--blue-800);
+    letter-spacing: 0;
   }
 
   /* Visible focus ring everywhere, brand-tinted. */
   :focus-visible {
-    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white dark:ring-offset-surface-dark;
+    outline: 2px solid var(--blue-500);
+    outline-offset: 2px;
   }
 }
 
 @layer components {
+  .ui-button {
+    height: auto;
+    min-height: var(--control-height-medium);
+    border-radius: var(--radius-control);
+    padding: 12px 16px;
+    font-size: 15px;
+    line-height: 1.5;
+    gap: 8px;
+  }
+
+  .ui-button[data-size='lg'] {
+    min-height: var(--control-height-large);
+    padding: 14px 24px;
+    font-size: 16px;
+  }
+
+  .ui-button[data-size='sm'] {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+
+  .ui-button[data-size='icon'] {
+    min-width: var(--control-height-medium);
+    padding: 12px;
+  }
+
+  .ui-button[data-pill='true'] {
+    border-radius: var(--radius-control);
+  }
+
+  .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--control-gap);
+  }
+
+  .button-group > .ui-button {
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .button-group { flex-direction: row; }
+    .button-group > .ui-button { width: auto; }
+  }
+
+  @media (min-width: 640px) and (pointer: fine) and (hover: hover) {
+    .ui-button[data-size='sm'] { min-height: var(--control-height-small); }
+  }
+
+  .hero-surface {
+    background: var(--blue-50);
+  }
+
+  .hero-surface::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.09;
+    background-image: radial-gradient(var(--color-blue) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse at 65% 35%, black, transparent 75%);
+  }
+
+  .dark .hero-surface {
+    background: var(--color-dark);
+  }
+
   .container-page {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
   .section-heading {
-    @apply text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white;
+    @apply text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl dark:text-white;
   }
 
   .section-subheading {
-    @apply mt-3 max-w-2xl text-base text-slate-600 dark:text-slate-400;
+    @apply mt-3 max-w-2xl text-base text-stone-600 dark:text-brand-200;
   }
 }
 
@@ -45,4 +186,66 @@
     -webkit-user-select: none;
     user-select: none;
   }
+}
+
+:root :is(h1, h2, h3, h4, h5, h6),
+:root :is(h1, h2, h3, h4, h5, h6)[class] {
+  color: var(--heading-color, var(--blue-800));
+}
+
+:root :is(h1, h2, h3, h4, h5, h6)[class] :is(span, strong, em) {
+  color: inherit;
+}
+
+.dark {
+  --heading-color: var(--white);
+}
+
+.dark-section {
+  --heading-color: var(--white);
+  background: var(--blue-900);
+  color: var(--blue-200);
+}
+
+.dark-section :is(p, strong, address, a:not(.ui-button)) {
+  color: var(--blue-200);
+}
+
+.dark-section a:hover {
+  color: var(--white);
+}
+
+.dark-section a[class*='bg-brand-100'] {
+  background: var(--blue-900);
+  border: 1px solid var(--n-200);
+}
+
+.ui-button.ui-button-cta {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+button, input:not([type='checkbox']):not([type='radio']), select, textarea {
+  border-radius: var(--radius-control);
+}
+
+.ui-card {
+  border: 1px solid var(--n-200);
+  border-radius: var(--radius-card);
+}
+
+.dashboard-content .ui-card {
+  background-color: color-mix(in srgb, var(--white) 35%, transparent);
+}
+
+.dark .dashboard-content .ui-card {
+  background-color: color-mix(in srgb, var(--blue-900) 35%, transparent);
+}
+
+.dashboard-content .dashboard-menu-card {
+  border-color: var(--blue-500);
+}
+
+.dark .dashboard-content .dashboard-menu-card {
+  border-color: var(--blue-400);
 }

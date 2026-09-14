@@ -6,62 +6,62 @@ import { cn } from '@/lib/utils';
 // TODO: move to GET /faqs so the admin panel can edit these.
 const FAQ_GROUPS = [
   {
-    group: 'Admission & account',
+    group: 'ভর্তি ও অ্যাকাউন্ট',
     items: [
       {
-        q: 'How do I create an account?',
-        a: 'Register with your mobile number. You will receive a 6-digit OTP by SMS. After verification our team reviews the registration — accounts are activated once an administrator approves them, usually within a few working hours.',
+        q: 'আমি কীভাবে অ্যাকাউন্ট তৈরি করব?',
+        a: 'আপনার মোবাইল নম্বর দিয়ে রেজিস্ট্রেশন করুন। এসএমএসে আপনি একটি ৬-সংখ্যার OTP পাবেন। ভেরিফিকেশনের পর আমাদের টিম রেজিস্ট্রেশনটি পর্যালোচনা করে — অ্যাডমিনিস্ট্রেটর অনুমোদন দিলে অ্যাকাউন্ট সক্রিয় হয়, সাধারণত কয়েক কর্মঘণ্টার মধ্যে।',
       },
       {
-        q: 'Why is my account showing "pending approval"?',
-        a: 'Every new registration is manually checked against the details you submitted (name, BMDC number, institution). This prevents shared and fraudulent accounts. You will get an SMS as soon as the account is activated.',
+        q: 'আমার অ্যাকাউন্টে "অনুমোদনের অপেক্ষায়" দেখাচ্ছে কেন?',
+        a: 'প্রতিটি নতুন রেজিস্ট্রেশন আপনার দেওয়া তথ্যের (নাম, BMDC নম্বর, প্রতিষ্ঠান) সাথে ম্যানুয়ালি যাচাই করা হয়। এটি শেয়ার করা ও প্রতারণামূলক অ্যাকাউন্ট প্রতিরোধ করে। অ্যাকাউন্ট সক্রিয় হলেই আপনি এসএমএস পাবেন।',
       },
       {
-        q: 'Can I log in from more than one device?',
-        a: 'No. Each account allows one active session at a time. Signing in on a new device automatically signs you out everywhere else — this protects our lecture material from being shared.',
+        q: 'আমি একাধিক ডিভাইস থেকে লগইন করতে পারব কি?',
+        a: 'না। প্রতিটি অ্যাকাউন্টে একবারে একটি সক্রিয় সেশন থাকতে পারে। নতুন ডিভাইসে সাইন ইন করলে অন্য সব জায়গা থেকে স্বয়ংক্রিয়ভাবে সাইন আউট হয়ে যাবেন — এটি আমাদের লেকচার সামগ্রী শেয়ার হওয়া থেকে রক্ষা করে।',
       },
     ],
   },
   {
-    group: 'Courses & classes',
+    group: 'কোর্স ও ক্লাস',
     items: [
       {
-        q: 'Are the classes live or recorded?',
-        a: 'Both. Core lectures are recorded so you can study around your duty roster, and each course runs live problem-solving and doubt-clearing sessions every week. Live sessions are recorded and added to your library.',
+        q: 'ক্লাসগুলো লাইভ কি রেকর্ডেড?',
+        a: 'দুটোই। মূল লেকচারগুলো রেকর্ডেড, যাতে আপনি ডিউটি রোস্টারের সাথে মিলিয়ে পড়তে পারেন, এবং প্রতিটি কোর্সে প্রতি সপ্তাহে লাইভ প্রবলেম-সলভিং ও ডাউট-ক্লিয়ারিং সেশন হয়। লাইভ সেশনগুলোও রেকর্ড করে আপনার লাইব্রেরিতে যুক্ত করা হয়।',
       },
       {
-        q: 'How long do I keep access to a course?',
-        a: 'Access runs until the examination date of the batch you enrolled in. Extensions are available at a reduced fee if you defer to the next cycle.',
+        q: 'কোর্সে আমার অ্যাক্সেস কতদিন থাকবে?',
+        a: 'আপনি যে ব্যাচে ভর্তি হয়েছেন, সেই ব্যাচের পরীক্ষার তারিখ পর্যন্ত অ্যাক্সেস থাকবে। পরের সাইকেলে পিছিয়ে গেলে হ্রাসকৃত ফিতে মেয়াদ বাড়ানো যায়।',
       },
       {
-        q: 'Can I download the lecture notes?',
-        a: 'Notes are readable inside the app through a secure viewer and watermarked with your account details. Printed note bundles are included with selected courses.',
+        q: 'আমি লেকচার নোট ডাউনলোড করতে পারব কি?',
+        a: 'নোটগুলো অ্যাপের ভেতরে একটি সুরক্ষিত ভিউয়ারে পড়া যায় এবং আপনার অ্যাকাউন্টের তথ্য দিয়ে ওয়াটারমার্ক করা থাকে। নির্দিষ্ট কোর্সে প্রিন্টেড নোট বান্ডেল অন্তর্ভুক্ত থাকে।',
       },
     ],
   },
   {
-    group: 'Exams & results',
+    group: 'পরীক্ষা ও ফলাফল',
     items: [
       {
-        q: 'What question formats do the exams use?',
-        a: 'Single Best Answer (SBA) and Multiple True/False (MTF), matching the BCPS pattern including negative marking where applicable.',
+        q: 'পরীক্ষায় কোন ধরনের প্রশ্ন থাকে?',
+        a: 'Single Best Answer (SBA) এবং Multiple True/False (MTF) — BCPS প্যাটার্ন অনুসারে, প্রযোজ্য ক্ষেত্রে নেগেটিভ মার্কিংসহ।',
       },
       {
-        q: 'What happens if my internet drops during an exam?',
-        a: 'Your answers are saved as you go and the timer keeps running server-side. Reconnect and you resume from the same question with the remaining time intact.',
+        q: 'পরীক্ষার মাঝে ইন্টারনেট চলে গেলে কী হবে?',
+        a: 'আপনার উত্তরগুলো সাথে সাথে সেভ হয় এবং টাইমার সার্ভারে চলতে থাকে। পুনরায় সংযুক্ত হলে আপনি একই প্রশ্ন থেকে অবশিষ্ট সময়সহ আবার শুরু করতে পারবেন।',
       },
     ],
   },
   {
-    group: 'Payment & refunds',
+    group: 'পেমেন্ট ও রিফান্ড',
     items: [
       {
-        q: 'Which payment methods are supported?',
-        a: 'bKash, Nagad, Rocket and card or bank transfer. An invoice appears in your dashboard immediately after a successful payment.',
+        q: 'কোন কোন পেমেন্ট পদ্ধতি সমর্থিত?',
+        a: 'বিকাশ, নগদ, রকেট এবং কার্ড বা ব্যাংক ট্রান্সফার। সফল পেমেন্টের পর সাথে সাথেই আপনার ড্যাশবোর্ডে ইনভয়েস দেখা যাবে।',
       },
       {
-        q: 'Do you offer refunds?',
-        a: 'A full refund is available within 7 days of enrolment provided you have not accessed more than three lectures. After that, fees can be transferred to a later batch once.',
+        q: 'আপনারা রিফান্ড দেন কি?',
+        a: 'ভর্তির ৭ দিনের মধ্যে তিনটির বেশি লেকচার না দেখে থাকলে সম্পূর্ণ রিফান্ড পাওয়া যায়। এর পরে ফি একবার পরবর্তী ব্যাচে স্থানান্তর করা যায়।',
       },
     ],
   },
@@ -71,14 +71,14 @@ function FaqItem({ item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border-b border-slate-200 last:border-0 dark:border-slate-800">
+    <div className="border-b border-stone-200 last:border-0 dark:border-stone-200">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-4 py-4 text-left"
       >
-        <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.q}</span>
+        <span className="text-sm font-semibold text-stone-900 dark:text-white">{item.q}</span>
         <svg
           className={cn(
             'h-5 w-5 shrink-0 text-brand-600 transition-transform dark:text-brand-400',
@@ -92,19 +92,19 @@ function FaqItem({ item }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {open && <p className="pb-4 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{item.a}</p>}
+      {open && <p className="pb-4 text-sm leading-relaxed text-stone-600 dark:text-brand-200">{item.a}</p>}
     </div>
   );
 }
 
 export default function FAQ() {
   return (
-    <div className="bg-white dark:bg-surface-dark">
-      <section className="border-b border-slate-200 bg-surface-subtle py-12 text-center dark:border-slate-800 dark:bg-surface-dark-subtle">
+    <div>
+      <section className="bg-surface-light py-12 text-center dark:bg-surface-dark">
         <div className="container-page">
-          <h1 className="section-heading">Frequently Asked Questions</h1>
+          <h1 className="section-heading">সাধারণ জিজ্ঞাসা</h1>
           <p className="section-subheading mx-auto text-center">
-            Admission, classes, exams and payment — the things students ask us most.
+            ভর্তি, ক্লাস, পরীক্ষা ও পেমেন্ট — শিক্ষার্থীরা আমাদের যা সবচেয়ে বেশি জিজ্ঞেস করেন।
           </p>
         </div>
       </section>
@@ -124,17 +124,27 @@ export default function FAQ() {
         </div>
 
         <aside>
-          <Card className="sticky top-24 p-6">
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-              Still have a question?
-            </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-              Our admission team answers on WhatsApp between 10 AM and 8 PM, Saturday to Thursday.
-            </p>
-            <Button to="/contact" fullWidth className="mt-5">
-              Contact us
-            </Button>
-          </Card>
+          <div className="sticky top-24 space-y-6">
+            <img
+              src="/assets/bg/Online%20Doctor-rafiki.svg"
+              alt=""
+              aria-hidden="true"
+              width={500}
+              height={500}
+              className="mx-auto aspect-square w-full max-w-xs object-contain"
+            />
+            <Card className="p-6">
+              <h2 className="text-base font-semibold text-stone-900 dark:text-white">
+                আরও কোনো প্রশ্ন আছে?
+              </h2>
+              <p className="mt-2 text-sm text-stone-600 dark:text-brand-200">
+                আমাদের ভর্তি টিম শনিবার থেকে বৃহস্পতিবার সকাল ১০টা থেকে রাত ৮টা পর্যন্ত হোয়াটসঅ্যাপে উত্তর দেয়।
+              </p>
+              <Button to="/contact" fullWidth className="mt-5">
+                যোগাযোগ করুন
+              </Button>
+            </Card>
+          </div>
         </aside>
       </section>
     </div>

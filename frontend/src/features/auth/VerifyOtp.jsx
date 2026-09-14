@@ -19,7 +19,7 @@ export default function VerifyOtp() {
   const [submitError, setSubmitError] = useState(null);
 
   const pendingMobile = useAuthStore((s) => s.pendingMobile);
-  const setUser = useAuthStore((s) => s.setUser);
+  const setSession = useAuthStore((s) => s.setSession);
   const mobile = location.state?.mobile ?? pendingMobile;
 
   const resendTimer = useCountdown(OTP_RESEND_SECONDS);
@@ -36,10 +36,10 @@ export default function VerifyOtp() {
   const onSubmit = async ({ otp }) => {
     setSubmitError(null);
     try {
-      const { user } = await verifyOtp({ mobile, otp });
-      // Verified, but not active: the account still needs admin approval, so we
-      // store the user without a token and route to the waiting screen.
-      setUser(user);
+      const session = await verifyOtp({ mobile, otp });
+      // Verified, but not active: the account still needs admin approval. The
+      // pending session lets the waiting screen poll for the approval.
+      setSession(session);
       navigate('/pending-approval', { replace: true });
     } catch (error) {
       setSubmitError(error.message ?? 'Verification failed. Please try again.');
@@ -84,12 +84,12 @@ export default function VerifyOtp() {
           {...register('otp')}
         />
 
-        <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
+        <Button type="submit" fullWidth isLoading={isSubmitting}>
           Verify
         </Button>
       </form>
 
-      <div className="mt-5 text-center text-sm text-slate-600 dark:text-slate-400">
+      <div className="mt-5 text-center text-sm text-stone-600 dark:text-brand-200">
         {resendTimer.isExpired ? (
           <button
             type="button"

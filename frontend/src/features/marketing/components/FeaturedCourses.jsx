@@ -4,7 +4,7 @@ import CourseCard from '@/features/courses/components/CourseCard.jsx';
 import { useFeaturedCourses } from '@/features/courses/api/courses.queries.js';
 import { useEnrollAction } from '@/features/courses/hooks/useEnrollAction.js';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 
 /** Category pills + featured course grid — the core of the homepage. */
@@ -30,13 +30,23 @@ export default function FeaturedCourses() {
   );
 
   return (
-    <section className="bg-white py-12 dark:bg-surface-dark">
+    <section className="relative isolate overflow-hidden bg-surface-light py-12 dark:bg-surface-dark">
+      <img
+        src="/assets/bg/1149786_5650-1920.webp"
+        srcSet="/assets/bg/1149786_5650-768.webp 768w, /assets/bg/1149786_5650-1920.webp 1920w"
+        sizes="100vw"
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        decoding="async"
+        className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-30 dark:opacity-20"
+      />
       <div className="container-page">
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white" lang="bn">
+          <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 sm:text-4xl lg:text-5xl dark:text-white" lang="bn">
             আপনার কাঙ্খিত কোর্সটি খুঁজে নিন
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm font-medium text-slate-600 sm:text-base dark:text-slate-400" lang="bn">
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-medium text-stone-600 sm:text-base dark:text-brand-200" lang="bn">
             প্রিলি থেকে ভাইভা-আপনার স্বপ্নপূরণে ২৪/৭ পাশে থাকবো আমরা!
           </p>
         </div>
@@ -45,9 +55,7 @@ export default function FeaturedCourses() {
 
         <div className="mt-10">
           {isLoading ? (
-            <div className="flex justify-center py-16">
-              <Spinner size="lg" label="Loading courses…" />
-            </div>
+            <ContentSkeleton variant="cards" label="Loading courses" />
           ) : isError ? (
             <EmptyState
               title="Couldn't load featured batches"
@@ -60,7 +68,7 @@ export default function FeaturedCourses() {
               action={<Button to="/batches">Browse all batches</Button>}
             />
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
               {visible.map((course) => (
                 <CourseCard key={course.id} course={course} onEnroll={onEnroll} />
               ))}
@@ -69,7 +77,7 @@ export default function FeaturedCourses() {
         </div>
 
         <div className="mt-10 text-center">
-          <Button to="/batches" variant="outline" size="lg">
+          <Button to="/batches" variant="outline" className="w-full sm:w-auto">
             View all batches
           </Button>
         </div>

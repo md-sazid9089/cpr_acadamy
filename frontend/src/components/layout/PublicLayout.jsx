@@ -3,7 +3,9 @@ import AnnouncementStrip from './AnnouncementStrip.jsx';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
 import ChatBubble from './ChatBubble.jsx';
+import usePageTitle from '@/hooks/usePageTitle.js';
 import { cn } from '@/lib/utils';
+import './PublicLayout.css';
 
 /**
  * Routes whose first section is a full-bleed hero. On these the navbar floats
@@ -17,9 +19,10 @@ const OVERLAY_NAV_ROUTES = ['/'];
 export default function PublicLayout() {
   const { pathname } = useLocation();
   const overlayNav = OVERLAY_NAV_ROUTES.includes(pathname);
+  usePageTitle();
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-surface-dark">
+    <div className={cn('flex min-h-screen flex-col bg-surface-light dark:bg-surface-dark', pathname === '/' && 'homepage-scale')}>
       <AnnouncementStrip />
       <Navbar />
       {/* -mt-20 cancels the navbar's own height (h-20) so the next section

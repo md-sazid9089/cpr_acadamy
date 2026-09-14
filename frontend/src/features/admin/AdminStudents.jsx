@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStudents, updateStudentStatus } from './api/admin.api.js';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
@@ -20,6 +21,7 @@ const FILTERS = [
 export default function AdminStudents() {
   const [filter, setFilter] = useState(ACCOUNT_STATUS.AWAITING_APPROVAL);
   const [confirming, setConfirming] = useState(null);
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: students = [], isLoading } = useQuery({
@@ -36,19 +38,31 @@ export default function AdminStudents() {
     },
   });
 
+  // Row click opens the record; the action buttons stop propagation so they don't.
+  const stop = (handler) => (event) => {
+    event.stopPropagation();
+    handler();
+  };
+
   const columns = [
     {
       key: 'fullName',
       header: 'Student',
       render: (row) => (
         <div>
-          <p className="font-medium text-slate-900 dark:text-white">{row.fullName}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{row.mobile}</p>
+          <p className="font-medium text-stone-900 dark:text-white">{row.fullName}</p>
+          <p className="text-xs text-stone-500 dark:text-brand-200">{row.mobile}</p>
         </div>
       ),
     },
     { key: 'institution', header: 'Institution' },
     { key: 'interest', header: 'Track' },
+    {
+      key: 'enrolments',
+      header: 'Courses',
+      align: 'right',
+      render: (row) => <span className="text-stone-700 dark:text-brand-200">{row.enrolmentCount ?? row.enrolments?.length ?? 0}</span>,
+    },
     { key: 'createdAt', header: 'Registered', render: (row) => formatDate(row.createdAt) },
     { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
     {
@@ -61,14 +75,14 @@ export default function AdminStudents() {
             <>
               <Button
                 size="sm"
-                onClick={() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE })}
+                onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE }))}
               >
                 Approve
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setConfirming({ student: row, action: ACCOUNT_STATUS.REJECTED })}
+                onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.REJECTED }))}
               >
                 Reject
               </Button>
@@ -78,7 +92,7 @@ export default function AdminStudents() {
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setConfirming({ student: row, action: ACCOUNT_STATUS.SUSPENDED })}
+              onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.SUSPENDED }))}
             >
               Suspend
             </Button>
@@ -87,11 +101,14 @@ export default function AdminStudents() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE })}
+              onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE }))}
             >
               Reinstate
             </Button>
           )}
+          <Button size="sm" variant="ghost" to={`/admin/students/${row.id}`} onClick={(event) => event.stopPropagation()}>
+            View
+          </Button>
         </div>
       ),
     },
@@ -106,7 +123,7 @@ export default function AdminStudents() {
   return (
     <>
       <Card>
-        <CardHeader title="Students" description="Review registrations and manage account access." />
+        <CardHeader title="Students" description="Review registrations and manage account access. Click a row for details and payment history." />
 
         <div className="flex flex-wrap gap-2 px-5 pt-4">
           {FILTERS.map((option) => (
@@ -118,7 +135,7 @@ export default function AdminStudents() {
                 'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                 filter === option.id
                   ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               {option.label}
@@ -131,6 +148,7 @@ export default function AdminStudents() {
             columns={columns}
             rows={students}
             isLoading={isLoading}
+            onRowClick={(row) => navigate(`/admin/students/${row.id}`)}
             emptyTitle="No students in this view"
             emptyDescription="Try a different filter."
           />
@@ -162,13 +180,16 @@ export default function AdminStudents() {
         }
       >
         {confirming && (
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            <strong className="text-slate-900 dark:text-white">{confirming.student.fullName}</strong>{' '}
+          <p className="text-sm text-stone-600 dark:text-brand-200">
+            <strong className="text-stone-900 dark:text-white">{confirming.student.fullName}</strong>{' '}
             ({confirming.student.mobile}) from {confirming.student.institution}.
             {confirming.action === ACCOUNT_STATUS.ACTIVE
               ? ' They will receive an activation SMS and can sign in immediately.'
               : ' They will lose access and be notified by SMS.'}
           </p>
+        )}
+        {statusMutation.isError && (
+          <p role="alert" className="mt-3 text-sm font-medium text-red-600 dark:text-red-400">{statusMutation.error.message}</p>
         )}
       </Modal>
     </>

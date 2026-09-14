@@ -7,7 +7,7 @@ import BatchFilters from './components/BatchFilters.jsx';
 import { useCourses } from './api/courses.queries.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
 import Input from '@/components/ui/Input.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { BATCH_GROUPS } from '@/constants';
@@ -93,7 +93,7 @@ export default function Batches() {
 
   return (
     <div className="bg-white dark:bg-surface-dark">
-      <section className="bg-white py-12 dark:bg-surface-dark">
+      <section className="bg-surface-light py-12 dark:bg-surface-dark">
         <div className="container-page text-center">
           {showResults && (
             <Link
@@ -139,9 +139,7 @@ export default function Batches() {
 
           <div>
             {isLoading ? (
-              <div className="flex justify-center py-20">
-                <Spinner size="lg" label="Loading batches…" />
-              </div>
+              <ContentSkeleton variant="cards" label="Loading batches" />
             ) : isError ? (
               <EmptyState
                 title="Couldn't load batches"
@@ -160,7 +158,7 @@ export default function Batches() {
               />
             ) : (
               <>
-                <p className="mb-5 text-sm text-slate-600 dark:text-slate-400">
+                <p className="mb-5 text-sm text-stone-600 dark:text-brand-200">
                   {courses.length} {courses.length === 1 ? 'batch' : 'batches'} available
                 </p>
                 {/* Two-up beside the sidebar: the card's overlapping info block

@@ -70,15 +70,15 @@ const PROPS = [
 
 export default function ValueProps() {
   return (
-    <section lang="bn" className="bg-white py-8 dark:bg-surface-dark">
+    <section lang="bn" className="w-full py-8">
       <div className="container-page">
         <div className="grid grid-cols-2 gap-6 lg:grid-cols-4 lg:gap-10">
           {PROPS.map(({ label, icon }) => (
             <div key={label} className="flex flex-col items-center text-center">
-              <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-200/80 text-brand-700 dark:bg-slate-700/50 dark:text-brand-300">
+              <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-stone-200/80 text-brand-700 dark:bg-surface-dark dark:text-brand-300">
                 {icon}
               </span>
-              <p className="mt-3 text-sm font-semibold leading-snug text-slate-700 dark:text-slate-300">
+              <p className="mt-3 text-sm font-semibold leading-snug text-stone-700 dark:text-brand-200">
                 {label}
               </p>
             </div>
