@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useComplaint, useReplyToComplaint } from './api/dashboard.queries.js';
 import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { formatDateTime } from '@/lib/utils';
 
@@ -54,9 +54,7 @@ export default function ComplaintDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner size="lg" label="Loading complain…" />
-      </div>
+      <ContentSkeleton label="Loading complaint" />
     );
   }
 

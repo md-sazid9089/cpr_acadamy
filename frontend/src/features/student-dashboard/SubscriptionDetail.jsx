@@ -5,7 +5,7 @@ import { useSubscriptions } from './api/dashboard.queries.js';
 import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import DashboardTabs from './components/DashboardTabs.jsx';
 import { SECONDARY_ACTION } from './Subscriptions.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatBDT, formatDate } from '@/lib/utils';
 
 const TABS = [
@@ -45,9 +45,7 @@ export default function SubscriptionDetail() {
 
       <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-200 dark:bg-surface-dark-subtle">
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Spinner size="lg" label="Loading subscriptions…" />
-          </div>
+          <ContentSkeleton label="Loading subscriptions" />
         ) : items.length === 0 ? (
           <div className="py-6 text-center">
             <p className="text-base italic text-stone-700 dark:text-brand-200">

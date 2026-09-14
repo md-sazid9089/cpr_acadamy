@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { FaPlay } from 'react-icons/fa6';
 import { useCourseVideos } from '../api/courseHub.queries.js';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 
 /**
  * Format an ISO date string as "DD Mon YYYY".
@@ -27,9 +27,7 @@ export default function AtAGlanceTab({ courseSlug }) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-16">
-        <Spinner size="lg" label="Loading videos…" />
-      </div>
+      <ContentSkeleton label="Loading videos" />
     );
   }
 

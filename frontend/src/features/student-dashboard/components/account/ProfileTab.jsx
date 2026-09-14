@@ -3,7 +3,7 @@ import { FaPenToSquare, FaUser } from 'react-icons/fa6';
 import { ACCOUNT_SECTIONS, getProfileCompletion } from './accountSections.js';
 import EditSectionModal from './EditSectionModal.jsx';
 import { useAccountProfile, useUpdateAccountProfile } from '../../api/dashboard.queries.js';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatDate } from '@/lib/utils';
 
 /** Read-only "Label: value" row. Empty values render the label alone, as in the reference. */
@@ -42,9 +42,7 @@ export default function ProfileTab() {
 
   if (isLoading || !profile) {
     return (
-      <div className="flex justify-center py-16">
-        <Spinner size="lg" label="Loading your profile…" />
-      </div>
+      <ContentSkeleton variant="form" label="Loading your profile" />
     );
   }
 

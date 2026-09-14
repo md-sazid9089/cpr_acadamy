@@ -31,7 +31,7 @@ export default function Footer() {
         {/* ── Column 1: Brand & Contact Info ── */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <Logo compact className="h-10 w-10" />
+            <Logo compact className="h-11 w-11" />
             <span className="text-lg font-bold text-white tracking-wide">
               CPR Academy
             </span>

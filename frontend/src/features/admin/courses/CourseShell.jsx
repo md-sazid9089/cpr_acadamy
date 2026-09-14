@@ -14,7 +14,7 @@ import { PublishControl } from './PublishGate.jsx';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { BATCH_GROUPS, CATEGORY_SLUGS, COURSE_STATUS } from '@/constants';
 import { cn } from '@/lib/utils';
 
@@ -41,9 +41,7 @@ export default function CourseShell() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-start justify-center pt-20">
-        <Spinner size="lg" label="Loading course…" />
-      </div>
+      <ContentSkeleton variant="form" label="Loading course" />
     );
   }
 

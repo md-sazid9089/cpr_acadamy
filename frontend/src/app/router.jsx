@@ -7,7 +7,7 @@ import ProtectedRoute from '@/features/auth/ProtectedRoute.jsx';
 // Straight from the module, not the barrel: importing from '@/components/ui'
 // pulls every primitive it re-exports into whichever chunk does the importing,
 // and this file is the entry chunk.
-import { PageSpinner } from '@/components/ui/Spinner.jsx';
+import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import { ROLES } from '@/constants';
 
 // Marketing pages stay in the entry chunk: they are what a first-time visitor
@@ -84,10 +84,10 @@ const CourseScheduleTab = lazy(() => import('@/features/admin/courses/CourseSche
 
 /**
  * Wraps a lazily-imported page in its own Suspense boundary so only the routed
- * page falls back to the spinner — the surrounding layout stays on screen.
+ * page falls back to a skeleton — the surrounding layout stays on screen.
  */
-function suspend(element) {
-  return <Suspense fallback={<PageSpinner />}>{element}</Suspense>;
+function suspend(element, variant = 'list') {
+  return <Suspense fallback={<PageSkeleton variant={variant} />}>{element}</Suspense>;
 }
 
 /** Former module-based lesson list; classes now live on the course hub. */
@@ -107,7 +107,7 @@ const router = createBrowserRouter([
   ...(import.meta.env.DEV ? [{
     path: '/demo/exam-positions',
     element: <DashboardLayout variant={ROLES.STUDENT} />,
-    children: [{ index: true, element: suspend(<ExamPositions demo />) }],
+    children: [{ index: true, element: suspend(<ExamPositions demo />, 'table') }],
   }] : []),
   {
     element: <PublicLayout />,
@@ -123,24 +123,23 @@ const router = createBrowserRouter([
       { path: '/faq', element: <FAQ /> },
       { path: '/gallery', element: <Gallery /> },
       { path: '/about', element: <About /> },
-      { path: '/contact', element: suspend(<Contact />) },
+      { path: '/contact', element: suspend(<Contact />, 'form') },
 
-      { path: '/login', element: suspend(<Login />) },
-      { path: '/register', element: suspend(<Register />) },
-      { path: '/verify-otp', element: suspend(<VerifyOtp />) },
-      { path: '/pending-approval', element: suspend(<PendingApproval />) },
-      { path: '/forgot-password', element: suspend(<ForgotPassword />) },
-      { path: '/reset-password', element: suspend(<ResetPassword />) },
-
-      { path: '*', element: <NotFound /> },
+      { path: '/login', element: suspend(<Login />, 'form') },
+      { path: '/register', element: suspend(<Register />, 'form') },
+      { path: '/verify-otp', element: suspend(<VerifyOtp />, 'form') },
+      { path: '/pending-approval', element: suspend(<PendingApproval />, 'form') },
+      { path: '/forgot-password', element: suspend(<ForgotPassword />, 'form') },
+      { path: '/reset-password', element: suspend(<ResetPassword />, 'form') },
     ],
   },
+  { path: '*', element: <NotFound /> },
 
   // Full-bleed course player: the public chrome would only compete with the
   // lesson, so it sits outside PublicLayout with its own auth guard.
   {
     path: '/learn/:courseSlug/:lessonId',
-    element: <ProtectedRoute role={ROLES.STUDENT}>{suspend(<CoursePlayer />)}</ProtectedRoute>,
+    element: <ProtectedRoute role={ROLES.STUDENT}>{suspend(<CoursePlayer />, 'detail')}</ProtectedRoute>,
     errorElement: <NotFound />,
   },
 
@@ -152,24 +151,24 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: suspend(<Overview />) },
-      { path: 'courses', element: suspend(<MyCourses />) },
-      { path: 'progress', element: suspend(<Progress />) },
-      { path: 'course/:slug', element: suspend(<CourseHub />) },
+      { index: true, element: suspend(<Overview />, 'dashboard') },
+      { path: 'courses', element: suspend(<MyCourses />, 'cards') },
+      { path: 'progress', element: suspend(<Progress />, 'dashboard') },
+      { path: 'course/:slug', element: suspend(<CourseHub />, 'detail') },
       { path: 'exams', element: suspend(<UpcomingExams />) },
-      { path: 'exam-positions', element: suspend(<ExamPositions />) },
-      { path: 'exams/:examId', element: suspend(<ExamRunner />) },
+      { path: 'exam-positions', element: suspend(<ExamPositions />, 'table') },
+      { path: 'exams/:examId', element: suspend(<ExamRunner />, 'exam') },
       { path: 'exams/:examId/result', element: suspend(<ExamResult />) },
       { path: 'learn/:slug', element: <LearnRedirect /> },
       { path: 'notice', element: suspend(<Notices />) },
-      { path: 'payments', element: suspend(<PaymentHistory />) },
-      { path: 'account', element: suspend(<MyAccount />) },
+      { path: 'payments', element: suspend(<PaymentHistory />, 'table') },
+      { path: 'account', element: suspend(<MyAccount />, 'form') },
       { path: 'complaints', element: suspend(<Complaints />) },
       { path: 'complaints/:complaintId', element: suspend(<ComplaintDetail />) },
       { path: 'subscriptions', element: suspend(<Subscriptions />) },
       { path: 'subscriptions/:batchId', element: suspend(<SubscriptionDetail />) },
       { path: 'subscriptions/:batchId/add', element: suspend(<AddSubscription />) },
-      { path: 'checkout/:slug', element: suspend(<Checkout />) },
+      { path: 'checkout/:slug', element: suspend(<Checkout />, 'form') },
       { path: 'invoices/:invoiceId', element: suspend(<Invoice />) },
       { path: '*', element: <Navigate to="/dashboard" replace /> },
     ],
@@ -183,12 +182,12 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: suspend(<AdminOverview />) },
-      { path: 'students', element: suspend(<AdminStudents />) },
+      { index: true, element: suspend(<AdminOverview />, 'dashboard') },
+      { path: 'students', element: suspend(<AdminStudents />, 'table') },
       { path: 'students/:studentId', element: suspend(<AdminStudentDetail />) },
       { path: 'complaints', element: suspend(<AdminComplaints />) },
       { path: 'notices', element: suspend(<AdminNotices />) },
-      { path: 'courses', element: suspend(<AdminCourses />) },
+      { path: 'courses', element: suspend(<AdminCourses />, 'table') },
       {
         path: 'courses/:id',
         element: suspend(<CourseShell />),
@@ -206,8 +205,8 @@ const router = createBrowserRouter([
       { path: 'videos', element: <Navigate to="/admin/courses" replace /> },
       { path: 'exams', element: <Navigate to="/admin/courses" replace /> },
       { path: 'schedules', element: <Navigate to="/admin/courses" replace /> },
-      { path: 'revenue', element: suspend(<AdminRevenue />) },
-      { path: 'reports', element: suspend(<AdminReports />) },
+      { path: 'revenue', element: suspend(<AdminRevenue />, 'dashboard') },
+      { path: 'reports', element: suspend(<AdminReports />, 'dashboard') },
       { path: '*', element: <Navigate to="/admin" replace /> },
     ],
   },

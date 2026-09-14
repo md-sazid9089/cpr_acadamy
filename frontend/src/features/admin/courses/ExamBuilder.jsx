@@ -11,7 +11,7 @@ import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import Input, { Select } from '@/components/ui/Input.jsx';
 import { EXAM_TYPES, QUESTION_TYPES } from '@/constants';
 import { cn } from '@/lib/utils';
@@ -59,9 +59,7 @@ export default function ExamBuilder() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-start justify-center pt-20">
-        <Spinner size="lg" label="Loading exam…" />
-      </div>
+      <ContentSkeleton variant="exam" label="Loading exam" />
     );
   }
 

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchAdminStats } from './api/admin.api.js';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatBDT } from '@/lib/utils';
 
 export default function AdminOverview() {
@@ -13,9 +13,7 @@ export default function AdminOverview() {
 
   if (isLoading || !stats) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading dashboard…" />
-      </div>
+      <ContentSkeleton variant="dashboard" label="Loading dashboard" />
     );
   }
 

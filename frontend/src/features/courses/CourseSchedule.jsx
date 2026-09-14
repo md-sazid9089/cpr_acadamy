@@ -4,7 +4,7 @@ import { useCourse } from './api/courses.queries.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
 import { useCourseSchedule } from '@/features/course-hub/api/courseHub.queries.js';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { CONTACT, CATEGORY_SLUGS } from '@/constants';
 
@@ -28,9 +28,7 @@ export default function CourseSchedule() {
 
   if (isLoading || routineLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-surface-dark">
-        <Spinner size="lg" label="Loading schedule…" />
-      </div>
+      <PageSkeleton variant="list" />
     );
   }
 

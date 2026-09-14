@@ -3,7 +3,7 @@ import { FaCircleCheck, FaCircleInfo, FaDesktop, FaMobileScreen } from 'react-ic
 import { useDevices, useRequestDeviceVerification } from '../../api/dashboard.queries.js';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 
 /** One device row — icon, "Device . Platform . Browser", status marker. */
 function DeviceRow({ device, verified }) {
@@ -59,9 +59,7 @@ export default function DeviceTab() {
 
   if (isLoading || !data) {
     return (
-      <div className="flex justify-center py-16">
-        <Spinner size="lg" label="Loading your devices…" />
-      </div>
+      <ContentSkeleton label="Loading your devices" />
     );
   }
 

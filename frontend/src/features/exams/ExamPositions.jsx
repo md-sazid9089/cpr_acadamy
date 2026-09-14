@@ -8,7 +8,7 @@ import DashboardPageHeader from '@/features/student-dashboard/components/Dashboa
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatDateTime } from '@/lib/utils';
 
 const SELECT = 'mt-1 h-11 w-full min-w-0 rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-surface-dark dark:text-brand-200';
@@ -25,7 +25,7 @@ function Standings({ examId, demo = false }) {
     retry: false,
   });
 
-  if (isLoading) return <div className="flex min-h-80 items-center justify-center"><Spinner label="Loading positions..." /></div>;
+  if (isLoading) return <ContentSkeleton variant="table" label="Loading positions" />;
   if (error || !data) return <EmptyState
     title={error?.code === 'RESULTS_NOT_RELEASED' ? 'Positions not released yet' : 'Positions unavailable'}
     description={error?.message}
@@ -148,7 +148,7 @@ export default function ExamPositions({ demo = false } = {}) {
       {demo ? <div role="note" className="flex flex-wrap items-center gap-3 border-b border-stone-200 pb-4 text-sm text-stone-600 dark:text-brand-200">
         <Badge tone="neutral">Demo data</Badge><span>Fictional students and scores</span>
       </div> : import.meta.env?.DEV && <div className="flex justify-end"><Button variant="outline" to="/demo/exam-positions">Preview sample data</Button></div>}
-      {isLoading ? <div className="flex justify-center py-20"><Spinner label="Loading exams..." /></div>
+      {isLoading ? <ContentSkeleton variant="table" label="Loading exams" />
         : error ? <EmptyState title="Exams unavailable" description={error.message} action={<Button variant="outline" onClick={() => refetch()}>Retry</Button>} />
           : params.has('examId') && !requestedExam ? <EmptyState title="Exam unavailable" action={<Button variant="outline" onClick={() => setParams({})}>All exam positions</Button>} />
           : !exams.length ? <EmptyState title="No exams available" action={<Button to="/dashboard/courses">My courses</Button>} />

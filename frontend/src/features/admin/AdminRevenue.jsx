@@ -7,7 +7,7 @@ import Table from '@/components/ui/Table.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Modal from '@/components/ui/Modal.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import Input, { Textarea } from '@/components/ui/Input.jsx';
 import { PAYMENT_METHODS, PAYMENT_STATUS } from '@/constants';
 import { cn, formatBDT, formatDateTime, formatNumber } from '@/lib/utils';
@@ -181,9 +181,7 @@ export default function AdminRevenue() {
 
   if (isLoading || !data) {
     return (
-      <div className="flex min-h-screen items-start justify-center pt-20">
-        <Spinner size="lg" label="Loading revenue…" />
-      </div>
+      <ContentSkeleton variant="dashboard" label="Loading revenue" />
     );
   }
 

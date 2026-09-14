@@ -2,16 +2,14 @@ import { useProgressSummary } from './api/dashboard.queries.js';
 import ProgressBar from './components/ProgressBar.jsx';
 import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 
 export default function Progress() {
   const { data, isLoading } = useProgressSummary();
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading progress…" />
-      </div>
+      <ContentSkeleton variant="dashboard" label="Loading progress" />
     );
   }
 

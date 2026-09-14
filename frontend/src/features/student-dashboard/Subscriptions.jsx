@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useSubscriptionBatches } from './api/dashboard.queries.js';
 import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import DashboardPanel from './components/DashboardPanel.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Button from '@/components/ui/Button.jsx';
 
@@ -28,9 +28,7 @@ export default function Subscriptions() {
 
       <DashboardPanel title="Subscription Available Batches">
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Spinner size="lg" label="Loading batches…" />
-          </div>
+          <ContentSkeleton variant="cards" label="Loading batches" />
         ) : batches.length === 0 ? (
           <EmptyState
             title="No subscription available batches"

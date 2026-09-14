@@ -7,7 +7,7 @@ import { fetchCourseBySlug } from '@/features/courses/api/courses.api.js';
 import { useSubscriptionPlans, useMyCourses } from '@/features/student-dashboard/api/dashboard.queries.js';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { CONTACT, PAYMENT_METHODS } from '@/constants';
 import { cn, formatBDT } from '@/lib/utils';
@@ -53,9 +53,7 @@ export default function Checkout() {
 
   if (isLoading || (planId && plansQuery.isLoading) || (!planId && enrollmentsQuery.isLoading)) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading checkout…" />
-      </div>
+      <ContentSkeleton variant="form" label="Loading checkout" />
     );
   }
 

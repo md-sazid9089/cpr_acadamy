@@ -11,7 +11,7 @@ import DashboardPanel from './components/DashboardPanel.jsx';
 import ComplaintStatusBadge from './components/complaints/ComplaintStatusBadge.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { formatDateTime } from '@/lib/utils';
 
@@ -65,9 +65,7 @@ export default function Complaints() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Spinner size="lg" label="Loading your complains…" />
-          </div>
+          <ContentSkeleton label="Loading your complaints" />
         ) : complaints.length === 0 ? (
           <EmptyState
             title="No complains yet"

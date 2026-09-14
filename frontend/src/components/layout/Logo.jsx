@@ -23,17 +23,13 @@ export default function Logo({ className, compact = false }) {
       className={cn('-ml-2 flex shrink-0 items-center lg:-ml-4', className)}
       aria-label="CPR Medical Academy, home"
     >
-      {/* Square + object-cover so the round crop stays a true circle rather
-          than an ellipse — the source is 2292x1824, so cover trims the sides
-          instead of squashing. The ring keeps the mark defined against the
-          white bar, since the artwork's own background is near-white. */}
       <img
         src="/assets/spotlight/cpr-logo.png"
         alt="CPR Medical Academy"
         width="240"
         height="191"
         className={cn(
-          'aspect-square rounded-full object-cover border border-stone-200  ',
+          'aspect-square rounded-none object-cover border border-stone-200',
           compact ? 'h-11 w-11' : 'h-[4.5rem] w-[4.5rem]',
         )}
       />

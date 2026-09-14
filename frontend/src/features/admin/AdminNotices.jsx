@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import Input, { Select, Textarea } from '@/components/ui/Input.jsx';
 import { formatDateTime } from '@/lib/utils';
 
@@ -65,9 +65,7 @@ export default function AdminNotices() {
           }
         />
         {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Spinner label="Loading notices…" />
-          </div>
+          <ContentSkeleton label="Loading notices" />
         ) : notices.length === 0 ? (
           <EmptyState
             title="No notices yet"

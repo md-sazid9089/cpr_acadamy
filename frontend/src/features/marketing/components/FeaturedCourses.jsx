@@ -4,7 +4,7 @@ import CourseCard from '@/features/courses/components/CourseCard.jsx';
 import { useFeaturedCourses } from '@/features/courses/api/courses.queries.js';
 import { useEnrollAction } from '@/features/courses/hooks/useEnrollAction.js';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 
 /** Category pills + featured course grid — the core of the homepage. */
@@ -55,9 +55,7 @@ export default function FeaturedCourses() {
 
         <div className="mt-10">
           {isLoading ? (
-            <div className="flex justify-center py-16">
-              <Spinner size="lg" label="Loading courses…" />
-            </div>
+            <ContentSkeleton variant="cards" label="Loading courses" />
           ) : isError ? (
             <EmptyState
               title="Couldn't load featured batches"

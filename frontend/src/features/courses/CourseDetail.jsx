@@ -14,7 +14,7 @@ import {
 import { useCourse } from './api/courses.queries.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import InstructorReviews from './components/InstructorReviews.jsx';
 import { CONTACT, CATEGORY_SLUGS } from '@/constants';
@@ -36,9 +36,7 @@ export default function CourseDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-surface-dark">
-        <Spinner size="lg" label="Loading course details…" />
-      </div>
+      <PageSkeleton variant="detail" />
     );
   }
 

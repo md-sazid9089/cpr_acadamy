@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { FiShield } from 'react-icons/fi';
 import Logo from './Logo.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -117,7 +118,7 @@ function ProfileMenu({ user, dashboardPath, onLogout }) {
             onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:text-brand-200 dark:hover:bg-surface-dark"
           >
-            Go to Dashboard
+            {user.role === 'admin' ? 'Admin panel' : 'Go to Dashboard'}
           </Link>
           <button
             type="button"
@@ -146,6 +147,7 @@ export default function Navbar() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
   const isAuthenticated = Boolean(user && accessToken);
+  const isAdmin = isAuthenticated && user.role === 'admin';
   const dashboardPath = user?.role === 'admin' ? '/admin' : '/dashboard';
 
   // Close the drawer whenever the route changes.
@@ -168,7 +170,7 @@ export default function Navbar() {
       <nav className="container-page flex h-20 items-center justify-between gap-4" aria-label="Main">
         <Logo />
 
-        <div className="hidden items-center gap-2 lg:flex xl:gap-4">
+        <div className="hidden items-center gap-2 xl:flex xl:gap-4">
           {NAV_LINKS.map((link) => (
             <NavLink key={link.to} to={link.to} end={link.end} className={linkClasses}>
               {link.label}
@@ -176,7 +178,15 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+          {isAdmin && (
+            <Button to="/admin" size="sm" className="gap-2" aria-label="Admin panel">
+              <FiShield className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="sm:hidden">Admin</span>
+              <span className="hidden sm:inline">Admin panel</span>
+            </Button>
+          )}
+          <div className="hidden items-center gap-3 xl:flex">
           <ThemeToggle />
           {isAuthenticated ? (
             <ProfileMenu user={user} dashboardPath={dashboardPath} onLogout={logout} />
@@ -190,9 +200,9 @@ export default function Navbar() {
               </Button>
             </>
           )}
-        </div>
+          </div>
 
-        <div className="flex items-center gap-1 lg:hidden">
+        <div className="flex items-center gap-1 xl:hidden">
           <ThemeToggle />
           <button
             type="button"
@@ -210,10 +220,11 @@ export default function Navbar() {
             </svg>
           </button>
         </div>
+        </div>
       </nav>
 
       {mobileOpen && (
-        <div className="border-t border-stone-200 bg-white lg:hidden dark:border-stone-200 dark:bg-surface-dark">
+        <div className="border-t border-stone-200 bg-white xl:hidden dark:border-stone-200 dark:bg-surface-dark">
           <div className="container-page space-y-1 py-4">
             {NAV_LINKS.map((link) => (
               <NavLink
@@ -244,7 +255,7 @@ export default function Navbar() {
                     </span>
                   </div>
                   <Button to={dashboardPath} variant="outline" fullWidth>
-                    Dashboard
+                    {isAdmin ? 'Admin panel' : 'Dashboard'}
                   </Button>
                   <Button variant="ghost" fullWidth onClick={logout}>
                     Log out

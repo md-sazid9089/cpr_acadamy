@@ -3,7 +3,7 @@ import { useNotices } from './api/dashboard.queries.js';
 import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import DashboardPanel from './components/DashboardPanel.jsx';
 import Badge from '@/components/ui/Badge.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { formatDateTime } from '@/lib/utils';
 
@@ -25,9 +25,7 @@ export default function Notices() {
 
       <DashboardPanel title="Notice Board">
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Spinner size="lg" label="Loading notices…" />
-          </div>
+          <ContentSkeleton label="Loading notices" />
         ) : notices.length === 0 ? (
           <EmptyState
             title="No notices yet"

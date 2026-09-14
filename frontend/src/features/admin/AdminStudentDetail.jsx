@@ -10,7 +10,7 @@ import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { ACCOUNT_STATUS, PAYMENT_STATUS } from '@/constants';
 import { formatBDT, formatDate, formatDateTime } from '@/lib/utils';
 
@@ -59,9 +59,7 @@ export default function AdminStudentDetail() {
 
   if (studentQuery.isLoading) {
     return (
-      <div className="flex min-h-screen items-start justify-center pt-20">
-        <Spinner size="lg" label="Loading student…" />
-      </div>
+      <ContentSkeleton variant="form" label="Loading student" />
     );
   }
 

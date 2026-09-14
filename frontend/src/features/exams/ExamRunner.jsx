@@ -13,7 +13,7 @@ import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { QUESTION_TYPES } from '@/constants';
 import { cn } from '@/lib/utils';
 
@@ -123,9 +123,7 @@ export default function ExamRunner() {
 
   if (isLoading || !current) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading exam paper…" />
-      </div>
+      <ContentSkeleton variant="exam" label="Loading exam paper" />
     );
   }
 

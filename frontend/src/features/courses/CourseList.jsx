@@ -5,7 +5,7 @@ import CourseCard from './components/CourseCard.jsx';
 import { useCourses } from './api/courses.queries.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
 import Input from '@/components/ui/Input.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { CATEGORY_LABELS, CATEGORY_SLUGS, COURSE_CATEGORIES } from '@/constants';
@@ -62,9 +62,7 @@ export default function CourseList() {
 
       <section className="container-page py-12">
         {isLoading ? (
-          <div className="flex justify-center py-20">
-            <Spinner size="lg" label="Loading courses…" />
-          </div>
+          <ContentSkeleton variant="cards" label="Loading courses" />
         ) : isError ? (
           <EmptyState
             title="Couldn't load courses"

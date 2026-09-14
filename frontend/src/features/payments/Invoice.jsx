@@ -4,7 +4,7 @@ import { fetchInvoice } from './api/payments.api.js';
 import Card from '@/components/ui/Card.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { PAYMENT_METHODS, CONTACT } from '@/constants';
 import { formatBDT, formatDate } from '@/lib/utils';
@@ -34,9 +34,7 @@ export default function Invoice() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading invoice…" />
-      </div>
+      <ContentSkeleton variant="table" label="Loading invoice" />
     );
   }
 

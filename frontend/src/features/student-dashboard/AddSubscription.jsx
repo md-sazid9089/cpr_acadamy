@@ -3,7 +3,7 @@ import { FaCheck } from 'react-icons/fa6';
 import { useSubscriptionBatches, useSubscriptionPlans } from './api/dashboard.queries.js';
 import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import DashboardPanel from './components/DashboardPanel.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatBDT } from '@/lib/utils';
 
 /**
@@ -27,9 +27,7 @@ export default function AddSubscription() {
 
       <DashboardPanel title="Available Subscription Packages">
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Spinner size="lg" label="Loading packages…" />
-          </div>
+          <ContentSkeleton variant="cards" label="Loading packages" />
         ) : plans.length === 0 ? (
           <p className="py-10 text-center text-sm text-stone-500 dark:text-brand-200">
             No subscription packages are on offer for this batch right now.

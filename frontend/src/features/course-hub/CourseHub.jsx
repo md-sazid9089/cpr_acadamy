@@ -5,7 +5,7 @@ import AtAGlanceTab from './tabs/AtAGlanceTab.jsx';
 import ExamTab from './tabs/ExamTab.jsx';
 import ScheduleTab from './tabs/ScheduleTab.jsx';
 import DashboardPageHeader from '@/features/student-dashboard/components/DashboardPageHeader.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useMyCourses } from '@/features/student-dashboard/api/dashboard.queries.js';
@@ -34,9 +34,7 @@ export default function CourseHub() {
 
   if (coursesLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner size="lg" label="Loading course…" />
-      </div>
+      <ContentSkeleton variant="detail" label="Loading course" />
     );
   }
 

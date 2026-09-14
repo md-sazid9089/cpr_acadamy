@@ -4,7 +4,7 @@ import { FaClipboardList, FaCircleCheck } from 'react-icons/fa6';
 import { useCourseExams } from '../api/courseHub.queries.js';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatDateTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -85,9 +85,7 @@ export default function ExamTab({ courseSlug }) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-16">
-        <Spinner size="lg" label="Loading exams…" />
-      </div>
+      <ContentSkeleton label="Loading exams" />
     );
   }
 

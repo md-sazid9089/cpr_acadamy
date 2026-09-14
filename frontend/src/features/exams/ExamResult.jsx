@@ -8,7 +8,7 @@ import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import DashboardPageHeader from '@/features/student-dashboard/components/DashboardPageHeader.jsx';
 import { QUESTION_TYPES } from '@/constants';
 import { formatDateTime } from '@/lib/utils';
@@ -36,9 +36,7 @@ export default function ExamResult() {
 
   if (isLoading || !result) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading result…" />
-      </div>
+      <ContentSkeleton variant="dashboard" label="Loading result" />
     );
   }
 

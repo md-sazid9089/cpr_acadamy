@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { FaStar, FaRegStar, FaTrashCan, FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
 import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDate } from '@/lib/utils';
 import {
@@ -141,7 +142,7 @@ export default function InstructorReviews({ slug }) {
           </div>
         )}
       </div>
-      {reviews.isLoading ? <Spinner label="Loading instructor reviews" /> : reviews.isError ? (
+      {reviews.isLoading ? <ContentSkeleton label="Loading instructor reviews" /> : reviews.isError ? (
         <div className="mb-6 space-y-3">
           <p role="alert" className="text-sm text-red-600">Reviews could not be loaded.</p>
           <Button variant="outline" onClick={() => reviews.refetch()}>Try again</Button>

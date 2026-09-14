@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import Spinner from './Spinner.jsx';
+import { Skeleton } from './Skeleton.jsx';
 import EmptyState from './EmptyState.jsx';
 
 /**
@@ -19,15 +19,7 @@ export default function Table({
   onRowClick,
   className,
 }) {
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Spinner label="Loading…" />
-      </div>
-    );
-  }
-
-  if (!rows.length) {
+  if (!isLoading && !rows.length) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }
 
@@ -35,7 +27,8 @@ export default function Table({
     align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
 
   return (
-    <div className={cn('overflow-x-auto', className)}>
+    <div className={cn('overflow-x-auto', className)} aria-busy={isLoading}>
+      {isLoading && <span role="status" className="sr-only">Loading table</span>}
       <table className="w-full min-w-[36rem] border-collapse text-sm">
         <thead>
           <tr className="border-b border-stone-200 dark:border-stone-200">
@@ -54,7 +47,15 @@ export default function Table({
           </tr>
         </thead>
         <tbody className="divide-y divide-stone-200 dark:divide-stone-200">
-          {rows.map((row, index) => (
+          {isLoading ? Array.from({ length: 5 }, (_, index) => (
+            <tr key={index} aria-hidden="true">
+              {columns.map((column) => (
+                <td key={column.key} className={cn('px-4 py-4', column.className)}>
+                  <Skeleton className={cn('h-4 w-3/4', column.align === 'right' && 'ml-auto', column.align === 'center' && 'mx-auto')} />
+                </td>
+              ))}
+            </tr>
+          )) : rows.map((row, index) => (
             <tr
               key={getRowId(row, index)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}

@@ -6,4 +6,5 @@ export { default as Modal } from './Modal.jsx';
 export { default as Carousel } from './Carousel.jsx';
 export { default as Table } from './Table.jsx';
 export { default as Spinner, PageSpinner } from './Spinner.jsx';
+export { default as ContentSkeleton, Skeleton, PageSkeleton } from './Skeleton.jsx';
 export { default as EmptyState } from './EmptyState.jsx';

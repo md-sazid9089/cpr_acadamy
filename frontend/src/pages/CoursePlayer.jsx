@@ -14,7 +14,7 @@ import {
 } from 'react-icons/fa6';
 import VideoPlayer from '@/features/learning/components/VideoPlayer.jsx';
 import SecurePdfViewer from '@/features/learning/components/SecurePdfViewer.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useCourseVideos } from '@/features/course-hub/api/courseHub.queries.js';
 import { markLessonComplete } from '@/features/course-hub/api/courseHub.api.js';
@@ -206,9 +206,7 @@ export default function CoursePlayer() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-stone-50">
-        <Spinner size="lg" label="Loading lecture…" />
-      </div>
+      <PageSkeleton variant="detail" />
     );
   }
 

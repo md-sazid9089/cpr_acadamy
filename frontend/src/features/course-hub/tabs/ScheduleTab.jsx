@@ -1,5 +1,5 @@
 import { useCourseSchedule } from '../api/courseHub.queries.js';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 
 /**
  * Schedule tab — displays the batch routine table directly inside the
@@ -10,9 +10,7 @@ export default function ScheduleTab({ courseSlug }) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-16">
-        <Spinner size="lg" label="Loading schedule…" />
-      </div>
+      <ContentSkeleton label="Loading schedule" />
     );
   }
 

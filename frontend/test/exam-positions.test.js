@@ -56,7 +56,7 @@ function harness(search = '', demo = false) {
     '@/components/ui/Button.jsx': { __esModule: true, default: 'button' },
     '@/components/ui/Badge.jsx': { __esModule: true, default: 'badge' },
     '@/components/ui/EmptyState.jsx': { __esModule: true, default: 'empty' },
-    '@/components/ui/Spinner.jsx': { __esModule: true, default: 'spinner' },
+    '@/components/ui/Skeleton.jsx': { __esModule: true, default: 'skeleton' },
     '@/features/student-dashboard/components/DashboardPageHeader.jsx': { __esModule: true, default: 'header' },
     '@/lib/utils': { formatDateTime: value => value },
     './demo-positions.js': { demoExams, demoPositions },
@@ -104,7 +104,9 @@ test('positions keep the personal summary across pages, share ties and reset pag
 test('positions distinguish empty, loading and embargoed results without displaying cached scores', () => {
   const app = harness();
   app.context.loading = true;
-  assert.equal(nodes(app.standings()).some(node => node.type === 'spinner'), true);
+  const loadingView = app.standings();
+  assert.equal(nodes(loadingView).some(node => node.type === 'skeleton' && node.props.variant === 'table'), true);
+  assert.doesNotMatch(content(loadingView), /Student 26|Position 26/);
   app.context.loading = false;
   app.context.empty = true;
   let view = app.standings();

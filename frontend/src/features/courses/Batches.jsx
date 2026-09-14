@@ -7,7 +7,7 @@ import BatchFilters from './components/BatchFilters.jsx';
 import { useCourses } from './api/courses.queries.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
 import Input from '@/components/ui/Input.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { BATCH_GROUPS } from '@/constants';
@@ -139,9 +139,7 @@ export default function Batches() {
 
           <div>
             {isLoading ? (
-              <div className="flex justify-center py-20">
-                <Spinner size="lg" label="Loading batches…" />
-              </div>
+              <ContentSkeleton variant="cards" label="Loading batches" />
             ) : isError ? (
               <EmptyState
                 title="Couldn't load batches"

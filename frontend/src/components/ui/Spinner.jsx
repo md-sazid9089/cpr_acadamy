@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { PageSkeleton } from './Skeleton.jsx';
 
 const SIZES = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-10 w-10' };
 
@@ -20,11 +21,6 @@ export default function Spinner({ size = 'md', label, className }) {
   );
 }
 
-/** Full-viewport loader for route-level Suspense fallbacks. */
-export function PageSpinner() {
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Spinner size="lg" label="Loading…" />
-    </div>
-  );
+export function PageSpinner(props) {
+  return <PageSkeleton {...props} />;
 }

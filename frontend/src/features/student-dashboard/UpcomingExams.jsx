@@ -4,7 +4,7 @@ import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import Card from '@/components/ui/Card.jsx';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { EXAM_STATUS } from '@/constants';
 import { formatDateTime } from '@/lib/utils';
@@ -16,9 +16,7 @@ export default function UpcomingExams() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" label="Loading exams…" />
-      </div>
+      <ContentSkeleton label="Loading exams" />
     );
   }
 

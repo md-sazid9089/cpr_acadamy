@@ -6,7 +6,7 @@ import { fetchAdminComplaints, replyToComplaintAsAdmin, setComplaintStatus } fro
 import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import Spinner from '@/components/ui/Spinner.jsx';
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { Textarea } from '@/components/ui/Input.jsx';
 import ComplaintStatusBadge from '@/features/student-dashboard/components/complaints/ComplaintStatusBadge.jsx';
 import { cn, formatDateTime } from '@/lib/utils';
@@ -79,9 +79,7 @@ export default function AdminComplaints() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Spinner label="Loading threads…" />
-          </div>
+          <ContentSkeleton label="Loading threads" />
         ) : rows.length === 0 ? (
           <EmptyState title="Nothing here" description="No threads match this filter." />
         ) : (
