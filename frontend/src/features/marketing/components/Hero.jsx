@@ -1,5 +1,6 @@
 import Carousel from '@/components/ui/Carousel.jsx';
 import Button from '@/components/ui/Button.jsx';
+import ValueProps from './ValueProps.jsx';
 
 /**
  * Promotional posters, served from `public/assets/carousel/`.
@@ -50,27 +51,17 @@ const CAROUSEL_SLIDES = [
 ];
 
 export default function Hero() {
-  // `isolate` makes this section a stacking context, so the -z-10 decorative
-  // layers paint above its own background instead of disappearing behind it.
-  // The min-height fills the viewport below the announcement strip (~2.5rem);
-  // `svh` rather than `vh` so mobile browser chrome doesn't push the fold off.
   return (
-    <section className="relative isolate flex min-h-[calc(100svh-2.5rem)] items-center overflow-hidden bg-surface-dark">
-      {/* Background photo: a dark 3D DNA render, so it needs no dark-mode twin.
-          `object-cover` + right-centre focus keeps the sharp helix (which sits in
-          the upper-right of the source) in frame at every aspect ratio. */}
+    <section className="homepage-hero hero-surface relative isolate flex flex-col items-center justify-center gap-6 overflow-hidden lg:gap-12">
       <img
-        src="/assets/bg/Kerfin7-NEA-2128.jpg"
+        src="/assets/bg/Kerfin7-NEA-2128-1920.webp"
+        srcSet="/assets/bg/Kerfin7-NEA-2128-768.webp 768w, /assets/bg/Kerfin7-NEA-2128-1920.webp 1920w"
+        sizes="100vw"
         alt=""
         aria-hidden="true"
-        width={2000}
-        height={3000}
-        fetchpriority="high"
-        className="pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover object-[70%_30%]"
+        decoding="async"
+        className="pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover object-[70%_30%] opacity-20 dark:opacity-40"
       />
-
-      {/* pt-16 clears the navbar, which overlays this section (see
-          PublicLayout) so the photo runs up behind the transparent bar. */}
       <div className="container-page w-full pb-6 pt-20 lg:pb-10 lg:pt-24">
         {/* The visible hero is artwork, so the page's h1 is screen-reader only —
             without it the homepage would have no top-level heading at all. */}
@@ -80,24 +71,33 @@ export default function Hero() {
 
         {/* Two-column hero: marketing copy on the left, poster carousel card on
             the right. Below lg the copy stacks above the card. */}
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
+        <div className="relative top-10 grid items-center gap-12 lg:top-16 lg:grid-cols-2 lg:gap-20">
           <div className="text-center lg:text-left" lang="bn">
-            <h2 className="text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white">
+            <h2 className="text-4xl font-extrabold leading-tight tracking-normal text-brand-900 sm:text-5xl lg:text-6xl dark:text-white">
               আপনার সফলতার প্রস্তুতি শুরু হোক{' '}
-              <span className="text-brand-600 dark:text-brand-400">CPR</span>{' '}
+              <span className="text-brand-600 dark:text-brand-300">CPR</span>{' '}
               থেকে
             </h2>
 
-            <p className="mx-auto mt-5 max-w-xl text-base font-medium text-slate-600 sm:text-lg lg:mx-0 dark:text-slate-300">
+            <p className="mx-auto mt-7 max-w-xl text-base font-medium text-stone-600 sm:text-lg lg:mx-0 dark:text-brand-200">
               সরকারি চাকরি ও অন্যান্য প্রতিযোগিতামূলক পরীক্ষার জন্য সাজানো কোর্স থেকে আপনার
               প্রয়োজন অনুযায়ী প্রস্তুতি শুরু করুন
             </p>
 
-            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center lg:justify-start">
-              <Button to="/register" size="lg">
+            <div className="button-group mt-10 items-stretch justify-center sm:items-center lg:justify-start">
+              <Button
+                to="/register"
+                variant="accent"
+                size="lg"
+                shape="pill"
+              >
                 প্রস্তুতি শুরু করুন
               </Button>
-              <Button to="/courses" variant="outline" size="lg">
+              <Button
+                to="/courses"
+                variant="outline"
+                size="lg"
+              >
                 কোর্সগুলো দেখুন
               </Button>
             </div>
@@ -111,9 +111,7 @@ export default function Hero() {
               fit="contain"
               // Landscape frame with side arrows, matching the reference card.
               showArrows
-              // Modern floating frame: deep rounding, an elevated soft shadow and
-              // a translucent ring instead of the plain bordered box.
-              frameClassName="rounded-[2rem] shadow-2xl shadow-brand-900/25 ring-1 ring-white/50 dark:ring-white/10"
+              frameClassName="rounded-2xl border border-stone-200 dark:border-stone-200"
               // Wide landscape card on every viewport.
               aspectClassName="aspect-[16/10]"
               label="Course promotions"
@@ -121,6 +119,7 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      <ValueProps />
     </section>
   );
 }

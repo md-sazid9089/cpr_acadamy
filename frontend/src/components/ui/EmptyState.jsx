@@ -11,9 +11,9 @@ export default function EmptyState({ title, description, action, icon, className
           </svg>
         )}
       </div>
-      <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-white">{title}</h3>
+      <h3 className="mt-4 text-base font-semibold text-stone-900 dark:text-white">{title}</h3>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-stone-500 dark:text-brand-200">{description}</p>
       )}
       {action && <div className="mt-5">{action}</div>}
     </div>

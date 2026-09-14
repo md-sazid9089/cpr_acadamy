@@ -34,7 +34,7 @@ export default function PaymentHistory() {
       header: 'Amount',
       align: 'right',
       render: (row) => (
-        <span className="font-semibold text-slate-900 dark:text-white">{formatBDT(row.amount)}</span>
+        <span className="font-semibold text-stone-900 dark:text-white">{formatBDT(row.amount)}</span>
       ),
     },
     {

@@ -38,10 +38,10 @@ export default function BatchGroupGrid({ category, counts, className }) {
             key={group.id}
             to={groupHref(group)}
             className={cn(
-              'group flex h-full min-h-[120px] flex-col items-center justify-between rounded-xl border border-brand-400 bg-white p-3.5 text-center shadow-sm transition-all duration-200 sm:min-h-[140px] sm:p-5',
-              'hover:-translate-y-1 hover:border-brand-600 hover:shadow-md',
+              'group flex h-full min-h-[120px] flex-col items-center justify-between rounded-xl border border-stone-200 bg-white p-3.5 text-center transition-all duration-200 sm:min-h-[140px] sm:p-5',
+              'hover:-translate-y-1 hover:border-stone-200 border border-stone-200',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600',
-              'dark:border-slate-700 dark:bg-surface-dark-subtle dark:hover:border-brand-500 dark:hover:bg-slate-900',
+              'dark:border-stone-200 dark:bg-surface-dark-subtle dark:hover:border-stone-200 dark:hover:bg-surface-dark',
               // On 2-col mobile view, center the last odd item (BMDC Licensing)
               isLastOdd &&
                 'col-span-2 w-full max-w-[calc(50%-0.375rem)] mx-auto md:col-span-1 md:max-w-none',
@@ -58,13 +58,13 @@ export default function BatchGroupGrid({ category, counts, className }) {
               </h3>
 
               {group.note && (
-                <p className="mt-1 text-[10px] leading-snug text-slate-500 sm:text-[11px] dark:text-slate-400">
+                <p className="mt-1 text-[10px] leading-snug text-stone-500 sm:text-[11px] dark:text-brand-200">
                   {group.note}
                 </p>
               )}
 
               {counts?.[group.id] != null && counts[group.id] > 0 && (
-                <p className="mt-1 text-[10px] text-slate-400 sm:text-xs">
+                <p className="mt-1 text-[10px] text-stone-400 sm:text-xs">
                   {counts[group.id]} {counts[group.id] === 1 ? 'batch' : 'batches'}
                 </p>
               )}

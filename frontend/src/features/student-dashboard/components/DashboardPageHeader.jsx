@@ -9,15 +9,17 @@ import {
   FaLayerGroup,
   FaComments,
   FaClipboard,
+  FaTrophy,
 } from 'react-icons/fa6';
 
 const BUTTON =
-  'inline-flex min-h-[40px] shrink-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 sm:px-4 sm:text-sm dark:border-slate-700 dark:bg-surface-dark-subtle dark:text-slate-200 dark:hover:bg-slate-800';
+  'inline-flex min-h-[40px] shrink-0 items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-700 transition hover:bg-stone-50 sm:px-4 sm:text-sm dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200 dark:hover:bg-surface-dark';
 
 /** Quick-links shown in the header Dashboard dropdown. */
 const DASHBOARD_MENU = [
   { to: '/dashboard', label: 'Dashboard', icon: FaTableCellsLarge, end: true },
   { to: '/dashboard/courses', label: 'My Course', icon: FaBook },
+  { to: '/dashboard/exam-positions', label: 'Exam Positions', icon: FaTrophy },
   { to: '/dashboard/account', label: 'My account', icon: FaUser },
   { to: '/dashboard/subscriptions', label: 'Subscriptions', icon: FaLayerGroup },
   { to: '/dashboard/complaints', label: 'Complain Box', icon: FaComments },
@@ -60,14 +62,14 @@ function DashboardMenu() {
         <span className="hidden sm:inline">Dashboard</span>
         <FaChevronDown
           aria-hidden="true"
-          className={`h-3 w-3 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`h-3 w-3 text-stone-500 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-surface-dark"
+          className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 dark:border-stone-200 dark:bg-surface-dark"
         >
           {DASHBOARD_MENU.map(({ to, label, icon: ItemIcon, end }) => (
             <NavLink
@@ -80,8 +82,8 @@ function DashboardMenu() {
                 [
                   'flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors',
                   isActive
-                    ? 'bg-brand-50 text-brand-700 dark:bg-slate-800 dark:text-brand-300'
-                    : 'text-brand-900 hover:bg-brand-50 hover:text-brand-700 dark:text-slate-200 dark:hover:bg-slate-800',
+                    ? 'bg-brand-50 text-brand-700 dark:bg-surface-dark dark:text-brand-300'
+                    : 'text-brand-900 hover:bg-brand-50 hover:text-brand-700 dark:text-brand-200 dark:hover:bg-surface-dark',
                 ].join(' ')
               }
             >

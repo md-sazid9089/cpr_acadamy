@@ -35,3 +35,17 @@ export async function fetchExamList() {
   const { data } = await apiClient.get('/exams', { params: { limit: 100 } });
   return data;
 }
+
+export async function fetchPositionExams({ signal } = {}) {
+  const exams = [];
+  for (let offset = 0; ; offset += 100) {
+    const { data } = await apiClient.get('/exams', { params: { limit: 100, offset }, signal });
+    exams.push(...data);
+    if (data.length < 100) return exams;
+  }
+}
+
+export async function fetchExamPositions(examId, { limit = 10, offset = 0, signal } = {}) {
+  const { data } = await apiClient.get(`/exams/${examId}/positions`, { params: { limit, offset }, signal });
+  return data;
+}

@@ -31,7 +31,7 @@ export default function MtfQuestion({
   return (
     <div className="space-y-2">
       {question.options.map((option, index) => {
-        const picked = value[option.id];
+        const picked = value?.[option.id];
         const expected = correctAnswer?.[option.id];
         const isGraded = readOnly && expected !== undefined;
         const isRight = isGraded && picked === expected;
@@ -43,14 +43,14 @@ export default function MtfQuestion({
             className={cn(
               'flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4',
               isRight
-                ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/40'
+                ? 'border-stone-200 bg-brand-50 dark:border-stone-200 dark:bg-brand-950/40'
                 : isWrong
-                  ? 'border-red-400 bg-red-50 dark:border-red-700 dark:bg-red-950/40'
-                  : 'border-slate-200 dark:border-slate-800',
+                  ? 'border-stone-200 bg-red-50 dark:border-stone-200 dark:bg-red-950/40'
+                  : 'border-stone-200 dark:border-stone-200',
             )}
           >
-            <p className="flex flex-1 items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            <p className="flex flex-1 items-start gap-3 text-sm text-stone-700 dark:text-brand-200">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-100 text-xs font-bold text-stone-500 dark:bg-surface-dark dark:text-brand-200">
                 {LETTERS[index] ?? index + 1}
               </span>
               {option.text}
@@ -72,8 +72,8 @@ export default function MtfQuestion({
                     picked === choice
                       ? choice
                         ? 'bg-brand-600 text-white'
-                        : 'bg-slate-700 text-white dark:bg-slate-600'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700',
+                        : 'bg-stone-700 text-white dark:bg-stone-600'
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200 dark:hover:bg-surface-dark',
                     readOnly && 'cursor-default opacity-90',
                   )}
                 >
@@ -83,7 +83,7 @@ export default function MtfQuestion({
             </div>
 
             {isGraded && (
-              <p className="w-full text-xs font-medium text-slate-500 dark:text-slate-400">
+              <p className="w-full text-xs font-medium text-stone-500 dark:text-brand-200">
                 Correct answer: {expected ? 'True' : 'False'}
               </p>
             )}

@@ -124,7 +124,7 @@ export default function CourseVideosTab() {
                 'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                 filter === option.id
                   ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               {option.label}
@@ -148,10 +148,10 @@ export default function CourseVideosTab() {
             }
           />
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-stone-200 dark:divide-stone-200">
             {groups.map(([date, list]) => (
               <section key={date} className="px-5 py-4">
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-brand-200">
                   {/* Local-time suffix so a bare date does not shift a day west of UTC. */}
                   {formatDate(`${date}T00:00:00`, { weekday: 'long' })}
                   <span className="ml-2 font-normal normal-case tracking-normal">
@@ -163,11 +163,11 @@ export default function CourseVideosTab() {
                   {list.map((video) => (
                     <li
                       key={video.id}
-                      className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800"
+                      className="flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 p-3 dark:border-stone-200"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{video.title}</p>
-                        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                        <p className="truncate text-sm font-medium text-stone-900 dark:text-white">{video.title}</p>
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 dark:text-brand-200">
                           <span>{video.scheduledTime}</span>
                           <span>{video.duration}</span>
                           {video.videoUrl ? (
@@ -181,7 +181,7 @@ export default function CourseVideosTab() {
                               Video
                             </a>
                           ) : (
-                            <span className="text-amber-700 dark:text-amber-400">No video source</span>
+                            <span className="text-brand-700 dark:text-brand-400">No video source</span>
                           )}
                           {video.notesUrl && (
                             <a
@@ -296,8 +296,8 @@ export default function CourseVideosTab() {
           </>
         }
       >
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Delete <strong className="text-slate-900 dark:text-white">{deleting?.title}</strong>? Any routine row that
+        <p className="text-sm text-stone-600 dark:text-brand-200">
+          Delete <strong className="text-stone-900 dark:text-white">{deleting?.title}</strong>? Any routine row that
           points at it will show “No class” until you pick another lecture.
         </p>
       </Modal>

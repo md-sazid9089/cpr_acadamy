@@ -1,4 +1,5 @@
 import { useUpcomingExams } from './api/dashboard.queries.js';
+import { FaTrophy } from 'react-icons/fa6';
 import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import Card from '@/components/ui/Card.jsx';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
@@ -24,6 +25,7 @@ export default function UpcomingExams() {
   return (
     <div className="space-y-4">
       <DashboardPageHeader title="My Exams" backTo="/dashboard" />
+      <div className="flex justify-end"><Button variant="outline" to="/dashboard/exam-positions"><FaTrophy aria-hidden="true" />Exam positions</Button></div>
       {!exams.length && (
         <EmptyState
           title="No exams scheduled"
@@ -39,19 +41,20 @@ export default function UpcomingExams() {
                 <Badge tone="neutral">{TYPE_LABELS[exam.type]}</Badge>
                 <StatusBadge status={exam.status} />
               </div>
-              <h2 className="mt-2 text-base font-semibold text-slate-900 dark:text-white">
+              <h2 className="mt-2 text-base font-semibold text-stone-900 dark:text-white">
                 {exam.title}
               </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-stone-500 dark:text-brand-200">
                 {exam.courseTitle} · {formatDateTime(exam.scheduledAt)}
               </p>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">
                 {exam.questionCount} questions · {exam.totalMarks} marks · {exam.durationMinutes}{' '}
                 minutes
               </p>
             </div>
 
-            <div className="shrink-0">
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Button variant="outline" to={`/dashboard/exam-positions?examId=${exam.id}`}><FaTrophy aria-hidden="true" />Positions</Button>
               {isRunning ? (
                 <Button to={`/dashboard/exams/${exam.id}`}>Start exam</Button>
               ) : exam.status === EXAM_STATUS.SUBMITTED || exam.status === EXAM_STATUS.PUBLISHED ? (

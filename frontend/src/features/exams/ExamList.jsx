@@ -38,10 +38,10 @@ export default function ExamList() {
               <Badge tone="neutral">{TYPE_LABELS[exam.type]}</Badge>
               <StatusBadge status={exam.status} />
             </div>
-            <h2 className="mt-2 text-base font-semibold text-slate-900 dark:text-white">
+            <h2 className="mt-2 text-base font-semibold text-stone-900 dark:text-white">
               {exam.title}
             </h2>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">
               {formatDateTime(exam.scheduledAt)} · {exam.questionCount} questions ·{' '}
               {exam.durationMinutes} min · {exam.totalMarks} marks
             </p>

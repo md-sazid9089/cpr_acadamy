@@ -46,8 +46,8 @@ export default function Contact() {
   };
 
   return (
-    <div className="bg-white dark:bg-surface-dark">
-      <section className="border-b border-slate-200 bg-surface-subtle py-12 text-center dark:border-slate-800 dark:bg-surface-dark-subtle">
+    <div className="bg-surface-light dark:bg-surface-dark">
+      <section className="bg-surface-light py-12 text-center dark:bg-surface-dark">
         <div className="container-page">
           <h1 className="section-heading">Contact Us</h1>
           <p className="section-subheading mx-auto text-center">
@@ -66,10 +66,10 @@ export default function Contact() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
+              <h2 className="mt-4 text-lg font-semibold text-stone-900 dark:text-white">
                 Message sent
               </h2>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              <p className="mt-1 text-sm text-stone-600 dark:text-brand-200">
                 Thank you. Our admission team will call or message you shortly.
               </p>
               <Button variant="outline" className="mt-5" onClick={() => setSubmitted(false)}>
@@ -123,7 +123,7 @@ export default function Contact() {
                 {...register('message')}
               />
 
-              <Button type="submit" size="lg" isLoading={isSubmitting}>
+              <Button type="submit" fullWidth isLoading={isSubmitting}>
                 Send message
               </Button>
             </form>
@@ -133,7 +133,7 @@ export default function Contact() {
         <aside className="space-y-4">
           {CONTACT_CARDS.map((item) => (
             <Card key={item.label} className="p-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">
                 {item.label}
               </p>
               {item.href ? (
@@ -146,7 +146,7 @@ export default function Contact() {
                   {item.value}
                 </a>
               ) : (
-                <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">
+                <p className="mt-1 text-sm font-medium text-stone-800 dark:text-brand-200">
                   {item.value}
                 </p>
               )}
@@ -154,10 +154,10 @@ export default function Contact() {
           ))}
 
           <Card className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Address</p>
-            <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">{CONTACT.address}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">Address</p>
+            <p className="mt-1 text-sm text-stone-700 dark:text-brand-200">{CONTACT.address}</p>
             {/* TODO: embed a map once the office location is confirmed. */}
-            <div className="mt-3 flex h-32 items-center justify-center rounded-lg bg-surface-subtle text-xs text-slate-400 dark:bg-slate-800">
+            <div className="mt-3 flex h-32 items-center justify-center rounded-lg bg-surface-subtle text-xs text-stone-400 dark:bg-surface-dark">
               Map placeholder
             </div>
           </Card>

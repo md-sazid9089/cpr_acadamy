@@ -44,6 +44,41 @@ manual payments the administrator confirms under **Admin → Revenue**.
 For a full end-to-end check, `backend/scripts/smoke.ps1` and
 `smoke-student.ps1` drive the whole journey against a running backend.
 
+### Exam policy and upgrades
+
+The API and database store `negativeMarking` / `negative_marking` in percentage
+points: `25` deducts 25% of the marks of the answered item. The default is `0`.
+Legacy rates up to 1000% remain representable to preserve historical non-default
+settings. `passMark` / `pass_mark` defaults to `70`; pass/fail is computed by the
+server from the score, not the rounded display percentage.
+
+Mixed papers must publish with exactly 50 questions: positions 1-30 are MTF
+with five statements worth 0.4 each, followed by 20 SBA questions worth 2 each.
+Their total is 100, pass mark is 70%, and negative marking must be zero.
+Other papers must match their target count; published MTF always has five
+statements. Marks belong to each question; the editor's new-question default
+does not overwrite existing questions.
+
+Deploy frontend and backend together because the negative-marking API units
+changed. Stop the API and worker before running `npm --prefix backend run db:migrate`
+from the repository root (or `npm run db:migrate` inside backend), then restart
+them. Back up the database first. PGlite must have only one owning process.
+Production does not apply migrations automatically.
+
+Migration 003 resets legacy `0.25` exam and attempt snapshot rates to zero,
+converts other rates to equivalent percentages, and adds the 70% threshold.
+Teacher intent was not recorded, so deliberately chosen `0.25` values cannot
+be distinguished and are reset too, as approved for this migration.
+Migration 004 regrades submitted attempts with the authoritative server grader;
+in-progress attempts retain their answers and deadlines under the corrected
+policy. Existing question content/order is not rewritten. Migration and
+regrading run transactionally; completed migrations are not run twice.
+
+Answer autosave is serialized and retries every five seconds and on reconnect,
+with visible saving/error states and a manual retry. The queue is in memory:
+closing or leaving the page can still lose unsaved answers; a browser-close
+warning is shown when pending saves exist. Final submission sends all answers.
+
 ## Routes
 
 Public pages render inside `PublicLayout` (announcement strip, navbar, footer,
@@ -52,7 +87,7 @@ chat bubble). Everything under `/dashboard` and `/admin` sits behind
 
 | Area      | Paths                                                                                                                                                                        |
 | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Marketing | `/`, `/about`, `/contact`, `/faq`, `/gallery`, `/class`                                                                                                                        |
+| Marketing | `/`, `/about`, `/contact`, `/faq`, `/gallery`                                                                                                                                  |
 | Catalogue | `/batches`, `/courses`, `/courses/:category`, `/courses/:category/:slug`, `/courses/:category/:slug/schedule`, `/schedule`                                                      |
 | Auth      | `/login`, `/register`, `/verify-otp`, `/pending-approval`, `/forgot-password`, `/reset-password`                                                                                |
 | Student   | `/dashboard`, `/dashboard/courses`, `/dashboard/course/:slug`, `/dashboard/progress`, `/dashboard/exams(/:examId[/result])`, `/dashboard/payments`, `/dashboard/invoices/:id`   |

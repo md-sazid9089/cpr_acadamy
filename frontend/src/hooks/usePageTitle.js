@@ -5,11 +5,11 @@ const BRAND = 'CPR Medical Academy';
 
 // First match wins, so deeper paths come before their parents.
 const TITLES = [
+  [/^\/demo\/exam-positions/, 'Exam Positions Demo'],
   [/^\/courses\/[^/]+\/[^/]+\/schedule/, 'Batch Schedule'],
   [/^\/courses/, 'Courses'],
   [/^\/batches/, 'Batches'],
   [/^\/schedule/, 'Batch Schedule'],
-  [/^\/class/, 'Class Routine'],
   [/^\/faq/, 'FAQ'],
   [/^\/gallery/, 'Gallery'],
   [/^\/about/, 'About Us'],
@@ -23,6 +23,7 @@ const TITLES = [
   [/^\/dashboard\/courses/, 'My Courses'],
   [/^\/dashboard\/progress/, 'My Progress'],
   [/^\/dashboard\/course\//, 'Course'],
+  [/^\/dashboard\/exam-positions/, 'Exam Positions'],
   [/^\/dashboard\/exams\/[^/]+\/result/, 'Exam Result'],
   [/^\/dashboard\/exams\/[^/]+/, 'Exam'],
   [/^\/dashboard\/exams/, 'My Exams'],

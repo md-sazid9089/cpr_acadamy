@@ -3,7 +3,6 @@ import { Link, useOutletContext, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FaArrowLeftLong, FaCheck, FaPlus, FaTriangleExclamation } from 'react-icons/fa6';
 import { blankQuestion, fetchAdminExam, updateExam } from '../api/admin.api.js';
-import { computeTotalMarks, deductionPerWrong, marksPerQuestionTotal, stemsPerQuestion } from '../utils/marking.js';
 import { adminExamKey, adminExamsKey } from './keys.js';
 import { TYPE_LABELS } from './CourseExamsTab.jsx';
 import QuestionCard, { isQuestionComplete } from './QuestionCard.jsx';
@@ -95,6 +94,7 @@ function ExamEditor({ exam, course }) {
     questionCount: exam.questionCount,
     marksPerQuestion: exam.marksPerQuestion ?? 1,
     deductionPercent: exam.deductionPercent ?? 0,
+    passMark: exam.passMark ?? 70,
   });
   const [questions, setQuestions] = useState(exam.questions ?? []);
   const [dirty, setDirty] = useState(() => new Set());
@@ -133,11 +133,17 @@ function ExamEditor({ exam, course }) {
       durationMinutes: Number(settings.durationMinutes) || 0,
       questionCount: Number(settings.questionCount) || 0,
       marksPerQuestion: Number(settings.marksPerQuestion) || 0,
-      deductionPercent: Math.min(100, Math.max(0, Number(settings.deductionPercent) || 0)),
+      deductionPercent: Number(settings.deductionPercent),
+      passMark: Number(settings.passMark),
+      questions,
     });
   };
 
-  const setField = (field) => (event) => setSettings((prev) => ({ ...prev, [field]: event.target.value }));
+  const setField = (field) => (event) => setSettings((prev) => ({
+    ...prev,
+    [field]: event.target.value,
+    ...(field === 'type' && event.target.value === 'mixed' ? { questionCount: 50, marksPerQuestion: 2, deductionPercent: 0, passMark: 70 } : {}),
+  }));
 
   // ── Questions ──
   // The whole paper is one document server-side, so every structural change
@@ -148,7 +154,7 @@ function ExamEditor({ exam, course }) {
   const lastSaved = useRef(questions);
 
   const questionsMutation = useMutation({
-    mutationFn: (list) => updateExam({ id: exam.id, questions: list, marksPerQuestion: Number(settings.marksPerQuestion) || 1 }),
+    mutationFn: (list) => updateExam({ id: exam.id, questions: list, type: settings.type }),
     onSuccess: (saved, list) => {
       lastSaved.current = list;
       remember({ ...saved, questions: list });
@@ -188,7 +194,8 @@ function ExamEditor({ exam, course }) {
   }, []);
 
   const addQuestion = () => {
-    const next = [...questions, blankQuestion(settings.type)];
+    const type = settings.type === 'mixed' ? (questions.length < 30 ? QUESTION_TYPES.MTF : QUESTION_TYPES.SBA) : settings.type;
+    const next = [...questions, settings.type === 'mixed' ? blankQuestion(type) : blankQuestion(type, Number(settings.marksPerQuestion))];
     setQuestions(next);
     persist(next);
   };
@@ -225,10 +232,8 @@ function ExamEditor({ exam, course }) {
     marksPerQuestion: Number(settings.marksPerQuestion) || 0,
     deductionPercent: Number(settings.deductionPercent) || 0,
   };
-  const totalMarks = computeTotalMarks(marking);
-  const deduction = deductionPerWrong(marking);
-  const perQuestion = marksPerQuestionTotal(marking);
-  const stems = stemsPerQuestion(settings.type);
+  const totalMarks = Math.round(questions.reduce((total, question) => total + Number(question.marks) * (question.type === QUESTION_TYPES.MTF ? question.options.length : 1), 0) * 1000) / 1000;
+  const isMixed = settings.type === 'mixed';
   const isMtf = settings.type === QUESTION_TYPES.MTF;
   const isTimed = settings.kind !== EXAM_TYPES.PRACTICE;
 
@@ -236,25 +241,24 @@ function ExamEditor({ exam, course }) {
   const target = marking.questionCount;
   const incomplete = useMemo(() => questions.filter((q) => !isQuestionComplete(q)).length, [questions]);
   const progress = target > 0 ? Math.min(100, Math.round((written / target) * 100)) : 0;
-  const typeLocked = questions.length > 0;
+  const typeLocked = locked;
   const saving = settingsMutation.isPending || questionsMutation.isPending;
 
-  const marksLabel = isMtf
-    ? `${stems} × ${marking.marksPerQuestion} = ${perQuestion} marks`
-    : `${perQuestion} ${perQuestion === 1 ? 'mark' : 'marks'}`;
+  const mixedReady = !isMixed || (target === 50 && questions.every((question, index) => question.type === (index < 30 ? 'mtf' : 'sba') && question.marks === (index < 30 ? 0.4 : 2)));
+  const complete = written === target && target > 0 && incomplete === 0 && mixedReady;
 
   return (
     <div className="space-y-5">
       <Link
         to={`/admin/courses/${course.id}/exams`}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-brand-600 dark:text-brand-200 dark:hover:text-brand-400"
       >
         <FaArrowLeftLong aria-hidden="true" className="h-3 w-3" />
         All exams
       </Link>
 
       {locked && (
-        <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+        <p className="flex items-start gap-2 rounded-xl border border-stone-200 bg-brand-50 p-3 text-sm text-brand-900 dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-200">
           <FaTriangleExclamation aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             {exam.attemptCount} {exam.attemptCount === 1 ? 'student has' : 'students have'} already sat this paper, so it can no longer be
@@ -266,7 +270,7 @@ function ExamEditor({ exam, course }) {
       {saveError && (
         <p
           role="alert"
-          className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+          className="flex items-start gap-2 rounded-xl border border-stone-200 bg-red-50 p-3 text-sm text-red-800 dark:border-stone-200 dark:bg-red-950/40 dark:text-red-200"
         >
           <FaTriangleExclamation aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{saveError}</span>
@@ -282,7 +286,7 @@ function ExamEditor({ exam, course }) {
             action={
               <div className="flex items-center gap-3">
                 {savedAt && !saving && !saveError && (
-                  <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-brand-700 dark:text-brand-400">
                     <FaCheck aria-hidden="true" className="h-3.5 w-3.5" />
                     Saved
                   </span>
@@ -300,6 +304,7 @@ function ExamEditor({ exam, course }) {
               <Select label="Question type" value={settings.type} onChange={setField('type')} disabled={typeLocked}>
                 <option value={QUESTION_TYPES.SBA}>SBA — single best answer</option>
                 <option value={QUESTION_TYPES.MTF}>MCQ — five true/false statements</option>
+                <option value="mixed">Mixed - 30 MCQ, then 20 SBA</option>
               </Select>
               <Select label="Exam kind" value={settings.kind} onChange={setField('kind')}>
                 {Object.entries(KIND_LABELS).map(([value, label]) => (
@@ -319,7 +324,7 @@ function ExamEditor({ exam, course }) {
               </Select>
             </div>
             {typeLocked && (
-              <p className="-mt-2 text-xs text-slate-500 dark:text-slate-400">
+              <p className="-mt-2 text-xs text-stone-500 dark:text-brand-200">
                 Question type is locked while the paper has questions — delete them to change it.
               </p>
             )}
@@ -360,15 +365,17 @@ function ExamEditor({ exam, course }) {
                 required
                 min={1}
                 value={settings.questionCount}
+                disabled={isMixed}
                 onChange={setField('questionCount')}
                 hint="How many the paper should have."
               />
               <Input
-                label={isMtf ? 'Marks per statement' : 'Marks per question'}
+                label={isMtf ? 'New statement marks' : 'New question marks'}
                 type="number"
                 required
-                min={0}
-                step={0.5}
+                min={0.05}
+                step={0.05}
+                disabled={isMixed}
                 value={settings.marksPerQuestion}
                 onChange={setField('marksPerQuestion')}
               />
@@ -377,25 +384,26 @@ function ExamEditor({ exam, course }) {
                 type="number"
                 required
                 min={0}
-                max={100}
-                step={5}
+                max={1000}
+                step={0.001}
+                disabled={isMixed}
                 value={settings.deductionPercent}
                 onChange={setField('deductionPercent')}
                 hint="Of the marks per answer, taken for a wrong one."
               />
+              <Input label="Pass mark (%)" type="number" min={0} max={100} step={0.001} required disabled={isMixed} value={settings.passMark} onChange={setField('passMark')} />
             </div>
 
             <p
               className="rounded-xl bg-brand-50 px-4 py-3 text-sm font-medium text-brand-900 dark:bg-brand-950/60 dark:text-brand-200"
               aria-live="polite"
             >
-              {target} {target === 1 ? 'question' : 'questions'}
-              {isMtf && <> × {stems} statements</>} × {marking.marksPerQuestion} {marking.marksPerQuestion === 1 ? 'mark' : 'marks'} ={' '}
+              {written} / {target} questions ·{' '}
               <strong>{totalMarks} marks</strong>
               {' · '}
-              {deduction > 0 ? (
+              {marking.deductionPercent > 0 ? (
                 <>
-                  wrong {isMtf ? 'statement' : 'answer'} <strong>−{deduction}</strong>
+                  wrong answer deduction <strong>{marking.deductionPercent}%</strong>
                 </>
               ) : (
                 'no negative marking'
@@ -410,13 +418,13 @@ function ExamEditor({ exam, course }) {
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+            <p className="text-sm font-semibold text-stone-900 dark:text-white">
               {written} of {target} questions written
             </p>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-0.5 text-xs text-stone-500 dark:text-brand-200">
               {incomplete > 0
                 ? `${incomplete} ${incomplete === 1 ? 'question is' : 'questions are'} missing a stem, an option or the answer key.`
-                : written >= target && target > 0
+                : complete
                   ? 'Paper is complete.'
                   : 'Add questions below. Each one saves when you move on from it.'}
             </p>
@@ -425,18 +433,19 @@ function ExamEditor({ exam, course }) {
             <Badge tone={isMtf ? 'info' : 'brand'}>{TYPE_LABELS[settings.type]}</Badge>
             {questionsMutation.isPending && <Badge tone="neutral">Saving…</Badge>}
             {incomplete > 0 && <Badge tone="warning">{incomplete} incomplete</Badge>}
-            {written >= target && target > 0 && incomplete === 0 && <Badge tone="success">Complete</Badge>}
+            {complete && <Badge tone="success">Complete</Badge>}
+            {isMixed && <Badge tone={mixedReady ? 'neutral' : 'warning'}>MCQ 1-30 / SBA 31-50</Badge>}
           </div>
         </div>
         <div
-          className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+          className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100 dark:bg-surface-dark"
           role="progressbar"
           aria-valuenow={written}
           aria-valuemin={0}
           aria-valuemax={target}
         >
           <div
-            className={cn('h-full rounded-full transition-[width]', written >= target ? 'bg-emerald-500' : 'bg-brand-600')}
+            className={cn('h-full rounded-full transition-[width]', written >= target ? 'bg-brand-500' : 'bg-brand-600')}
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -463,7 +472,8 @@ function ExamEditor({ exam, course }) {
               key={question.id}
               question={question}
               index={index}
-              marksLabel={marksLabel}
+              marksLabel={`${Math.round(question.marks * (question.type === QUESTION_TYPES.MTF ? question.options.length : 1) * 1000) / 1000} marks`}
+              allowTypeChange={isMixed}
               onChange={(patch) => patchQuestion(question.id, patch)}
               onBlur={flushQuestion(question.id)}
               onDuplicate={() => duplicateQuestion(question.id)}
@@ -498,7 +508,7 @@ function ExamEditor({ exam, course }) {
           </>
         }
       >
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-stone-600 dark:text-brand-200">
           Delete question {questions.findIndex((q) => q.id === deleting?.id) + 1}? The ones after it move up.
         </p>
       </Modal>

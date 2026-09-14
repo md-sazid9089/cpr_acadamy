@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { FaArrowDown, FaArrowUp, FaClone, FaTrash } from 'react-icons/fa6';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
-import Input, { Textarea } from '@/components/ui/Input.jsx';
+import Input, { Select, Textarea } from '@/components/ui/Input.jsx';
 import { QUESTION_TYPES } from '@/constants';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +13,7 @@ export function isQuestionComplete(question) {
   if (!question.stem?.trim()) return false;
   if (question.options.some((option) => !option.text?.trim())) return false;
   if (question.type === QUESTION_TYPES.SBA) return Boolean(question.correctOptionId);
-  return question.options.every((option) => typeof question.correctAnswer?.[option.id] === 'boolean');
+  return question.options.length === 5 && question.options.every((option) => typeof question.correctAnswer?.[option.id] === 'boolean');
 }
 
 /**
@@ -25,6 +25,7 @@ export default function QuestionCard({
   question,
   index,
   marksLabel,
+  allowTypeChange = false,
   onChange,
   onBlur,
   onDuplicate,
@@ -52,8 +53,8 @@ export default function QuestionCard({
     <article
       onBlur={onBlur}
       className={cn(
-        'rounded-2xl border bg-white p-5 shadow-sm dark:bg-surface-dark-subtle',
-        complete ? 'border-slate-200 dark:border-slate-800' : 'border-amber-300 dark:border-amber-800',
+        'rounded-2xl border bg-white p-5 border-stone-200 dark:bg-surface-dark-subtle',
+        complete ? 'border-stone-200 dark:border-stone-200' : 'border-stone-200 dark:border-stone-200',
       )}
       aria-label={`Question ${index + 1}`}
     >
@@ -82,6 +83,15 @@ export default function QuestionCard({
       </header>
 
       <div className="mt-4 space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {allowTypeChange && (
+            <Select label="Question type" value={question.type} onChange={(event) => onChange({ type: event.target.value, correctOptionId: '', correctAnswer: {}, marks: event.target.value === QUESTION_TYPES.MTF ? 0.4 : 2 })}>
+              <option value={QUESTION_TYPES.MTF}>MCQ (True / False)</option>
+              <option value={QUESTION_TYPES.SBA}>SBA</option>
+            </Select>
+          )}
+          <Input label={isSba ? 'Question marks' : 'Marks per statement'} type="number" required min={0.05} max={100} step={0.05} value={question.marks} onChange={(event) => onChange({ marks: Number(event.target.value) })} />
+        </div>
         <Textarea
           label="Question"
           rows={3}
@@ -102,7 +112,7 @@ export default function QuestionCard({
         />
 
         <fieldset>
-          <legend className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <legend className="text-sm font-medium text-stone-700 dark:text-brand-200">
             {isSba ? 'Options — mark the correct one' : 'Statements — mark each true or false'}
             <span className="ml-0.5 text-red-500">*</span>
           </legend>
@@ -118,8 +128,8 @@ export default function QuestionCard({
                       className={cn(
                         'flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-xs font-bold transition-colors',
                         isCorrect
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700',
+                          ? 'bg-brand-600 text-white'
+                          : 'bg-stone-100 text-stone-500 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200 dark:hover:bg-surface-dark',
                       )}
                       title={isCorrect ? 'Correct answer' : 'Mark as correct'}
                     >
@@ -136,7 +146,7 @@ export default function QuestionCard({
                   )}
 
                   {!isSba && (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-100 text-xs font-bold text-stone-500 dark:bg-surface-dark dark:text-brand-200">
                       {LETTERS[optionIndex]}
                     </span>
                   )}
@@ -164,9 +174,9 @@ export default function QuestionCard({
                             'h-10 rounded-lg px-3 text-xs font-semibold transition-colors',
                             mtfValue === value
                               ? value
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-slate-700 text-white dark:bg-slate-600'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700',
+                                ? 'bg-brand-600 text-white'
+                                : 'bg-stone-700 text-white dark:bg-stone-600'
+                              : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200 dark:hover:bg-surface-dark',
                           )}
                         >
                           {label}

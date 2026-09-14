@@ -100,18 +100,18 @@ export default function Checkout() {
                     'flex items-center justify-between rounded-xl border p-4 text-left transition-colors',
                     disabled && 'cursor-not-allowed opacity-60',
                     method === option.id
-                      ? 'border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-950/40'
-                      : 'border-slate-200 hover:border-brand-300 dark:border-slate-800',
+                      ? 'border-stone-200 bg-brand-50 dark:border-stone-200 dark:bg-brand-950/40'
+                      : 'border-stone-200 hover:border-stone-200 dark:border-stone-200',
                   )}
                 >
                   <span>
-                    <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">{option.label}</span>
-                    {disabled && <span className="block text-xs text-slate-500 dark:text-slate-400">Online payment coming soon</span>}
+                    <span className="block text-sm font-semibold text-stone-800 dark:text-brand-200">{option.label}</span>
+                    {disabled && <span className="block text-xs text-stone-500 dark:text-brand-200">Online payment coming soon</span>}
                   </span>
                   <span
                     className={cn(
-                      'h-4 w-4 shrink-0 rounded-full border-2',
-                      method === option.id ? 'border-brand-600 bg-brand-600' : 'border-slate-300 dark:border-slate-600',
+                      'h-4 w-4 shrink-0 rounded-full border',
+                      method === option.id ? 'border-stone-200 bg-brand-600' : 'border-stone-200 dark:border-stone-200',
                     )}
                   />
                 </button>
@@ -123,7 +123,7 @@ export default function Checkout() {
         <Card>
           <CardHeader title="How it works" description="Three steps — your access opens as soon as the academy confirms the transfer." />
           <CardBody>
-            <ol className="space-y-3 text-sm text-slate-700 dark:text-slate-300">
+            <ol className="space-y-3 text-sm text-stone-700 dark:text-brand-200">
               <li className="flex gap-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">1</span>
                 <span>
@@ -145,7 +145,7 @@ export default function Checkout() {
                 </span>
               </li>
             </ol>
-            <p className="mt-4 flex items-start gap-2 rounded-lg bg-surface-subtle p-3 text-xs text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+            <p className="mt-4 flex items-start gap-2 rounded-lg bg-surface-subtle p-3 text-xs text-stone-500 dark:bg-surface-dark dark:text-brand-200">
               <FaMobileScreen aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               Invoices stay open until the academy confirms or rejects them; you can find them any time under Payment History.
             </p>
@@ -155,32 +155,32 @@ export default function Checkout() {
 
       <aside>
         <Card className="sticky top-24 p-6">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Order summary</h2>
+          <h2 className="text-sm font-semibold text-stone-900 dark:text-white">Order summary</h2>
 
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{course.title}</p>
+          <p className="mt-3 text-sm text-stone-600 dark:text-brand-200">{course.title}</p>
           {plan ? (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-stone-500 dark:text-brand-200">
               {plan.name} · {plan.durationLabel}
             </p>
           ) : (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-stone-500 dark:text-brand-200">
               {[course.duration, course.lessonCount ? `${course.lessonCount} lectures` : null].filter(Boolean).join(' · ')}
             </p>
           )}
 
-          <dl className="mt-5 space-y-2 border-t border-slate-200 pt-4 text-sm dark:border-slate-800">
+          <dl className="mt-5 space-y-2 border-t border-stone-200 pt-4 text-sm dark:border-stone-200">
             <div className="flex justify-between">
-              <dt className="text-slate-500 dark:text-slate-400">{plan ? 'Package fee' : 'Course fee'}</dt>
-              <dd className="text-slate-800 dark:text-slate-200">{formatBDT(plan ? plan.amount : course.price)}</dd>
+              <dt className="text-stone-500 dark:text-brand-200">{plan ? 'Package fee' : 'Course fee'}</dt>
+              <dd className="text-stone-800 dark:text-brand-200">{formatBDT(plan ? plan.amount : course.price)}</dd>
             </div>
             {savings > 0 && (
               <div className="flex justify-between">
-                <dt className="text-slate-500 dark:text-slate-400">Discount</dt>
-                <dd className="text-emerald-600 dark:text-emerald-400">−{formatBDT(savings)}</dd>
+                <dt className="text-stone-500 dark:text-brand-200">Discount</dt>
+                <dd className="text-brand-600 dark:text-brand-400">−{formatBDT(savings)}</dd>
               </div>
             )}
-            <div className="flex justify-between border-t border-slate-200 pt-2 text-base font-bold dark:border-slate-800">
-              <dt className="text-slate-900 dark:text-white">Total</dt>
+            <div className="flex justify-between border-t border-stone-200 pt-2 text-base font-bold dark:border-stone-200">
+              <dt className="text-stone-900 dark:text-white">Total</dt>
               <dd className="text-brand-700 dark:text-brand-400">{formatBDT(amount)}</dd>
             </div>
           </dl>
@@ -193,7 +193,6 @@ export default function Checkout() {
 
           <Button
             fullWidth
-            size="lg"
             className="mt-5"
             isLoading={payMutation.isPending}
             onClick={() => payMutation.mutate({ courseSlug: course.slug, method, planId, idempotencyKey })}
@@ -202,7 +201,7 @@ export default function Checkout() {
             Create invoice for {formatBDT(amount)}
           </Button>
 
-          <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-3 text-center text-xs text-stone-500 dark:text-brand-200">
             The amount is fixed by the academy — the invoice always shows the current fee.
           </p>
         </Card>

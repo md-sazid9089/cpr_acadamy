@@ -14,7 +14,6 @@ import { ROLES } from '@/constants';
 // lands on, so splitting them would only add a round trip before first paint.
 import Home from '@/features/marketing/Home.jsx';
 import FAQ from '@/features/marketing/FAQ.jsx';
-import ClassRoutine from '@/features/marketing/ClassRoutine.jsx';
 import Gallery from '@/features/marketing/Gallery.jsx';
 import About from '@/features/marketing/About.jsx';
 import NotFound from '@/features/marketing/NotFound.jsx';
@@ -61,6 +60,7 @@ const CoursePlayer = lazy(() => import('@/pages/CoursePlayer.jsx'));
 // Exams, payments
 const ExamRunner = lazy(() => import('@/features/exams/ExamRunner.jsx'));
 const ExamResult = lazy(() => import('@/features/exams/ExamResult.jsx'));
+const ExamPositions = lazy(() => import('@/features/exams/ExamPositions.jsx'));
 const Checkout = lazy(() => import('@/features/payments/Checkout.jsx'));
 const Invoice = lazy(() => import('@/features/payments/Invoice.jsx'));
 
@@ -104,6 +104,11 @@ function LearnRedirect() {
  * enforces the admin-approval gate before either shell mounts.
  */
 const router = createBrowserRouter([
+  ...(import.meta.env.DEV ? [{
+    path: '/demo/exam-positions',
+    element: <DashboardLayout variant={ROLES.STUDENT} />,
+    children: [{ index: true, element: suspend(<ExamPositions demo />) }],
+  }] : []),
   {
     element: <PublicLayout />,
     errorElement: <NotFound />,
@@ -115,7 +120,6 @@ const router = createBrowserRouter([
       { path: '/courses/:category/:slug/schedule', element: <CourseSchedule /> },
       { path: '/schedule', element: <CourseSchedule /> },
       { path: '/batches', element: <Batches /> },
-      { path: '/class', element: <ClassRoutine /> },
       { path: '/faq', element: <FAQ /> },
       { path: '/gallery', element: <Gallery /> },
       { path: '/about', element: <About /> },
@@ -153,6 +157,7 @@ const router = createBrowserRouter([
       { path: 'progress', element: suspend(<Progress />) },
       { path: 'course/:slug', element: suspend(<CourseHub />) },
       { path: 'exams', element: suspend(<UpcomingExams />) },
+      { path: 'exam-positions', element: suspend(<ExamPositions />) },
       { path: 'exams/:examId', element: suspend(<ExamRunner />) },
       { path: 'exams/:examId/result', element: suspend(<ExamResult />) },
       { path: 'learn/:slug', element: <LearnRedirect /> },

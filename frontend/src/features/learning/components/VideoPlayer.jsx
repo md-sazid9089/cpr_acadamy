@@ -16,7 +16,7 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
 
   if (!src || error) {
     return (
-      <div className="relative flex aspect-video w-full items-center justify-center rounded-xl bg-slate-900 text-center">
+      <div className="relative flex aspect-video w-full items-center justify-center rounded-xl bg-stone-900 text-center">
         <div className="px-6">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-white">
             <svg className="h-7 w-7" viewBox="0 0 24 24" fill="currentColor">
@@ -24,7 +24,7 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
             </svg>
           </div>
           <p className="mt-4 text-sm font-medium text-white">{title ?? 'Lecture video'}</p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-stone-400">
             {/* TODO: stream from the media backend once lectures are uploaded. */}
             Video source not connected yet.
           </p>

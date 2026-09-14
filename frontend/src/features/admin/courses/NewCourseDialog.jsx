@@ -63,7 +63,7 @@ export default function NewCourseDialog({ open, onClose }) {
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <fieldset>
-          <legend className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <legend className="text-sm font-medium text-stone-700 dark:text-brand-200">
             Category <span className="text-red-500">*</span>
           </legend>
           <div className="mt-2 grid gap-2 sm:grid-cols-3">
@@ -78,13 +78,13 @@ export default function NewCourseDialog({ open, onClose }) {
                   className={cn(
                     'flex items-start justify-between gap-2 rounded-xl border p-3 text-left transition-colors',
                     selected
-                      ? 'border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-950/40'
-                      : 'border-slate-200 hover:border-brand-300 dark:border-slate-700 dark:hover:border-brand-700',
+                      ? 'border-stone-200 bg-brand-50 dark:border-stone-200 dark:bg-brand-950/40'
+                      : 'border-stone-200 hover:border-stone-200 dark:border-stone-200 dark:hover:border-stone-200',
                   )}
                 >
                   <span>
-                    <span className="block text-sm font-semibold text-slate-900 dark:text-white">{category}</span>
-                    <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                    <span className="block text-sm font-semibold text-stone-900 dark:text-white">{category}</span>
+                    <span className="mt-0.5 block text-xs text-stone-500 dark:text-brand-200">
                       {CATEGORY_LABELS[category]}
                     </span>
                   </span>

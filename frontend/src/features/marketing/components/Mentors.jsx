@@ -63,7 +63,7 @@ function MentorCard({ mentor }) {
     <div className="group relative mx-auto w-full max-w-[240px] pb-10 sm:max-w-[260px]">
       {/* Gradient wrapper — the backdrop behind the cutout photo. Brand tokens
           rather than inline hex, so it tracks the palette like everything else. */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 via-brand-800 to-accent-800 shadow-sm transition-transform duration-300 group-hover:scale-[1.02]">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 via-brand-800 to-brand-900 border border-stone-200 transition-transform duration-300 group-hover:scale-[1.02]">
         {/* Photo — works best with a transparent-background cutout PNG */}
         <div className="aspect-[3/4]">
           {!imgFailed && mentor.image ? (
@@ -85,11 +85,11 @@ function MentorCard({ mentor }) {
       </div>
 
       {/* Floating info badge — overlaps the bottom of the gradient card */}
-      <div className="absolute bottom-0 left-2 right-2 rounded-xl border border-slate-100 bg-white px-3.5 py-2.5 shadow-lg dark:border-slate-800 dark:bg-surface-dark dark:shadow-slate-950/50">
-        <h3 className="text-xs font-bold text-slate-900 sm:text-sm dark:text-white">
+      <div className="absolute bottom-0 left-2 right-2 rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 dark:border-stone-200 dark:bg-surface-dark">
+        <h3 className="text-xs font-bold text-stone-900 sm:text-sm dark:text-white">
           {mentor.name}
         </h3>
-        <p className="mt-0.5 text-[11px] text-slate-500 sm:text-xs dark:text-slate-400">
+        <p className="mt-0.5 text-[11px] text-stone-500 sm:text-xs dark:text-brand-200">
           {mentor.credential}
         </p>
         <p className="mt-1.5">
@@ -133,13 +133,13 @@ export default function Mentors() {
   }, [emblaApi, isPaused]);
 
   return (
-    <section className="bg-white py-12 dark:bg-surface-dark">
+    <section className="bg-surface-light py-12 dark:bg-surface-dark">
       <div className="container-page">
         <div className="text-center">
           <span className="inline-block rounded-full bg-brand-600 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">
             Mentors
           </span>
-          <h2 className="mt-4 text-2xl font-normal tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+          <h2 className="mt-4 text-2xl font-normal tracking-tight text-stone-900 sm:text-3xl dark:text-white">
             Unlock Your Success With Our Expert Mentors!
           </h2>
         </div>

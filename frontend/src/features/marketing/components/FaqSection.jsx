@@ -44,12 +44,12 @@ export default function FaqSection() {
   };
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-brand-100/50 via-white to-brand-50/60 py-16 dark:from-slate-900/60 dark:via-surface-dark dark:to-slate-900/50">
+    <section className="relative overflow-hidden bg-surface-light py-16 dark:bg-surface-dark">
       {/* Background medical plus pattern */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
         style={{
-          backgroundImage: `radial-gradient(#4338ca 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(var(--color-blue) 1px, transparent 1px)`,
           backgroundSize: '28px 28px',
         }}
         aria-hidden="true"
@@ -65,7 +65,7 @@ export default function FaqSection() {
             আপনার প্রশ্নগুলির উত্তর
           </h2>
           <p
-            className="mx-auto mt-2.5 max-w-xl text-sm font-medium text-slate-600 sm:text-base dark:text-slate-400"
+            className="mx-auto mt-2.5 max-w-xl text-sm font-medium text-stone-600 sm:text-base dark:text-brand-200"
             lang="bn"
           >
             সচরাচর যেসব প্রশ্ন আমাদের সেবাগ্রহিতাগণ করে থাকেন
@@ -79,10 +79,10 @@ export default function FaqSection() {
             return (
               <div
                 key={faq.id}
-                className={`overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-200 dark:bg-surface-dark-subtle ${
+                className={`overflow-hidden rounded-xl border bg-white border-stone-200 transition-all duration-200 dark:bg-surface-dark-subtle ${
                   isOpen
-                    ? 'border-brand-500 shadow-md ring-1 ring-brand-400/30'
-                    : 'border-slate-200/90 hover:border-brand-300 dark:border-slate-800'
+                    ? 'border-stone-200 border '
+                    : 'border-stone-200 hover:border-stone-200 dark:border-stone-200'
                 }`}
               >
                 <button
@@ -99,18 +99,18 @@ export default function FaqSection() {
                       }`}
                     />
                     <span
-                      className="text-sm font-bold text-slate-800 sm:text-base dark:text-slate-100"
+                      className="text-sm font-bold text-stone-800 sm:text-base dark:text-brand-200"
                       lang="bn"
                     >
                       {faq.question}
                     </span>
                   </div>
 
-                  <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors group-hover:text-brand-600 sm:text-sm dark:text-slate-400">
+                  <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 transition-colors group-hover:text-brand-600 sm:text-sm dark:text-brand-200">
                     <span className="hidden sm:inline">উত্তর দেখুন</span>
                     <FaArrowRightLong
                       className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                        isOpen ? 'rotate-90 text-brand-600' : 'text-slate-400'
+                        isOpen ? 'rotate-90 text-brand-600' : 'text-stone-400'
                       }`}
                     />
                   </span>
@@ -118,7 +118,7 @@ export default function FaqSection() {
 
                 {/* Collapsible Answer */}
                 {isOpen && (
-                  <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4 text-xs leading-relaxed text-slate-700 sm:text-sm sm:px-7 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+                  <div className="border-t border-stone-200 bg-stone-50/60 px-5 py-4 text-xs leading-relaxed text-stone-700 sm:text-sm sm:px-7 dark:border-stone-200 dark:bg-surface-dark dark:text-brand-200">
                     <p lang="bn">{faq.answer}</p>
                   </div>
                 )}
@@ -131,7 +131,7 @@ export default function FaqSection() {
         <div className="mt-10 text-center">
           <Link
             to="/faq"
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-brand-700 hover:shadow-lg"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-bold text-white border border-stone-200 transition-all hover:bg-brand-700"
           >
             <span>সকল প্রশ্ন দেখুন</span>
             <FaArrowRightLong className="h-3.5 w-3.5" />

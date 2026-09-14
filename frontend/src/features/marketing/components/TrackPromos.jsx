@@ -14,8 +14,6 @@ const TRACK_CARDS = [
     subtitle: 'Phase A & B, Combined Batch — Online & Offline',
     cta: 'See Batches',
     ctaTo: '/batches?group=fcps-p1-medicine',
-    gradient: 'from-brand-100 via-brand-50/70 to-white',
-    darkGradient: 'dark:from-brand-900 dark:via-brand-950/70 dark:to-surface-dark',
     Icon: FaBookOpen,
   },
   {
@@ -26,20 +24,16 @@ const TRACK_CARDS = [
     subtitle: 'BCS (Health) written & viva preparation',
     cta: 'See Batches',
     ctaTo: '/batches',
-    gradient: 'from-brand-50 via-white to-brand-100',
-    darkGradient: 'dark:from-brand-950 dark:via-surface-dark dark:to-brand-900',
     Icon: FaHospital,
   },
   {
     id: 'mbbs',
     badge: 'MBBS',
-    badgeColor: 'bg-accent-600 text-white',
+    badgeColor: 'bg-brand-100 text-brand-700',
     headline: 'MBBS Professional পরীক্ষার প্রস্তুতি নিন',
     subtitle: '1st–4th professional exam coaching',
     cta: 'See Batches',
     ctaTo: '/batches?group=bmdc-licensing',
-    gradient: 'from-accent-50 via-brand-50/70 to-brand-100',
-    darkGradient: 'dark:from-accent-950 dark:via-brand-950/70 dark:to-brand-900',
     Icon: FaStethoscope,
   },
   {
@@ -50,23 +44,23 @@ const TRACK_CARDS = [
     subtitle: 'Free consultation with our expert mentors',
     cta: 'পরামর্শ নিন',
     ctaTo: '/contact',
-    gradient: 'from-accent-100 via-accent-50/70 to-white',
-    darkGradient: 'dark:from-accent-950 dark:via-brand-950 dark:to-surface-dark',
     Icon: FaLightbulb,
   },
 ];
 
 export default function TrackPromos() {
   return (
-    <section className="relative isolate overflow-hidden bg-slate-50 py-10 sm:py-14 dark:bg-surface-dark/50">
-      {/* Full-width molecular background, clearly visible behind the content. */}
+    <section className="relative isolate overflow-hidden bg-surface-subtle py-10 sm:py-14 dark:bg-surface-dark">
       <img
-        src="/assets/bg/1103999_7626.jpg"
+        src="/assets/bg/1103999_7626-1920.webp"
+        srcSet="/assets/bg/1103999_7626-768.webp 768w, /assets/bg/1103999_7626-1920.webp 1920w"
+        sizes="100vw"
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover"
+        loading="lazy"
+        decoding="async"
+        className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-40 dark:opacity-20"
       />
-
       <div className="container-page">
         {/* 2 in a row on all viewports (grid-cols-2) */}
         <div className="grid grid-cols-2 gap-3 sm:gap-6">
@@ -74,7 +68,7 @@ export default function TrackPromos() {
             <Link
               key={card.id}
               to={card.ctaTo}
-              className={`group relative flex min-h-[170px] flex-col justify-between overflow-hidden rounded-xl bg-gradient-to-br p-4 shadow-sm transition-all duration-300 hover:shadow-xl sm:min-h-[260px] sm:rounded-2xl sm:p-8 lg:p-10 ${card.gradient} ${card.darkGradient}`}
+              className="group relative flex min-h-[170px] flex-col justify-between overflow-hidden rounded-card bg-white p-4 border border-stone-200 transition-colors duration-300 sm:min-h-[260px] sm:p-8 lg:p-10 dark:bg-surface-dark"
             >
               {/* Text content */}
               <div className="relative z-10 flex flex-1 flex-col">
@@ -85,14 +79,14 @@ export default function TrackPromos() {
                 </span>
 
                 <h3
-                  className="mt-2.5 text-xs font-extrabold leading-tight tracking-tight text-slate-800 sm:mt-4 sm:text-xl lg:text-2xl dark:text-white"
+                  className="mt-2.5 text-xs font-extrabold leading-tight tracking-tight text-stone-800 sm:mt-4 sm:text-xl lg:text-2xl dark:text-white"
                   lang="bn"
                 >
                   {card.headline}
                 </h3>
 
                 {card.subtitle && (
-                  <p className="mt-1 hidden text-[11px] font-medium tracking-wide text-slate-500 sm:mt-2 sm:block sm:text-sm lg:text-base dark:text-slate-400">
+                  <p className="mt-1 hidden text-[11px] font-medium tracking-wide text-stone-500 sm:mt-2 sm:block sm:text-sm lg:text-base dark:text-brand-200">
                     {card.subtitle}
                   </p>
                 )}
@@ -100,7 +94,7 @@ export default function TrackPromos() {
 
               {/* CTA button */}
               <div className="relative z-10 mt-3 sm:mt-6">
-                <span className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors group-hover:bg-brand-600 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm dark:bg-white dark:text-slate-900 dark:group-hover:bg-brand-400">
+                <span className="inline-flex w-fit items-center gap-1.5 rounded-control bg-brand-700 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors group-hover:bg-brand-800 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm">
                   <span>{card.cta}</span>
                   <svg
                     className="h-3 w-3 sm:h-4 sm:w-4"
@@ -120,7 +114,7 @@ export default function TrackPromos() {
               {/* Decorative icon */}
               <card.Icon
                 aria-hidden="true"
-                className="pointer-events-none absolute -bottom-2 -right-2 h-12 w-12 text-slate-900/20 transition-transform duration-300 group-hover:scale-110 sm:-bottom-3 sm:-right-3 sm:h-28 sm:w-28 lg:h-32 lg:w-32 dark:text-white/20"
+                className="pointer-events-none absolute -bottom-2 -right-2 h-12 w-12 text-stone-900/20 transition-transform duration-300 group-hover:scale-110 sm:-bottom-3 sm:-right-3 sm:h-28 sm:w-28 lg:h-32 lg:w-32 dark:text-white/20"
               />
             </Link>
           ))}

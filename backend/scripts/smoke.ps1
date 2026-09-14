@@ -22,7 +22,7 @@ $course = Call POST '/admin/courses' @{ slug = $slug; title = 'Smoke FCPS Batch'
 "course: $($course.id) status=$($course.status)"
 $video = Call POST '/admin/videos' @{ courseId = $course.id; title = 'Orientation'; src = 'https://media.example.test/v.mp4'; scheduledAt = (Get-Date).AddDays(-1).ToUniversalTime().ToString('o'); durationMinutes = 75; status = 'published' } $t
 "video: $($video.duration) at $($video.scheduledDate) $($video.scheduledTime)"
-$exam = Call POST '/admin/exams' @{ courseId = $course.id; title = 'Smoke Paper'; durationMinutes = 20; scheduledAt = (Get-Date).AddDays(-1).ToUniversalTime().ToString('o'); targetQuestionCount = 1; marksPerQuestion = 1; negativeMarking = 0.25; isPublished = $true; questions = @(@{ id = 'q1'; type = 'sba'; stem = 'Pick B'; options = @(@{ id = 'a'; text = 'A' }, @{ id = 'b'; text = 'B' }); correctAnswer = 'b'; marks = 1 }) } $t
+$exam = Call POST '/admin/exams' @{ courseId = $course.id; title = 'Smoke Paper'; durationMinutes = 20; scheduledAt = (Get-Date).AddDays(-1).ToUniversalTime().ToString('o'); targetQuestionCount = 1; marksPerQuestion = 1; negativeMarking = 0; isPublished = $true; questions = @(@{ id = 'q1'; type = 'sba'; stem = 'Pick B'; options = @(@{ id = 'a'; text = 'A' }, @{ id = 'b'; text = 'B' }); correctAnswer = 'b'; marks = 1 }) } $t
 "exam: $($exam.id) status=$($exam.status)"
 $row = Call POST '/admin/schedules' @{ courseId = $course.id; scheduledAt = (Get-Date).AddDays(3).ToUniversalTime().ToString('o'); examId = $exam.id; exam = 'Smoke Paper'; lectureVideoId = $video.id; lecture = 'Orientation' } $t
 "schedule: $($row.dateTime -replace "`n", ' / ')"

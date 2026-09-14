@@ -1,7 +1,7 @@
 const TONES = {
-  open: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300',
-  answered: 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-300',
-  solved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',
+  open: 'bg-brand-100 text-brand-800 dark:bg-brand-950/50 dark:text-brand-300',
+  answered: 'bg-brand-100 text-brand-800 dark:bg-brand-950/50 dark:text-brand-300',
+  solved: 'bg-brand-100 text-brand-800 dark:bg-brand-950/50 dark:text-brand-300',
 };
 
 const LABELS = { open: 'Open', answered: 'Replied', solved: 'Solved' };

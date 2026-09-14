@@ -112,7 +112,7 @@ export default function CourseScheduleTab() {
       <span
         className={cn(
           'text-xs',
-          title ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-400 dark:text-slate-500',
+          title ? 'font-semibold text-stone-900 dark:text-white' : 'font-medium text-stone-400 dark:text-brand-200',
         )}
       >
         {title ?? fallbackLabel}
@@ -125,7 +125,7 @@ export default function CourseScheduleTab() {
       key: 'dateTime',
       header: 'Date & time',
       render: (row) => (
-        <span className="whitespace-pre-line text-xs font-semibold text-slate-800 dark:text-slate-200">
+        <span className="whitespace-pre-line text-xs font-semibold text-stone-800 dark:text-brand-200">
           {routineLabel(row.date, row.time)}
         </span>
       ),
@@ -221,7 +221,7 @@ export default function CourseScheduleTab() {
           </Select>
 
           {videos.length === 0 && exams.length === 0 && (
-            <p className="text-xs text-amber-700 dark:text-amber-400">
+            <p className="text-xs text-brand-700 dark:text-brand-400">
               This course has no videos or exams yet, so every cell will read “No class” / “No exam”.
             </p>
           )}
@@ -252,7 +252,7 @@ export default function CourseScheduleTab() {
           </>
         }
       >
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-stone-600 dark:text-brand-200">
           Remove the {deleting ? routineLabel(deleting.date, deleting.time).replace('\n', ' at ') : ''} row from the routine?
         </p>
       </Modal>

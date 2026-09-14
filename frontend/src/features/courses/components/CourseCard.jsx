@@ -17,7 +17,7 @@ const POSTERS = [
 const CATEGORY_GRADIENTS = {
   FCPS: 'from-brand-600 via-brand-700 to-brand-800',
   BCS: 'from-brand-500 via-brand-600 to-brand-700',
-  MBBS: 'from-accent-700 via-brand-700 to-brand-800',
+  MBBS: 'from-brand-600 via-brand-700 to-brand-800',
 };
 
 /**
@@ -34,15 +34,15 @@ export default function CourseCard({ course, onEnroll }) {
   const posterSrc = course.thumbnailUrl || POSTERS[charCode % POSTERS.length];
 
   return (
-    <div className="group relative pb-14 sm:pb-16">
+    <div className="group relative">
       {/* ── Gradient / poster thumbnail wrapper ── */}
       <div
-        className={`relative overflow-hidden rounded-2xl bg-gradient-to-br shadow-sm transition-transform duration-300 group-hover:scale-[1.02] ${
+        className={`relative overflow-hidden rounded-image bg-gradient-to-br border border-stone-200 transition-transform duration-300 group-hover:scale-[1.02] ${
           CATEGORY_GRADIENTS[course.category] ?? CATEGORY_GRADIENTS.FCPS
         }`}
       >
         {/* Poster image with spacious square aspect ratio */}
-        <div className="aspect-square w-full overflow-hidden bg-slate-800">
+        <div className="aspect-square w-full overflow-hidden bg-stone-800">
           <img
             src={posterSrc}
             alt={course.title}
@@ -53,11 +53,11 @@ export default function CourseCard({ course, onEnroll }) {
 
         {/* Badge overlays — top of the image area so bottom poster content is unblocked */}
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-          <Badge tone="brand" className="bg-white/95 text-brand-800 shadow-sm ring-1 ring-white/50 backdrop-blur-sm">
+          <Badge tone="brand" className="bg-white/95 text-brand-800 border border-stone-200 backdrop-blur-sm">
             {course.category}
           </Badge>
           {hasDiscount && (
-            <Badge tone="warning" className="bg-amber-400/95 font-bold text-amber-950 shadow-sm ring-1 ring-amber-200/50 backdrop-blur-sm">
+            <Badge tone="warning" className="bg-brand-100 font-bold text-brand-800">
               Offer running
             </Badge>
           )}
@@ -65,13 +65,13 @@ export default function CourseCard({ course, onEnroll }) {
       </div>
 
       {/* ── Compact floating info badge — overlaps minimally at the very bottom ── */}
-      <div className="absolute bottom-0 left-2.5 right-2.5 rounded-xl border border-slate-100 bg-white/95 p-3 shadow-lg backdrop-blur-sm sm:left-3 sm:right-3 sm:p-3.5 dark:border-slate-800 dark:bg-surface-dark/95 dark:shadow-slate-950/50">
-        <h3 className="line-clamp-1 text-xs font-bold leading-tight text-slate-900 sm:text-sm dark:text-white">
+      <div className="relative mx-2.5 -mt-4 rounded-card border border-stone-200 bg-white/95 p-3 backdrop-blur-sm sm:mx-3 sm:p-3.5 dark:border-stone-200 dark:bg-surface-dark/95">
+        <h3 className="line-clamp-1 text-xs font-bold leading-tight text-stone-900 sm:text-sm dark:text-white">
           {course.title}
         </h3>
         
         {course.subtitle && (
-          <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500 dark:text-slate-400">
+          <p className="mt-0.5 line-clamp-1 text-[11px] text-stone-500 dark:text-brand-200">
             {course.subtitle}
           </p>
         )}
@@ -82,23 +82,23 @@ export default function CourseCard({ course, onEnroll }) {
             {formatBDT(hasDiscount ? course.discountPrice : course.price)}
           </span>
           {hasDiscount && (
-            <span className="text-[10px] text-slate-400 line-through sm:text-xs dark:text-slate-500">
+            <span className="text-[10px] text-stone-400 line-through sm:text-xs dark:text-brand-200">
               {formatBDT(course.price)}
             </span>
           )}
           {course.startsOn && (
-            <span className="ml-auto text-[10px] text-slate-400 sm:text-[11px] dark:text-slate-500">
+            <span className="ml-auto text-[10px] text-stone-400 sm:text-[11px] dark:text-brand-200">
               Starts {formatDate(course.startsOn)}
             </span>
           )}
         </div>
 
         {/* Compact action buttons */}
-        <div className="mt-2 grid grid-cols-2 gap-1.5">
-          <Button to={detailPath} variant="outline" size="sm" className="py-1 text-xs" fullWidth>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Button to={detailPath} variant="outline" size="sm" className="order-2 sm:order-1" fullWidth>
             Details
           </Button>
-          <Button size="sm" className="py-1 text-xs" fullWidth onClick={() => onEnroll?.(course)}>
+          <Button size="sm" className="order-1 sm:order-2" fullWidth onClick={() => onEnroll?.(course)}>
             Enrol Now
           </Button>
         </div>

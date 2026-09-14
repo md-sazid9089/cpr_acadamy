@@ -29,38 +29,38 @@ export const PAYMENT_COLUMNS = [
     header: 'Invoice',
     render: (row) => (
       <div>
-        <p className="font-mono text-xs font-semibold text-slate-900 dark:text-white">{row.invoiceNo}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">{formatDateTime(row.paidAt ?? row.createdAt)}</p>
+        <p className="font-mono text-xs font-semibold text-stone-900 dark:text-white">{row.invoiceNo}</p>
+        <p className="text-xs text-stone-500 dark:text-brand-200">{formatDateTime(row.paidAt ?? row.createdAt)}</p>
       </div>
     ),
   },
   {
     key: 'courseTitle',
     header: 'Course',
-    render: (row) => <p className="max-w-xs text-xs text-slate-700 line-clamp-2 dark:text-slate-300">{row.courseTitle}</p>,
+    render: (row) => <p className="max-w-xs text-xs text-stone-700 line-clamp-2 dark:text-brand-200">{row.courseTitle}</p>,
   },
   {
     key: 'method',
     header: 'Method',
-    render: (row) => <span className="text-xs text-slate-700 dark:text-slate-300">{METHOD_LABELS[row.method] ?? row.method}</span>,
+    render: (row) => <span className="text-xs text-stone-700 dark:text-brand-200">{METHOD_LABELS[row.method] ?? row.method}</span>,
   },
   {
     key: 'transactionId',
     header: 'Transaction ID',
     render: (row) =>
       row.transactionId ? (
-        <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+        <code className="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-xs text-stone-800 dark:bg-surface-dark dark:text-brand-200">
           {row.transactionId}
         </code>
       ) : (
-        <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
+        <span className="text-xs text-stone-400 dark:text-brand-200">—</span>
       ),
   },
   {
     key: 'amount',
     header: 'Amount',
     align: 'right',
-    render: (row) => <span className="font-semibold text-slate-900 dark:text-white">{formatBDT(row.amount)}</span>,
+    render: (row) => <span className="font-semibold text-stone-900 dark:text-white">{formatBDT(row.amount)}</span>,
   },
   { key: 'status', header: 'Status', align: 'right', render: (row) => <StatusBadge status={row.status} /> },
 ];
@@ -107,8 +107,8 @@ export function ReconcileDialog({ payment, onClose, onDone }) {
               className={cn(
                 'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                 mode === option.id
-                  ? option.id === 'confirm' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+                  ? option.id === 'confirm' ? 'bg-brand-600 text-white' : 'bg-red-600 text-white'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               {option.label}
@@ -240,7 +240,7 @@ export default function AdminRevenue() {
             <div className="flex h-48 items-end justify-between gap-4">
               {byMonth.map((month) => (
                 <div key={month.month} className="flex flex-1 flex-col items-center gap-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  <span className="text-xs font-medium text-stone-500 dark:text-brand-200">
                     {Math.round(month.amount / 1000)}k
                   </span>
                   <div
@@ -248,7 +248,7 @@ export default function AdminRevenue() {
                     style={{ height: `${(month.amount / peak) * 100}%` }}
                     title={formatBDT(month.amount)}
                   />
-                  <span className="text-xs text-slate-500 dark:text-slate-400">{month.month}</span>
+                  <span className="text-xs text-stone-500 dark:text-brand-200">{month.month}</span>
                 </div>
               ))}
             </div>
@@ -261,12 +261,12 @@ export default function AdminRevenue() {
             {byMethod.map((item) => (
               <div key={item.method}>
                 <div className="mb-1.5 flex justify-between text-sm">
-                  <span className="font-medium text-slate-700 dark:text-slate-300">{METHOD_LABELS[item.method] ?? item.method}</span>
-                  <span className="text-slate-500 dark:text-slate-400">
+                  <span className="font-medium text-stone-700 dark:text-brand-200">{METHOD_LABELS[item.method] ?? item.method}</span>
+                  <span className="text-stone-500 dark:text-brand-200">
                     {formatBDT(item.amount)} · {item.share}%
                   </span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-surface-dark">
                   <div className="h-full rounded-full bg-brand-600" style={{ width: `${item.share}%` }} />
                 </div>
               </div>
@@ -278,26 +278,26 @@ export default function AdminRevenue() {
       <Card>
         <CardHeader title="Revenue by course" description="Paid invoices in the transaction list below." />
         <CardBody className="space-y-3">
-          {byCourse.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">No paid invoices yet.</p>}
+          {byCourse.length === 0 && <p className="text-sm text-stone-500 dark:text-brand-200">No paid invoices yet.</p>}
           {byCourse.map((item) => (
             <div key={item.courseId} className="grid items-center gap-3 sm:grid-cols-[1fr_auto]">
               <div className="min-w-0">
                 <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
                   <Link
                     to={`/admin/courses/${item.courseId}`}
-                    className="truncate font-medium text-slate-800 hover:text-brand-700 dark:text-slate-200 dark:hover:text-brand-400"
+                    className="truncate font-medium text-stone-800 hover:text-brand-700 dark:text-brand-200 dark:hover:text-brand-400"
                   >
                     {item.courseTitle}
                   </Link>
-                  <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="shrink-0 text-xs text-stone-500 dark:text-brand-200">
                     {item.count} {item.count === 1 ? 'payment' : 'payments'}
                   </span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-surface-dark">
                   <div className="h-full rounded-full bg-brand-600" style={{ width: `${Math.round((item.amount / topCourse) * 100)}%` }} />
                 </div>
               </div>
-              <span className="text-right text-sm font-semibold text-slate-900 dark:text-white">{formatBDT(item.amount)}</span>
+              <span className="text-right text-sm font-semibold text-stone-900 dark:text-white">{formatBDT(item.amount)}</span>
             </div>
           ))}
         </CardBody>
@@ -318,7 +318,7 @@ export default function AdminRevenue() {
                 'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                 filter === option.id
                   ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               {option.label}

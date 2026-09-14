@@ -1,14 +1,13 @@
 import apiClient from '@/lib/api-client';
 import { QUESTION_TYPES } from '@/constants';
-import { computeTotalMarks } from '../utils/marking.js';
 
 /**
  * Admin data access. Every endpoint is role-gated server-side too — the
  * ProtectedRoute check is a UX affordance, not a security boundary.
  *
  * The editor works in "Dhaka wall-clock" terms (a date plus a time) and
- * percentage-based negative marking; the API stores instants and absolute
- * marks. The small adapters below translate in both directions so the
+ * percentage-based negative marking; the API stores instants and percentage
+ * points. The small adapters below translate in both directions so the
  * components never see the difference.
  */
 
@@ -239,22 +238,22 @@ function questionId() {
 }
 
 /** A fresh, unanswered question of the given type. */
-export function blankQuestion(type) {
+export function blankQuestion(type, marks = type === QUESTION_TYPES.MTF ? 0.4 : 2) {
   const options = OPTION_IDS.map((id) => ({ id, text: '' }));
   return type === QUESTION_TYPES.MTF
-    ? { id: questionId(), type, stem: '', imageUrl: '', options, correctAnswer: {}, explanation: '' }
-    : { id: questionId(), type, stem: '', imageUrl: '', options, correctOptionId: '', explanation: '' };
+    ? { id: questionId(), type, stem: '', imageUrl: '', options, correctAnswer: {}, explanation: '', marks }
+    : { id: questionId(), type, stem: '', imageUrl: '', options, correctOptionId: '', explanation: '', marks };
 }
 
 /** API question -> editor question (SBA keys live in `correctOptionId`). */
 function toEditorQuestion(question) {
-  const base = { id: question.id, type: question.type, stem: question.stem ?? '', imageUrl: question.imageUrl ?? '', options: question.options, explanation: question.explanation ?? '' };
+  const base = { id: question.id, type: question.type, stem: question.stem ?? '', imageUrl: question.imageUrl ?? '', options: question.options, explanation: question.explanation ?? '', marks: question.marks ?? 1 };
   return question.type === QUESTION_TYPES.MTF
     ? { ...base, correctAnswer: question.correctAnswer && typeof question.correctAnswer === 'object' ? question.correctAnswer : {} }
     : { ...base, correctOptionId: typeof question.correctAnswer === 'string' ? question.correctAnswer : '' };
 }
 
-function toApiQuestion(question, marks) {
+function toApiQuestion(question) {
   const correctAnswer = question.type === QUESTION_TYPES.MTF
     ? (question.correctAnswer && Object.keys(question.correctAnswer).length ? question.correctAnswer : null)
     : (question.correctOptionId || null);
@@ -266,7 +265,7 @@ function toApiQuestion(question, marks) {
     options: question.options.map((option) => ({ id: option.id, text: option.text ?? '' })),
     correctAnswer,
     explanation: question.explanation ?? '',
-    marks: marks > 0 ? marks : 1,
+    marks: Number(question.marks ?? 1),
   };
 }
 
@@ -276,9 +275,9 @@ function toApiQuestion(question, marks) {
  */
 function toEditorExam(exam) {
   const marksPerQuestion = Number(exam.marksPerQuestion ?? 1);
-  const deductionPercent = marksPerQuestion > 0 ? Math.round((Number(exam.negativeMarking ?? 0) / marksPerQuestion) * 100) : 0;
-  const type = exam.questionType === QUESTION_TYPES.MTF ? QUESTION_TYPES.MTF : QUESTION_TYPES.SBA;
-  const questionCount = exam.targetQuestionCount || exam.questionCount || 0;
+  const deductionPercent = Number(exam.negativeMarking ?? 0);
+  const type = exam.questionType ?? QUESTION_TYPES.SBA;
+  const questionCount = exam.targetQuestionCount ?? exam.questionCount ?? 0;
   return {
     id: exam.id,
     courseId: exam.courseId,
@@ -297,7 +296,8 @@ function toEditorExam(exam) {
     incompleteCount: (exam.questionCount ?? 0) - (exam.completeQuestionCount ?? 0),
     marksPerQuestion,
     deductionPercent,
-    totalMarks: computeTotalMarks({ type, questionCount, marksPerQuestion }),
+    passMark: Number(exam.passMark ?? 70),
+    totalMarks: exam.totalMarks ?? 0,
     attemptCount: exam.attemptCount ?? 0,
     questions: Array.isArray(exam.questions) ? exam.questions.map(toEditorQuestion) : undefined,
   };
@@ -316,14 +316,10 @@ function toExamPayload(exam) {
   if (exam.durationMinutes !== undefined) payload.durationMinutes = Math.max(1, Number(exam.durationMinutes) || 1);
   if (exam.questionCount !== undefined) payload.targetQuestionCount = Math.max(0, Number(exam.questionCount) || 0);
   if (exam.marksPerQuestion !== undefined) payload.marksPerQuestion = round3(Number(exam.marksPerQuestion) || 0);
-  if (exam.deductionPercent !== undefined || exam.marksPerQuestion !== undefined) {
-    const marks = Number(exam.marksPerQuestion ?? 1) || 0;
-    const percent = Number(exam.deductionPercent ?? 0) || 0;
-    payload.negativeMarking = round3((percent / 100) * marks);
-  }
+  if (exam.deductionPercent !== undefined) payload.negativeMarking = round3(Number(exam.deductionPercent));
+  if (exam.passMark !== undefined) payload.passMark = round3(Number(exam.passMark));
   if (exam.questions !== undefined) {
-    const marks = Number(exam.marksPerQuestion ?? 1) || 1;
-    payload.questions = exam.questions.map((question) => toApiQuestion(question, marks));
+    payload.questions = exam.questions.map(toApiQuestion);
   }
   return payload;
 }
@@ -349,8 +345,7 @@ export async function createExam(exam) {
 
 /**
  * Saves settings and/or questions. Send `questions` (the full editor list) to
- * replace the paper; `marksPerQuestion` must accompany it so every question
- * carries the right marks.
+ * replace the paper, retaining each question's own marks.
  */
 export async function updateExam({ id, ...updates }) {
   const { data } = await apiClient.patch(`/admin/exams/${id}`, toExamPayload(updates));

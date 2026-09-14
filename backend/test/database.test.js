@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { openDatabase, migrate, one } from '../src/db.js';
 import { loadConfig } from '../src/config.js';
 
-const migrationCount = (await readdir(new URL('../migrations', import.meta.url))).filter(name => name.endsWith('.sql')).length;
+const migrationCount = (await readdir(new URL('../migrations', import.meta.url))).filter(name => /\.(sql|js)$/.test(name)).length;
 
 test('migrations are repeatable and the database enforces financial and identity constraints', async () => {
   const database = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });

@@ -11,9 +11,9 @@ function Field({ label, value, type }) {
   const display = type === 'date' && value ? formatDate(value) : value;
 
   return (
-    <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-      <span className="font-bold text-slate-900 dark:text-white">{label}:</span>{' '}
-      {display || <span className="text-slate-400 dark:text-slate-500">—</span>}
+    <p className="text-sm leading-relaxed text-stone-700 dark:text-brand-200">
+      <span className="font-bold text-stone-900 dark:text-white">{label}:</span>{' '}
+      {display || <span className="text-stone-400 dark:text-brand-200">—</span>}
     </p>
   );
 }
@@ -21,13 +21,13 @@ function Field({ label, value, type }) {
 /** Section heading with the underline rule and the edit pencil. */
 function SectionHeader({ title, onEdit }) {
   return (
-    <div className="mb-3 flex items-center justify-between gap-4 border-b-2 border-brand-200 pb-1.5 dark:border-slate-700">
+    <div className="mb-3 flex items-center justify-between gap-4 border-b-2 border-stone-200 pb-1.5 dark:border-stone-200">
       <h2 className="text-base font-bold text-brand-600 sm:text-lg dark:text-brand-300">{title}</h2>
       <button
         type="button"
         onClick={onEdit}
         aria-label={`Edit ${title}`}
-        className="rounded p-1 text-brand-600 transition-colors hover:bg-brand-100 hover:text-brand-800 dark:text-brand-400 dark:hover:bg-slate-800"
+        className="rounded p-1 text-brand-600 transition-colors hover:bg-brand-100 hover:text-brand-800 dark:text-brand-400 dark:hover:bg-surface-dark"
       >
         <FaPenToSquare aria-hidden="true" className="h-4 w-4" />
       </button>
@@ -54,14 +54,14 @@ export default function ProfileTab() {
   return (
     <>
       {/* ── Profile completion ── */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
+      <div className="rounded-xl border border-stone-200 bg-white p-5 dark:border-stone-200 dark:bg-surface-dark">
         <div className="flex items-center gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-sm font-bold text-slate-900 sm:text-base dark:text-white">
+              <h2 className="text-sm font-bold text-stone-900 sm:text-base dark:text-white">
                 Profile Completion
               </h2>
-              <span className="text-sm font-bold text-slate-900 dark:text-white">{percent}%</span>
+              <span className="text-sm font-bold text-stone-900 dark:text-white">{percent}%</span>
             </div>
 
             <div
@@ -70,23 +70,23 @@ export default function ProfileTab() {
               aria-valuemin={0}
               aria-valuemax={100}
               aria-label="Profile completion"
-              className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+              className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-surface-dark"
             >
               <div
-                className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                className="h-full rounded-full bg-brand-500 transition-all duration-500"
                 style={{ width: `${percent}%` }}
               />
             </div>
 
             {missing.length > 0 && (
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-2 text-xs text-stone-500 dark:text-brand-200">
                 Missing: {missing.join(', ')}
               </p>
             )}
           </div>
 
           {profile.isVerified && (
-            <span className="shrink-0 rounded-full bg-emerald-100 px-4 py-1.5 text-xs font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+            <span className="shrink-0 rounded-full bg-brand-100 px-4 py-1.5 text-xs font-bold text-brand-800 dark:bg-brand-950/50 dark:text-brand-300">
               Verified
             </span>
           )}
@@ -94,7 +94,7 @@ export default function ProfileTab() {
       </div>
 
       {/* ── Information sections ── */}
-      <div className="mt-5 rounded-xl bg-emerald-50/60 p-5 dark:bg-slate-900/40">
+      <div className="mt-5 rounded-xl bg-brand-50/60 p-5 dark:bg-surface-dark">
         {ACCOUNT_SECTIONS.map((section, index) => (
           <section key={section.id} className={index > 0 ? 'mt-7' : undefined}>
             <SectionHeader title={section.title} onEdit={() => setEditingSectionId(section.id)} />
@@ -102,7 +102,7 @@ export default function ProfileTab() {
             {section.id === 'basic' ? (
               <div className="flex flex-col gap-5 sm:flex-row">
                 <div className="shrink-0">
-                  <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800">
+                  <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-200 dark:bg-surface-dark">
                     {profile.photoUrl ? (
                       <img
                         src={profile.photoUrl}
@@ -112,12 +112,12 @@ export default function ProfileTab() {
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <FaUser aria-hidden="true" className="h-10 w-10 text-slate-300 dark:text-slate-600" />
+                      <FaUser aria-hidden="true" className="h-10 w-10 text-stone-300 dark:text-brand-200" />
                     )}
                   </div>
                   <button
                     type="button"
-                    className="mt-2 w-28 rounded-lg border border-brand-400 bg-white px-3 py-1.5 text-xs font-bold text-brand-600 transition hover:bg-brand-50 dark:border-slate-600 dark:bg-slate-800 dark:text-brand-300 dark:hover:bg-slate-700"
+                    className="mt-2 w-28 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-brand-600 transition hover:bg-brand-50 dark:border-stone-200 dark:bg-surface-dark dark:text-brand-300 dark:hover:bg-surface-dark"
                   >
                     Change
                   </button>

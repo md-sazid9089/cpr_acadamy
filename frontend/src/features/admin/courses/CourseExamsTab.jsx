@@ -17,11 +17,13 @@ const FILTERS = [
   { id: 'ALL', label: 'All' },
   { id: QUESTION_TYPES.SBA, label: 'SBA' },
   { id: QUESTION_TYPES.MTF, label: 'MCQ (True / False)' },
+  { id: 'mixed', label: 'Mixed' },
 ];
 
 export const TYPE_LABELS = {
   [QUESTION_TYPES.SBA]: 'SBA',
   [QUESTION_TYPES.MTF]: 'MCQ (T/F)',
+  mixed: 'Mixed',
 };
 
 /** Exams belonging to one course. Clicking a row opens the question builder. */
@@ -74,8 +76,9 @@ export default function CourseExamsTab() {
       scheduledAt: new Date(Date.now() + 7 * 86400000).toISOString(),
       durationMinutes: 60,
       questionCount: form.type === QUESTION_TYPES.MTF ? 25 : 50,
-      marksPerQuestion: 1,
-      deductionPercent: 25,
+      marksPerQuestion: form.type === QUESTION_TYPES.MTF ? 0.4 : 2,
+      deductionPercent: 0,
+      passMark: 70,
     });
   };
 
@@ -83,7 +86,7 @@ export default function CourseExamsTab() {
     {
       key: 'title',
       header: 'Exam',
-      render: (row) => <p className="max-w-md font-medium text-slate-900 line-clamp-1 dark:text-white">{row.title}</p>,
+      render: (row) => <p className="max-w-md font-medium text-stone-900 line-clamp-1 dark:text-white">{row.title}</p>,
     },
     {
       key: 'type',
@@ -93,18 +96,18 @@ export default function CourseExamsTab() {
     {
       key: 'scheduledAt',
       header: 'Scheduled',
-      render: (row) => <span className="text-xs text-slate-700 dark:text-slate-300">{formatDateTime(row.scheduledAt)}</span>,
+      render: (row) => <span className="text-xs text-stone-700 dark:text-brand-200">{formatDateTime(row.scheduledAt)}</span>,
     },
     {
       key: 'questions',
       header: 'Questions',
       render: (row) => {
         const written = row.writtenCount ?? 0;
-        const complete = written >= row.questionCount && !row.incompleteCount;
+        const complete = written === row.questionCount && !row.incompleteCount;
         return (
-          <span className={cn('text-xs font-semibold', complete ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-slate-400')}>
+          <span className={cn('text-xs font-semibold', complete ? 'text-brand-700 dark:text-brand-400' : 'text-stone-600 dark:text-brand-200')}>
             {written} / {row.questionCount}
-            {row.incompleteCount > 0 && <span className="ml-1 font-normal text-amber-700 dark:text-amber-400">({row.incompleteCount} incomplete)</span>}
+            {row.incompleteCount > 0 && <span className="ml-1 font-normal text-brand-700 dark:text-brand-400">({row.incompleteCount} incomplete)</span>}
           </span>
         );
       },
@@ -114,7 +117,7 @@ export default function CourseExamsTab() {
       header: 'Marks',
       align: 'right',
       render: (row) => (
-        <span className="text-xs text-slate-600 dark:text-slate-400">
+        <span className="text-xs text-stone-600 dark:text-brand-200">
           {row.totalMarks} · {row.durationMinutes}m
         </span>
       ),
@@ -170,7 +173,7 @@ export default function CourseExamsTab() {
                 'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                 filter === option.id
                   ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               {option.label}
@@ -214,8 +217,9 @@ export default function CourseExamsTab() {
             value={form.type}
             onChange={(event) => setForm({ ...form, type: event.target.value })}
           >
-            <option value={QUESTION_TYPES.SBA}>SBA — single best answer, one mark each</option>
-            <option value={QUESTION_TYPES.MTF}>MCQ — five true/false statements, five marks each</option>
+            <option value={QUESTION_TYPES.SBA}>SBA - two marks each</option>
+            <option value={QUESTION_TYPES.MTF}>MCQ - five statements, 0.4 marks each</option>
+            <option value="mixed">Mixed - 30 MCQ, then 20 SBA</option>
           </Select>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setCreating(false)}>
@@ -243,8 +247,8 @@ export default function CourseExamsTab() {
           </>
         }
       >
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Delete <strong className="text-slate-900 dark:text-white">{deleting?.title}</strong> and its{' '}
+        <p className="text-sm text-stone-600 dark:text-brand-200">
+          Delete <strong className="text-stone-900 dark:text-white">{deleting?.title}</strong> and its{' '}
           {deleting?.writtenCount ?? 0} questions? This cannot be undone.
         </p>
         {deleteMutation.isError && (

@@ -29,12 +29,12 @@ export default function SbaQuestion({ question, value, onChange, readOnly = fals
               'flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors',
               readOnly && 'cursor-default',
               isCorrect
-                ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/40'
+                ? 'border-stone-200 bg-brand-50 dark:border-stone-200 dark:bg-brand-950/40'
                 : isWrongPick
-                  ? 'border-red-400 bg-red-50 dark:border-red-700 dark:bg-red-950/40'
+                  ? 'border-stone-200 bg-red-50 dark:border-stone-200 dark:bg-red-950/40'
                   : isSelected
-                    ? 'border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-950/40'
-                    : 'border-slate-200 hover:border-brand-300 dark:border-slate-800 dark:hover:border-brand-700',
+                    ? 'border-stone-200 bg-brand-50 dark:border-stone-200 dark:bg-brand-950/40'
+                    : 'border-stone-200 hover:border-stone-200 dark:border-stone-200 dark:hover:border-stone-200',
             )}
           >
             <input
@@ -51,18 +51,18 @@ export default function SbaQuestion({ question, value, onChange, readOnly = fals
               className={cn(
                 'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
                 isCorrect
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-brand-600 text-white'
                   : isWrongPick
                     ? 'bg-red-600 text-white'
                     : isSelected
                       ? 'bg-brand-600 text-white'
-                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+                      : 'bg-stone-100 text-stone-500 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               {LETTERS[index] ?? index + 1}
             </span>
 
-            <span className="text-sm text-slate-700 dark:text-slate-200">{option.text}</span>
+            <span className="text-sm text-stone-700 dark:text-brand-200">{option.text}</span>
           </label>
         );
       })}

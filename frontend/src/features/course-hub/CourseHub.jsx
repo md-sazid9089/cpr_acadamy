@@ -60,18 +60,18 @@ export default function CourseHub() {
       <DashboardPageHeader title={course?.title ?? 'Course'} backTo="/dashboard/courses" />
 
       {/* ── Course Info Card ── */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-stone-200 dark:bg-surface-dark">
         {/* Section title header */}
-        <div className="border-b border-slate-100 bg-slate-50/80 px-5 py-4 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-900/60 dark:text-white sm:text-base">
+        <div className="border-b border-stone-200 bg-stone-50/80 px-5 py-4 text-sm font-semibold text-stone-900 dark:border-stone-200 dark:bg-surface-dark dark:text-white sm:text-base">
           {course?.title ?? 'Course Details'}
         </div>
 
         <div className="space-y-5 p-5">
           {/* Reg No */}
-          <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
-            <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-stone-600 dark:text-brand-200">
+            <span className="inline-flex items-center gap-1 rounded-lg bg-stone-100 px-2.5 py-1 dark:bg-surface-dark">
               Reg No:
-              <strong className="font-semibold text-slate-800 dark:text-slate-200">
+              <strong className="font-semibold text-stone-800 dark:text-brand-200">
                 {course?.regNo ?? '—'}
               </strong>
             </span>
@@ -79,11 +79,11 @@ export default function CourseHub() {
 
           {/* Progress Bar */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
+            <div className="flex items-center justify-between text-xs font-semibold text-stone-600 dark:text-brand-200">
               <span>Progress</span>
-              <span className="text-slate-900 dark:text-white">{progressValue}%</span>
+              <span className="text-stone-900 dark:text-white">{progressValue}%</span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-surface-dark">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all duration-500"
                 style={{ width: `${progressValue}%` }}
@@ -95,7 +95,7 @@ export default function CourseHub() {
           <div className="relative">
             <FaMagnifyingGlass
               aria-hidden="true"
-              className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
+              className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400"
             />
             <input
               type="search"
@@ -104,9 +104,9 @@ export default function CourseHub() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={cn(
-                'h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-800',
-                'placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30',
-                'dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-brand-500',
+                'h-10 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-4 text-sm text-stone-800',
+                'placeholder:text-stone-400 focus:border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30',
+                'dark:border-stone-200 dark:bg-surface-dark dark:text-brand-200 dark:placeholder:text-brand-200 dark:focus:border-stone-200',
               )}
             />
           </div>
@@ -116,7 +116,7 @@ export default function CourseHub() {
       {/* ── Tab Navigation ── */}
       <div
         role="tablist"
-        className="overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        className="overflow-hidden rounded-xl border border-stone-200 bg-white p-1.5 dark:border-stone-200 dark:bg-surface-dark"
       >
         <div className="grid grid-cols-3 gap-1.5">
           {TABS.map((tab) => {
@@ -132,8 +132,8 @@ export default function CourseHub() {
                 className={cn(
                   'flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all sm:text-sm',
                   isActive
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
+                    ? 'bg-brand-600 text-white border border-stone-200'
+                    : 'text-stone-600 hover:bg-stone-100 dark:text-brand-200 dark:hover:bg-surface-dark',
                 )}
               >
                 <Icon

@@ -82,11 +82,11 @@ function Checklist({ checks, courseId, onNavigate }) {
         <li key={check.id} className="flex items-center justify-between gap-3 text-sm">
           <span className="flex items-center gap-2">
             {check.ok ? (
-              <FaCheck aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <FaCheck aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
             ) : (
-              <FaCircleExclamation aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <FaCircleExclamation aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />
             )}
-            <span className={cn(check.ok ? 'text-slate-700 dark:text-slate-300' : 'text-slate-900 dark:text-white')}>
+            <span className={cn(check.ok ? 'text-stone-700 dark:text-brand-200' : 'text-stone-900 dark:text-white')}>
               {check.label}
             </span>
           </span>
@@ -139,7 +139,7 @@ export function PublishControl({ course }) {
             </>
           }
         >
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-stone-600 dark:text-brand-200">
             Existing enrolments are not affected. The course goes back to draft.
           </p>
         </Modal>
@@ -183,7 +183,7 @@ export function PublishControl({ course }) {
         ) : (
           <div className="space-y-4">
             {failing.length > 0 ? (
-              <p className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+              <p className="flex items-start gap-2 rounded-xl border border-stone-200 bg-brand-50 p-3 text-sm text-brand-900 dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-200">
                 <FaTriangleExclamation aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
                   {failing.length} {failing.length === 1 ? 'item is' : 'items are'} still missing. You can publish anyway
@@ -191,7 +191,7 @@ export function PublishControl({ course }) {
                 </span>
               </p>
             ) : (
-              <p className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200">
+              <p className="flex items-center gap-2 rounded-xl border border-stone-200 bg-brand-50 p-3 text-sm text-brand-900 dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-200">
                 <FaCheck aria-hidden="true" className="h-4 w-4 shrink-0" />
                 Everything is in place.
               </p>

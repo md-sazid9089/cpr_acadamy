@@ -84,12 +84,12 @@ export default function VerifyOtp() {
           {...register('otp')}
         />
 
-        <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
+        <Button type="submit" fullWidth isLoading={isSubmitting}>
           Verify
         </Button>
       </form>
 
-      <div className="mt-5 text-center text-sm text-slate-600 dark:text-slate-400">
+      <div className="mt-5 text-center text-sm text-stone-600 dark:text-brand-200">
         {resendTimer.isExpired ? (
           <button
             type="button"

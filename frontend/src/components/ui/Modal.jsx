@@ -39,7 +39,7 @@ export default function Modal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm"
         onClick={closeOnBackdrop ? onClose : undefined}
         aria-hidden="true"
       />
@@ -49,23 +49,23 @@ export default function Modal({
         aria-modal="true"
         aria-label={typeof title === 'string' ? title : undefined}
         className={cn(
-          'relative z-10 w-full animate-fade-in rounded-2xl bg-white shadow-xl',
-          'dark:bg-surface-dark-subtle dark:ring-1 dark:ring-slate-800',
+          'relative z-10 w-full animate-fade-in rounded-2xl bg-white border border-stone-200',
+          'dark:bg-surface-dark-subtle',
           SIZES[size] ?? SIZES.md,
         )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5 dark:border-slate-800">
+        <div className="flex items-start justify-between gap-4 border-b border-stone-200 p-5 dark:border-stone-200">
           <div>
-            {title && <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>}
+            {title && <h2 className="text-lg font-semibold text-stone-900 dark:text-white">{title}</h2>}
             {description && (
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>
+              <p className="mt-1 text-sm text-stone-500 dark:text-brand-200">{description}</p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            className="flex min-h-12 min-w-12 items-center justify-center rounded-control p-3 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-surface-dark dark:hover:text-brand-200"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
@@ -76,7 +76,7 @@ export default function Modal({
         <div className="max-h-[70vh] overflow-y-auto p-5">{children}</div>
 
         {footer && (
-          <div className="flex justify-end gap-3 border-t border-slate-200 p-5 dark:border-slate-800">
+          <div className="button-group justify-end border-t border-stone-200 p-5 dark:border-stone-200">
             {footer}
           </div>
         )}

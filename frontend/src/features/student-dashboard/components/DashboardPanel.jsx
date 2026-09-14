@@ -10,7 +10,7 @@ export default function DashboardPanel({ title, className, bodyClassName, childr
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-2xl border border-brand-400 bg-white shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle',
+        'ui-card overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-stone-200 dark:bg-surface-dark-subtle',
         className,
       )}
     >

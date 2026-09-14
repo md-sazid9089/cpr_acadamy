@@ -23,6 +23,7 @@ export default function AdminComplaints() {
   const [filter, setFilter] = useState('open');
   const [selectedId, setSelectedId] = useState(null);
   const [reply, setReply] = useState('');
+  const [replyError, setReplyError] = useState('');
   const queryClient = useQueryClient();
 
   const { data: complaints = [], isLoading } = useQuery({
@@ -46,7 +47,12 @@ export default function AdminComplaints() {
 
   const sendReply = (event) => {
     event.preventDefault();
-    if (!selected || !reply.trim()) return;
+    if (!selected) return;
+    if (!reply.trim()) {
+      setReplyError('Enter a reply before sending.');
+      return;
+    }
+    setReplyError('');
     replyMutation.mutate({ id: selected.id, body: reply.trim() });
   };
 
@@ -64,7 +70,7 @@ export default function AdminComplaints() {
                 'rounded-full px-3 py-1 text-xs font-medium transition-colors',
                 filter === option.id
                   ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               {option.label}
@@ -79,7 +85,7 @@ export default function AdminComplaints() {
         ) : rows.length === 0 ? (
           <EmptyState title="Nothing here" description="No threads match this filter." />
         ) : (
-          <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="mt-4 divide-y divide-stone-200 dark:divide-stone-200">
             {rows.map((item) => {
               const last = item.messages[item.messages.length - 1];
               const active = selected?.id === item.id;
@@ -89,17 +95,17 @@ export default function AdminComplaints() {
                     type="button"
                     onClick={() => setSelectedId(item.id)}
                     className={cn(
-                      'w-full px-5 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60',
+                      'w-full px-5 py-3 text-left transition-colors hover:bg-stone-50 dark:hover:bg-surface-dark',
                       active && 'bg-brand-50 dark:bg-brand-950/40',
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{item.relatedTo}</p>
+                      <p className="truncate text-sm font-semibold text-stone-900 dark:text-white">{item.relatedTo}</p>
                       <ComplaintStatusBadge status={item.status} />
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{item.batchTitle || 'General'}</p>
-                    <p className="mt-1 line-clamp-2 text-xs text-slate-600 dark:text-slate-300">{last?.body}</p>
-                    <p className="mt-1 text-[11px] text-slate-400">{formatDateTime(last?.sentAt ?? item.createdAt)}</p>
+                    <p className="mt-0.5 truncate text-xs text-stone-500 dark:text-brand-200">{item.batchTitle || 'General'}</p>
+                    <p className="mt-1 line-clamp-2 text-xs text-stone-600 dark:text-brand-200">{last?.body}</p>
+                    <p className="mt-1 text-[11px] text-stone-400">{formatDateTime(last?.sentAt ?? item.createdAt)}</p>
                   </button>
                 </li>
               );
@@ -144,32 +150,35 @@ export default function AdminComplaints() {
                     'max-w-[85%] rounded-2xl px-4 py-3 text-sm',
                     message.from === 'academy'
                       ? 'ml-auto bg-brand-600 text-white'
-                      : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
+                      : 'bg-stone-100 text-stone-800 dark:bg-surface-dark dark:text-brand-200',
                   )}
                 >
                   <p className="whitespace-pre-line">{message.body}</p>
-                  <p className={cn('mt-1 text-[11px]', message.from === 'academy' ? 'text-white/70' : 'text-slate-400')}>
+                  <p className={cn('mt-1 text-[11px]', message.from === 'academy' ? 'text-white/70' : 'text-stone-400')}>
                     {message.from === 'academy' ? 'Academy' : 'Student'} · {formatDateTime(message.sentAt)}
                   </p>
                 </div>
               ))}
 
               {selected.status === 'solved' ? (
-                <p className="rounded-lg bg-surface-subtle p-3 text-xs text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+                <p className="rounded-lg bg-surface-subtle p-3 text-xs text-stone-500 dark:bg-surface-dark dark:text-brand-200">
                   This thread is closed. Reopen it to reply.
                 </p>
               ) : (
-                <form onSubmit={sendReply} className="space-y-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+                <form onSubmit={sendReply} className="space-y-3 border-t border-stone-200 pt-4 dark:border-stone-200">
                   <Textarea
                     label="Reply to the student"
                     rows={3}
                     value={reply}
-                    onChange={(event) => setReply(event.target.value)}
+                    onChange={(event) => {
+                      setReply(event.target.value);
+                      setReplyError('');
+                    }}
                     placeholder="Dear Doctor, …"
-                    error={replyMutation.error?.message}
+                    error={replyError || replyMutation.error?.message}
                   />
                   <div className="flex justify-end">
-                    <Button type="submit" size="sm" disabled={!reply.trim()} isLoading={replyMutation.isPending}>
+                    <Button type="submit" size="sm" isLoading={replyMutation.isPending}>
                       <FaPaperPlane aria-hidden="true" className="h-3.5 w-3.5" />
                       Send reply
                     </Button>

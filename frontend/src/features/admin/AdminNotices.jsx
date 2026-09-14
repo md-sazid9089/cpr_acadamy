@@ -80,18 +80,18 @@ export default function AdminNotices() {
             }
           />
         ) : (
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="divide-y divide-stone-200 dark:divide-stone-200">
             {notices.map((notice) => (
               <li key={notice.id} className="flex flex-wrap items-start gap-3 px-5 py-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     {notice.pinned && <FaThumbtack aria-hidden="true" className="h-3 w-3 text-brand-600 dark:text-brand-400" />}
-                    <p className="font-medium text-slate-900 dark:text-white">{notice.title}</p>
+                    <p className="font-medium text-stone-900 dark:text-white">{notice.title}</p>
                     <Badge tone="neutral">{notice.category}</Badge>
                     {!notice.isPublished && <Badge tone="warning">Hidden</Badge>}
                   </div>
-                  <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{notice.body}</p>
-                  <p className="mt-1 text-xs text-slate-400">{formatDateTime(notice.publishedAt)}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-stone-600 dark:text-brand-200">{notice.body}</p>
+                  <p className="mt-1 text-xs text-stone-400">{formatDateTime(notice.publishedAt)}</p>
                 </div>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" onClick={() => openEdit(notice)} aria-label={`Edit ${notice.title}`}>
@@ -123,13 +123,13 @@ export default function AdminNotices() {
               </option>
             ))}
           </Select>
-          <div className="flex flex-wrap gap-5 text-sm text-slate-700 dark:text-slate-300">
+          <div className="flex flex-wrap gap-5 text-sm text-stone-700 dark:text-brand-200">
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-brand-600" checked={form.pinned} onChange={set('pinned')} />
+              <input type="checkbox" className="h-4 w-4 rounded border-stone-200 text-brand-600" checked={form.pinned} onChange={set('pinned')} />
               Pin to top
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-brand-600" checked={form.isPublished} onChange={set('isPublished')} />
+              <input type="checkbox" className="h-4 w-4 rounded border-stone-200 text-brand-600" checked={form.isPublished} onChange={set('isPublished')} />
               Visible to students
             </label>
           </div>
@@ -159,8 +159,8 @@ export default function AdminNotices() {
           </>
         }
       >
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          Delete <strong className="text-slate-900 dark:text-white">{deleting?.title}</strong>? Students will no longer see it.
+        <p className="text-sm text-stone-600 dark:text-brand-200">
+          Delete <strong className="text-stone-900 dark:text-white">{deleting?.title}</strong>? Students will no longer see it.
         </p>
       </Modal>
     </>

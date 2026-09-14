@@ -45,7 +45,7 @@ export default function BatchFilters({ value = {}, onChange, onClear, className 
         type="button"
         onClick={() => setMobileOpen((open) => !open)}
         aria-expanded={mobileOpen}
-        className="mb-4 flex w-full items-center justify-between rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-800 lg:hidden dark:border-slate-800 dark:bg-surface-dark-subtle dark:text-brand-300"
+        className="mb-4 flex w-full items-center justify-between rounded-xl border border-stone-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-800 lg:hidden dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-300"
       >
         <span className="flex items-center gap-2">
           <FaSliders aria-hidden="true" className="h-4 w-4" />
@@ -67,7 +67,7 @@ export default function BatchFilters({ value = {}, onChange, onClear, className 
           <button
             type="button"
             onClick={onClear}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 dark:border-slate-800 dark:text-slate-300 dark:hover:border-accent-800 dark:hover:text-accent-400"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200 px-4 py-2.5 text-sm font-semibold text-stone-600 transition-colors hover:border-stone-200 hover:text-brand-700 dark:border-stone-200 dark:text-brand-200 dark:hover:border-stone-200 dark:hover:text-brand-400"
           >
             <FaXmark aria-hidden="true" className="h-3.5 w-3.5" />
             Clear {activeCount} {activeCount === 1 ? 'filter' : 'filters'}
@@ -94,14 +94,14 @@ function FilterSection({ title, options, selected, onToggle }) {
   const bodyId = useId();
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-brand-200 bg-white dark:border-slate-800 dark:bg-surface-dark-subtle">
+    <section className="overflow-hidden rounded-2xl border border-stone-200 bg-surface-light dark:border-stone-200 dark:bg-surface-dark-subtle">
       <h3>
         <button
           type="button"
           onClick={() => setOpen((current) => !current)}
           aria-expanded={open}
           aria-controls={bodyId}
-          className="flex w-full items-center justify-between gap-3 bg-brand-50 px-4 py-3 text-left text-sm font-bold text-brand-800 transition-colors hover:bg-brand-100 dark:bg-slate-900/60 dark:text-brand-300 dark:hover:bg-slate-900"
+          className="flex w-full items-center justify-between gap-3 bg-brand-50 px-4 py-3 text-left text-sm font-bold text-brand-800 transition-colors hover:bg-brand-100 dark:bg-surface-dark dark:text-brand-300 dark:hover:bg-surface-dark"
         >
           <span className="flex items-center gap-2">
             {title}
@@ -127,17 +127,17 @@ function FilterSection({ title, options, selected, onToggle }) {
                 <label
                   className={cn(
                     'flex cursor-pointer items-start gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors',
-                    'hover:bg-brand-50 dark:hover:bg-slate-900',
+                    'hover:bg-brand-50 dark:hover:bg-surface-dark',
                     isChecked
                       ? 'font-semibold text-brand-800 dark:text-brand-300'
-                      : 'text-slate-700 dark:text-slate-300',
+                      : 'text-stone-700 dark:text-brand-200',
                   )}
                 >
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => onToggle(option.id)}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-2 focus:ring-brand-500 focus:ring-offset-0 dark:border-slate-600 dark:bg-slate-800"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-stone-200 text-brand-600 focus:ring-2 focus:ring-brand-500 focus:ring-offset-0 dark:border-stone-200 dark:bg-surface-dark"
                   />
                   <span className="leading-snug">{option.label}</span>
                 </label>

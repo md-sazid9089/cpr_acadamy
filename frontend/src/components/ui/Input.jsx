@@ -2,9 +2,9 @@ import { forwardRef, useId } from 'react';
 import { cn } from '@/lib/utils';
 
 const fieldStyles =
-  'block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 ' +
-  'transition-colors focus:border-brand-500 disabled:cursor-not-allowed disabled:bg-slate-50 ' +
-  'dark:bg-surface-dark-subtle dark:text-slate-100 dark:placeholder:text-slate-500 dark:disabled:bg-slate-900';
+  'block min-h-[var(--control-height-medium)] w-full rounded-control border bg-white px-3 py-3 text-[15px] leading-[1.5] text-stone-900 placeholder:text-stone-400 ' +
+  'transition-colors focus:border-stone-200 disabled:cursor-not-allowed disabled:bg-stone-50 ' +
+  'dark:bg-surface-dark-subtle dark:text-brand-200 dark:placeholder:text-brand-200 dark:disabled:bg-surface-dark';
 
 /** Text input with label, hint, prefix and error slot. Forwards refs for RHF. */
 const Input = forwardRef(function Input(
@@ -18,7 +18,7 @@ const Input = forwardRef(function Input(
   return (
     <div className={cn('space-y-1.5', containerClassName)}>
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label htmlFor={inputId} className="block text-sm font-medium text-stone-700 dark:text-brand-200">
           {label}
           {required && <span className="ml-0.5 text-red-500">*</span>}
         </label>
@@ -26,7 +26,7 @@ const Input = forwardRef(function Input(
 
       <div className="relative">
         {prefix && (
-          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-slate-500 dark:text-slate-400">
+          <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm text-stone-500 dark:text-brand-200">
             {prefix}
           </span>
         )}
@@ -39,8 +39,8 @@ const Input = forwardRef(function Input(
             fieldStyles,
             prefix && 'pl-14',
             error
-              ? 'border-red-400 focus:border-red-500 dark:border-red-500/70'
-              : 'border-slate-300 dark:border-slate-700',
+              ? 'border-stone-200 focus:border-stone-200 dark:border-stone-200'
+              : 'border-stone-200 dark:border-stone-200',
             className,
           )}
           {...props}
@@ -52,7 +52,7 @@ const Input = forwardRef(function Input(
           {error}
         </p>
       ) : hint ? (
-        <p id={`${inputId}-hint`} className="text-xs text-slate-500 dark:text-slate-400">
+        <p id={`${inputId}-hint`} className="text-xs text-stone-500 dark:text-brand-200">
           {hint}
         </p>
       ) : null}
@@ -71,7 +71,7 @@ export const Textarea = forwardRef(function Textarea(
   return (
     <div className={cn('space-y-1.5', containerClassName)}>
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label htmlFor={inputId} className="block text-sm font-medium text-stone-700 dark:text-brand-200">
           {label}
           {required && <span className="ml-0.5 text-red-500">*</span>}
         </label>
@@ -84,7 +84,7 @@ export const Textarea = forwardRef(function Textarea(
         className={cn(
           fieldStyles,
           'resize-y',
-          error ? 'border-red-400 dark:border-red-500/70' : 'border-slate-300 dark:border-slate-700',
+          error ? 'border-stone-200 dark:border-stone-200' : 'border-stone-200 dark:border-stone-200',
           className,
         )}
         {...props}
@@ -92,7 +92,7 @@ export const Textarea = forwardRef(function Textarea(
       {error ? (
         <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>
       ) : hint ? (
-        <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>
+        <p className="text-xs text-stone-500 dark:text-brand-200">{hint}</p>
       ) : null}
     </div>
   );
@@ -109,7 +109,7 @@ export const Select = forwardRef(function Select(
   return (
     <div className={cn('space-y-1.5', containerClassName)}>
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label htmlFor={inputId} className="block text-sm font-medium text-stone-700 dark:text-brand-200">
           {label}
           {required && <span className="ml-0.5 text-red-500">*</span>}
         </label>
@@ -119,7 +119,7 @@ export const Select = forwardRef(function Select(
         id={inputId}
         className={cn(
           fieldStyles,
-          error ? 'border-red-400 dark:border-red-500/70' : 'border-slate-300 dark:border-slate-700',
+          error ? 'border-stone-200 dark:border-stone-200' : 'border-stone-200 dark:border-stone-200',
           className,
         )}
         {...props}
@@ -129,7 +129,7 @@ export const Select = forwardRef(function Select(
       {error ? (
         <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>
       ) : hint ? (
-        <p className="text-xs text-slate-500 dark:text-slate-400">{hint}</p>
+        <p className="text-xs text-stone-500 dark:text-brand-200">{hint}</p>
       ) : null}
     </div>
   );

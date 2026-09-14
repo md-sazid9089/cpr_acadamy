@@ -8,11 +8,11 @@ import Button from '@/components/ui/Button.jsx';
 
 /** Solid primary action — matches the "View Subscriptions" button. */
 const PRIMARY_ACTION =
-  'flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-center text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 sm:text-sm';
+  'flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-center text-xs font-bold text-white border border-stone-200 transition hover:bg-brand-700 sm:text-sm';
 
 /** Tinted secondary action — matches the pink "Add Subscriptions" button. */
 const SECONDARY_ACTION =
-  'flex items-center justify-center rounded-lg bg-gradient-to-r from-accent-50 to-brand-50 px-4 py-2.5 text-center text-xs font-bold text-brand-600 shadow-sm ring-1 ring-accent-100 transition hover:from-accent-100 hover:to-brand-100 sm:text-sm dark:from-slate-800 dark:to-slate-800 dark:text-brand-300 dark:ring-slate-700 dark:hover:from-slate-700 dark:hover:to-slate-700';
+  'flex items-center justify-center rounded-lg bg-brand-50 px-4 py-2.5 text-center text-xs font-bold text-brand-600 border border-stone-200 transition hover:bg-brand-100 sm:text-sm dark:bg-surface-dark dark:text-brand-300 dark:hover:bg-surface-dark';
 
 /**
  * /dashboard/subscriptions — the batches this student can hold subscriptions
@@ -42,15 +42,15 @@ export default function Subscriptions() {
             {batches.map((batch) => (
               <div
                 key={batch.id}
-                className="rounded-xl border-2 border-brand-300 bg-white p-5 shadow-sm transition-all hover:border-brand-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
+                className="rounded-xl border border-stone-200 bg-white p-5 transition-all hover:border-stone-200 dark:border-stone-200 dark:bg-surface-dark"
               >
                 <h2 className="text-center text-base font-bold text-brand-600 sm:text-lg dark:text-brand-300">
                   {batch.title}
                 </h2>
 
-                <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
+                <p className="mt-2 text-center text-sm text-stone-600 dark:text-brand-200">
                   Reg No:
-                  <strong className="ml-1 text-slate-900 dark:text-white">{batch.regNo}</strong>
+                  <strong className="ml-1 text-stone-900 dark:text-white">{batch.regNo}</strong>
                 </p>
 
                 <div className="mt-5 grid grid-cols-2 gap-3">

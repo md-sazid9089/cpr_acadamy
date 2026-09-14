@@ -29,6 +29,9 @@ test('editor drafts: incomplete questions save, publication requires complete pa
     assert.equal(response.json().code, 'INCOMPLETE_QUESTIONS');
 
     response = await admin.request('PATCH', `/admin/exams/${exam.id}`, { isPublished: true, questions: [{ ...draft, stem: 'Pick one', options: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }], correctAnswer: 'b', imageUrl: 'https://cdn.example.test/ecg.png' }] });
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().code, 'QUESTION_COUNT_MISMATCH');
+    response = await admin.request('PATCH', `/admin/exams/${exam.id}`, { isPublished: true, targetQuestionCount: 1, questions: [{ ...draft, stem: 'Pick one', options: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }], correctAnswer: 'b', imageUrl: 'https://cdn.example.test/ecg.png' }] });
     assert.equal(response.statusCode, 200, response.body);
     assert.equal(response.json().completeQuestionCount, 1);
 

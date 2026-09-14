@@ -81,14 +81,16 @@
  * @property {string} title
  * @property {string} courseId
  * @property {'live' | 'mock' | 'practice'} type
+ * @property {'sba' | 'mtf' | 'mixed'} questionType
  * @property {'upcoming' | 'running' | 'submitted' | 'missed' | 'published'} status
  * @property {string} scheduledAt     ISO 8601.
  * @property {number} durationMinutes
  * @property {number} questionCount   Target paper length; the builder shows progress against it.
- * @property {number} totalMarks      Derived: questionCount × marksPerQuestion (× 5 stems for MTF). Never typed.
- * @property {number} [marksPerQuestion]  Per SBA question, or per MTF stem.
- * @property {number} [deductionPercent]  0–100; deduction per wrong answer = percent × marksPerQuestion.
- * @property {number} [negativeMarking] Fraction deducted per wrong answer, e.g. 0.25.
+ * @property {number} totalMarks      Derived from the actual questions and their marks.
+ * @property {number} [marksPerQuestion]  Editor default for new questions or MTF statements.
+ * @property {number} [deductionPercent]  Editor alias for negativeMarking.
+ * @property {number} [negativeMarking] Percentage points, e.g. 25 deducts 25% of that question's marks. Defaults to zero.
+ * @property {number} passMark        Pass threshold in percent; defaults to 70.
  * @property {Question[]} [questions]
  */
 
@@ -98,9 +100,10 @@
  * @property {'sba' | 'mtf'} type
  * @property {string} stem
  * @property {string} [imageUrl]
- * @property {QuestionOption[]} options  Always five, ids 'a'–'e'.
+ * @property {QuestionOption[]} options  Exactly five for published MTF; SBA accepts 2-10.
+ * @property {number} marks          Per SBA question or per MTF statement.
  * @property {string} [correctOptionId]  SBA answer key. Stripped before the paper reaches a student.
- * @property {Record<string, boolean>} [correctAnswer]  MTF answer key, optionId -> true/false. Stripped likewise.
+ * @property {string | Record<string, boolean> | null} [correctAnswer]  API SBA option ID or MTF boolean map. Hidden during an attempt.
  * @property {string} [explanation]   Revealed only after submission.
  */
 
@@ -108,13 +111,12 @@
  * @typedef {Object} QuestionOption
  * @property {string} id
  * @property {string} text
- * @property {boolean} [isCorrect]    Omitted by the API until results publish.
  */
 
 /**
  * SBA answers map questionId -> optionId.
  * MTF answers map questionId -> { [optionId]: true | false }.
- * @typedef {Record<string, string | Record<string, boolean>>} AnswerSheet
+ * @typedef {Record<string, string | Record<string, boolean> | null>} AnswerSheet
  */
 
 /**
@@ -125,6 +127,8 @@
  * @property {number} correctCount
  * @property {number} wrongCount
  * @property {number} skippedCount
+ * @property {number} passMark
+ * @property {boolean} passed
  * @property {number} [rank]
  * @property {number} [participants]
  * @property {string} submittedAt

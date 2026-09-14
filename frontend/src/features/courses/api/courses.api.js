@@ -49,3 +49,25 @@ export async function enrollInCourse(courseId) {
   const { data } = await apiClient.post(`/courses/${courseId}/enroll`);
   return data;
 }
+
+export async function fetchInstructorReviews(slug, page) {
+  const { data } = await apiClient.get(`/courses/${encodeURIComponent(slug)}/reviews`, {
+    params: { limit: 5, offset: page * 5 },
+  });
+  return data;
+}
+
+export async function fetchMyInstructorReview(slug) {
+  const { data } = await apiClient.get(`/courses/${encodeURIComponent(slug)}/review`);
+  return data;
+}
+
+export async function saveInstructorReview(slug, review) {
+  const { data } = await apiClient.post(`/courses/${encodeURIComponent(slug)}/review`, review);
+  return data;
+}
+
+export async function deleteInstructorReview(slug) {
+  const { data } = await apiClient.delete(`/courses/${encodeURIComponent(slug)}/review`);
+  return data;
+}

@@ -38,13 +38,13 @@ export default function Table({
     <div className={cn('overflow-x-auto', className)}>
       <table className="w-full min-w-[36rem] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-slate-200 dark:border-slate-800">
+          <tr className="border-b border-stone-200 dark:border-stone-200">
             {columns.map((column) => (
               <th
                 key={column.key}
                 scope="col"
                 className={cn(
-                  'whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400',
+                  'whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-brand-200',
                   alignClass(column.align),
                 )}
               >
@@ -53,21 +53,21 @@ export default function Table({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+        <tbody className="divide-y divide-stone-200 dark:divide-stone-200">
           {rows.map((row, index) => (
             <tr
               key={getRowId(row, index)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               className={cn(
                 'transition-colors',
-                onRowClick && 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50',
+                onRowClick && 'cursor-pointer hover:bg-stone-50 dark:hover:bg-surface-dark',
               )}
             >
               {columns.map((column) => (
                 <td
                   key={column.key}
                   className={cn(
-                    'px-4 py-3 text-slate-700 dark:text-slate-300',
+                    'px-4 py-3 text-stone-700 dark:text-brand-200',
                     alignClass(column.align),
                     column.className,
                   )}

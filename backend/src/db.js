@@ -2,6 +2,9 @@ import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { up as regradeAttempts } from '../migrations/004_regrade_attempts.js';
+
+const migrationSteps = new Map([['004_regrade_attempts.js', regradeAttempts]]);
 
 export async function openDatabase(config) {
   if (config.databaseMode === 'pglite') {
@@ -47,13 +50,19 @@ export async function migrate(database, directory = resolve(dirname(fileURLToPat
   await database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())');
   await database.transaction(async transaction => {
     await transaction.exec('LOCK TABLE schema_migrations IN EXCLUSIVE MODE');
-    for (const name of (await readdir(directory)).filter(name => name.endsWith('.sql')).sort()) {
+    for (const name of (await readdir(directory)).filter(name => /\.(sql|js)$/.test(name)).sort()) {
       const sql = await readFile(join(directory, name), 'utf8');
       const checksum = createHash('sha256').update(sql).digest('hex');
       const existing = (await transaction.query('SELECT checksum FROM schema_migrations WHERE name = $1', [name])).rows[0];
       if (existing && existing.checksum !== checksum) throw new Error(`Applied migration was modified: ${name}`);
       if (existing) continue;
-      await transaction.exec(sql);
+      if (name.endsWith('.js')) {
+        const up = migrationSteps.get(name);
+        if (!up) throw new Error(`Unregistered migration: ${name}`);
+        await up(transaction);
+      } else {
+        await transaction.exec(sql);
+      }
       await transaction.query('INSERT INTO schema_migrations(name, checksum) VALUES ($1, $2)', [name, checksum]);
     }
   });

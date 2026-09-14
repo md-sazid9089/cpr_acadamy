@@ -8,14 +8,14 @@ export default function ProgressBar({ value = 0, label, showValue = true, classN
     <div className={cn('w-full', className)}>
       {(label || showValue) && (
         <div className="mb-1.5 flex items-center justify-between text-xs">
-          {label && <span className="font-medium text-slate-600 dark:text-slate-400">{label}</span>}
+          {label && <span className="font-medium text-stone-600 dark:text-brand-200">{label}</span>}
           {showValue && (
             <span className="font-semibold text-brand-700 dark:text-brand-400">{clamped}%</span>
           )}
         </div>
       )}
       <div
-        className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"
+        className="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-surface-dark"
         role="progressbar"
         aria-valuenow={clamped}
         aria-valuemin={0}

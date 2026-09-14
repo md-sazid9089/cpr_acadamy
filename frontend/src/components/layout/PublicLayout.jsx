@@ -5,6 +5,7 @@ import Footer from './Footer.jsx';
 import ChatBubble from './ChatBubble.jsx';
 import usePageTitle from '@/hooks/usePageTitle.js';
 import { cn } from '@/lib/utils';
+import './PublicLayout.css';
 
 /**
  * Routes whose first section is a full-bleed hero. On these the navbar floats
@@ -21,7 +22,7 @@ export default function PublicLayout() {
   usePageTitle();
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-surface-dark">
+    <div className={cn('flex min-h-screen flex-col bg-surface-light dark:bg-surface-dark', pathname === '/' && 'homepage-scale')}>
       <AnnouncementStrip />
       <Navbar />
       {/* -mt-20 cancels the navbar's own height (h-20) so the next section

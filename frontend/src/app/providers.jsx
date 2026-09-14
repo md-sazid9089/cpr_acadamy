@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { watchSystemTheme } from '@/lib/theme';
 import { useAuthStore, watchAuthAcrossTabs } from '@/lib/auth';
 import apiClient from '@/lib/api-client';
+import { watchSessionCache } from '@/lib/session-cache';
 
 /**
  * The persisted session is trusted for the first paint, then checked once
@@ -47,14 +48,16 @@ export default function AppProviders({ children }) {
   const [queryClient] = useState(createQueryClient);
 
   useEffect(() => {
+    const unwatchCache = watchSessionCache(queryClient, useAuthStore);
     const unwatchTheme = watchSystemTheme();
     const unwatchAuth = watchAuthAcrossTabs();
     revalidateSession();
     return () => {
+      unwatchCache();
       unwatchTheme();
       unwatchAuth();
     };
-  }, []);
+  }, [queryClient]);
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

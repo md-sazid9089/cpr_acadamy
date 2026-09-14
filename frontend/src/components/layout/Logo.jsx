@@ -33,7 +33,7 @@ export default function Logo({ className, compact = false }) {
         width="240"
         height="191"
         className={cn(
-          'aspect-square rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700',
+          'aspect-square rounded-full object-cover border border-stone-200  ',
           compact ? 'h-11 w-11' : 'h-[4.5rem] w-[4.5rem]',
         )}
       />

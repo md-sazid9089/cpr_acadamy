@@ -50,7 +50,7 @@ const REASONS = [
 /** Trust + stats block, the section directly below the course grid. */
 export default function WhyChooseUs() {
   return (
-    <section className="relative isolate overflow-hidden bg-white py-12 dark:bg-surface-dark">
+    <section className="relative isolate overflow-hidden bg-surface-light py-12 dark:bg-surface-dark">
       <div className="pointer-events-none absolute inset-0 -z-10 text-brand-700 opacity-[0.04] dark:text-brand-300 dark:opacity-[0.10]">
         <DotMatrix className="h-full w-full" />
       </div>
@@ -67,7 +67,7 @@ export default function WhyChooseUs() {
         <dl className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {STATS.map((stat) => (
             <Card key={stat.label} className="p-6 text-center">
-              <dt className="order-2 mt-1 text-sm text-slate-500 dark:text-slate-400">{stat.label}</dt>
+              <dt className="order-2 mt-1 text-sm text-stone-500 dark:text-brand-200">{stat.label}</dt>
               <dd className="text-3xl font-extrabold text-brand-700 dark:text-brand-400">{stat.value}</dd>
             </Card>
           ))}
@@ -81,10 +81,10 @@ export default function WhyChooseUs() {
                   <path strokeLinecap="round" strokeLinejoin="round" d={reason.icon} />
                 </svg>
               </span>
-              <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-white">
+              <h3 className="mt-4 text-base font-semibold text-stone-900 dark:text-white">
                 {reason.title}
               </h3>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{reason.description}</p>
+              <p className="mt-2 text-sm text-stone-600 dark:text-brand-200">{reason.description}</p>
             </Card>
           ))}
         </div>

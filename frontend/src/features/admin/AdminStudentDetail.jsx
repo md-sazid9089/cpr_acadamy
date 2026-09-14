@@ -27,8 +27,8 @@ function Fact({ icon: Icon, label, value }) {
         <Icon aria-hidden="true" className="h-4 w-4" />
       </span>
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
-        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{value || '—'}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-brand-200">{label}</p>
+        <p className="truncate text-sm font-medium text-stone-900 dark:text-white">{value || '—'}</p>
       </div>
     </div>
   );
@@ -87,7 +87,7 @@ export default function AdminStudentDetail() {
       key: 'courseTitle',
       header: 'Course',
       render: (row) => (
-        <Link to={`/admin/courses/${row.courseId}`} className="font-medium text-slate-900 hover:text-brand-700 dark:text-white dark:hover:text-brand-400">
+        <Link to={`/admin/courses/${row.courseId}`} className="font-medium text-stone-900 hover:text-brand-700 dark:text-white dark:hover:text-brand-400">
           {row.courseTitle}
         </Link>
       ),
@@ -98,10 +98,10 @@ export default function AdminStudentDetail() {
       header: 'Progress',
       render: (row) => (
         <div className="flex items-center gap-2">
-          <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+          <div className="h-2 w-24 overflow-hidden rounded-full bg-stone-200 dark:bg-surface-dark">
             <div className="h-full rounded-full bg-brand-600" style={{ width: `${row.progress}%` }} />
           </div>
-          <span className="text-xs text-slate-600 dark:text-slate-400">{row.progress}%</span>
+          <span className="text-xs text-stone-600 dark:text-brand-200">{row.progress}%</span>
         </div>
       ),
     },
@@ -112,7 +112,7 @@ export default function AdminStudentDetail() {
     <div className="space-y-5">
       <Link
         to="/admin/students"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-brand-600 dark:text-brand-200 dark:hover:text-brand-400"
       >
         <FaArrowLeftLong aria-hidden="true" className="h-3 w-3" />
         All students
@@ -194,8 +194,8 @@ export default function AdminStudentDetail() {
           </>
         }
       >
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          <strong className="text-slate-900 dark:text-white">{student.fullName}</strong> ({student.mobile}).
+        <p className="text-sm text-stone-600 dark:text-brand-200">
+          <strong className="text-stone-900 dark:text-white">{student.fullName}</strong> ({student.mobile}).
           {confirming === ACCOUNT_STATUS.ACTIVE
             ? ' They will receive an activation SMS and can sign in immediately.'
             : ' They will lose access and be notified by SMS.'}

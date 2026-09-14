@@ -25,7 +25,7 @@ export default function MyAccount() {
 
       <DashboardTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
 
-      <div className="overflow-hidden rounded-2xl border border-brand-400 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-surface-dark-subtle">
+      <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 dark:border-stone-200 dark:bg-surface-dark-subtle">
         <Panel />
       </div>
     </div>

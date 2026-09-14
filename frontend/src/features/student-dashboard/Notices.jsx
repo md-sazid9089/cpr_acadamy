@@ -38,14 +38,14 @@ export default function Notices() {
             {notices.map((notice) => (
               <li
                 key={notice.id}
-                className="rounded-xl border-2 border-brand-300 bg-white p-5 shadow-sm transition-all hover:border-brand-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
+                className="rounded-xl border border-stone-200 bg-white p-5 transition-all hover:border-stone-200 dark:border-stone-200 dark:bg-surface-dark"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex items-start gap-2">
                     {notice.pinned && (
                       <FaThumbtack
                         aria-hidden="true"
-                        className="mt-1 h-3.5 w-3.5 shrink-0 text-accent-500"
+                        className="mt-1 h-3.5 w-3.5 shrink-0 text-brand-500"
                       />
                     )}
                     <h2 className="text-sm font-bold text-brand-600 sm:text-base dark:text-brand-300">
@@ -55,11 +55,11 @@ export default function Notices() {
                   <Badge tone={CATEGORY_TONE[notice.category] ?? 'neutral'}>{notice.category}</Badge>
                 </div>
 
-                <p className="mt-3 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                <p className="mt-3 text-sm leading-relaxed text-stone-700 dark:text-brand-200">
                   {notice.body}
                 </p>
 
-                <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-400 dark:border-slate-800 dark:text-slate-500">
+                <p className="mt-3 border-t border-stone-200 pt-3 text-xs text-stone-400 dark:border-stone-200 dark:text-brand-200">
                   {formatDateTime(notice.publishedAt)}
                 </p>
               </li>

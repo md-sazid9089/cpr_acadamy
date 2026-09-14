@@ -50,8 +50,8 @@ export default function AdminStudents() {
       header: 'Student',
       render: (row) => (
         <div>
-          <p className="font-medium text-slate-900 dark:text-white">{row.fullName}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{row.mobile}</p>
+          <p className="font-medium text-stone-900 dark:text-white">{row.fullName}</p>
+          <p className="text-xs text-stone-500 dark:text-brand-200">{row.mobile}</p>
         </div>
       ),
     },
@@ -61,7 +61,7 @@ export default function AdminStudents() {
       key: 'enrolments',
       header: 'Courses',
       align: 'right',
-      render: (row) => <span className="text-slate-700 dark:text-slate-300">{row.enrolmentCount ?? row.enrolments?.length ?? 0}</span>,
+      render: (row) => <span className="text-stone-700 dark:text-brand-200">{row.enrolmentCount ?? row.enrolments?.length ?? 0}</span>,
     },
     { key: 'createdAt', header: 'Registered', render: (row) => formatDate(row.createdAt) },
     { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
@@ -135,7 +135,7 @@ export default function AdminStudents() {
                 'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                 filter === option.id
                   ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               {option.label}
@@ -180,8 +180,8 @@ export default function AdminStudents() {
         }
       >
         {confirming && (
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            <strong className="text-slate-900 dark:text-white">{confirming.student.fullName}</strong>{' '}
+          <p className="text-sm text-stone-600 dark:text-brand-200">
+            <strong className="text-stone-900 dark:text-white">{confirming.student.fullName}</strong>{' '}
             ({confirming.student.mobile}) from {confirming.student.institution}.
             {confirming.action === ACCOUNT_STATUS.ACTIVE
               ? ' They will receive an activation SMS and can sign in immediately.'

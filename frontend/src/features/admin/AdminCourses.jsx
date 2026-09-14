@@ -37,9 +37,9 @@ export default function AdminCourses() {
       header: 'Course',
       render: (row) => (
         <div className="max-w-md">
-          <p className="font-medium text-slate-900 dark:text-white">{row.title}</p>
+          <p className="font-medium text-stone-900 dark:text-white">{row.title}</p>
           {row.batchGroup && (
-            <p className="text-xs text-slate-500 dark:text-slate-400">{GROUP_LABELS[row.batchGroup] ?? row.batchGroup}</p>
+            <p className="text-xs text-stone-500 dark:text-brand-200">{GROUP_LABELS[row.batchGroup] ?? row.batchGroup}</p>
           )}
         </div>
       ),
@@ -55,7 +55,7 @@ export default function AdminCourses() {
         <span>
           {formatBDT(row.discountPrice ?? row.price)}
           {row.discountPrice && (
-            <span className="ml-1.5 text-xs text-slate-400 line-through dark:text-slate-500">{formatBDT(row.price)}</span>
+            <span className="ml-1.5 text-xs text-stone-400 line-through dark:text-brand-200">{formatBDT(row.price)}</span>
           )}
         </span>
       ),
@@ -92,7 +92,7 @@ export default function AdminCourses() {
                 'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
                 filter === option.id
                   ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300',
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
               )}
             >
               {option.label}

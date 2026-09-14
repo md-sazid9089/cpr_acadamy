@@ -9,8 +9,8 @@ import Spinner from '@/components/ui/Spinner.jsx';
 import { formatBDT, formatDate } from '@/lib/utils';
 
 const TABS = [
-  { id: 'active', label: 'Active Subscriptions', icon: FaCheck, iconColor: 'text-emerald-500' },
-  { id: 'unpaid', label: 'Unpaid Subscriptions', icon: FaTriangleExclamation, iconColor: 'text-amber-500' },
+  { id: 'active', label: 'Active Subscriptions', icon: FaCheck, iconColor: 'text-brand-500' },
+  { id: 'unpaid', label: 'Unpaid Subscriptions', icon: FaTriangleExclamation, iconColor: 'text-brand-500' },
   { id: 'previous', label: 'Previous Subscriptions', icon: FaClockRotateLeft, iconColor: 'text-brand-500' },
 ];
 
@@ -43,14 +43,14 @@ export default function SubscriptionDetail() {
 
       <DashboardTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
 
-      <div className="overflow-hidden rounded-2xl border border-brand-400 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-surface-dark-subtle">
+      <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-200 dark:bg-surface-dark-subtle">
         {isLoading ? (
           <div className="flex justify-center py-10">
             <Spinner size="lg" label="Loading subscriptions…" />
           </div>
         ) : items.length === 0 ? (
           <div className="py-6 text-center">
-            <p className="text-base italic text-accent-500 dark:text-accent-400">
+            <p className="text-base italic text-stone-700 dark:text-brand-200">
               {EMPTY_TEXT[activeTab]}
             </p>
             <Link to={addHref} className={`${SECONDARY_ACTION} mx-auto mt-4 w-fit px-6`}>
@@ -62,42 +62,42 @@ export default function SubscriptionDetail() {
             {items.map((item) => (
               <li
                 key={item.id}
-                className="rounded-xl border-2 border-brand-300 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+                className="rounded-xl border border-stone-200 bg-white p-5 dark:border-stone-200 dark:bg-surface-dark"
               >
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-sm font-bold text-brand-600 sm:text-base dark:text-brand-300">
                     {item.name}
                   </h2>
-                  <span className="shrink-0 text-sm font-bold text-slate-900 dark:text-white">
+                  <span className="shrink-0 text-sm font-bold text-stone-900 dark:text-white">
                     {formatBDT(item.amount)}
                   </span>
                 </div>
 
-                <p className="mt-1.5 text-xs text-slate-600 sm:text-sm dark:text-slate-400">
+                <p className="mt-1.5 text-xs text-stone-600 sm:text-sm dark:text-brand-200">
                   {item.description}
                 </p>
 
-                <dl className="mt-4 space-y-2 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
+                <dl className="mt-4 space-y-2 border-t border-stone-200 pt-3 text-xs dark:border-stone-200">
                   {activeTab === 'unpaid' ? (
                     <div className="flex justify-between">
-                      <dt className="text-slate-500 dark:text-slate-400">Payment due</dt>
-                      <dd className="font-semibold text-accent-600 dark:text-accent-400">
+                      <dt className="text-stone-500 dark:text-brand-200">Payment due</dt>
+                      <dd className="font-semibold text-brand-500 dark:text-brand-200">
                         {formatDate(item.dueOn)}
                       </dd>
                     </div>
                   ) : (
                     <>
                       <div className="flex justify-between">
-                        <dt className="text-slate-500 dark:text-slate-400">Started</dt>
-                        <dd className="font-semibold text-slate-800 dark:text-slate-200">
+                        <dt className="text-stone-500 dark:text-brand-200">Started</dt>
+                        <dd className="font-semibold text-stone-800 dark:text-brand-200">
                           {formatDate(item.startsOn)}
                         </dd>
                       </div>
                       <div className="flex justify-between">
-                        <dt className="text-slate-500 dark:text-slate-400">
+                        <dt className="text-stone-500 dark:text-brand-200">
                           {activeTab === 'active' ? 'Valid until' : 'Ended'}
                         </dt>
-                        <dd className="font-semibold text-slate-800 dark:text-slate-200">
+                        <dd className="font-semibold text-stone-800 dark:text-brand-200">
                           {formatDate(item.endsOn)}
                         </dd>
                       </div>
@@ -108,7 +108,7 @@ export default function SubscriptionDetail() {
                 {activeTab === 'unpaid' && (
                   <Link
                     to={`/dashboard/checkout/${batchId}`}
-                    className="mt-4 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 sm:text-sm"
+                    className="mt-4 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white border border-stone-200 transition hover:bg-brand-700 sm:text-sm"
                   >
                     Pay Now
                   </Link>

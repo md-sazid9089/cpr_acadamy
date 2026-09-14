@@ -10,7 +10,7 @@ export default function DashboardTabs({ tabs, value, onChange }) {
   return (
     <div
       role="tablist"
-      className="overflow-hidden rounded-xl border border-brand-200 bg-gradient-to-r from-brand-100/70 via-brand-50 to-brand-50/60 p-1.5 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-800"
+      className="overflow-hidden rounded-xl border border-stone-200 bg-gradient-to-r from-brand-100/70 via-brand-50 to-brand-50/60 p-1.5 dark:border-stone-200 dark:from-surface-dark dark:to-surface-dark"
     >
       <div className="grid grid-cols-3 gap-1.5">
         {tabs.map((tab) => {
@@ -25,8 +25,8 @@ export default function DashboardTabs({ tabs, value, onChange }) {
               onClick={() => onChange(tab.id)}
               className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-bold transition-all sm:text-sm ${
                 isActive
-                  ? 'bg-brand-600 text-white shadow-md'
-                  : 'bg-white/80 text-slate-700 hover:bg-white dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-800'
+                  ? 'bg-brand-600 text-white border border-stone-200'
+                  : 'bg-white/80 text-stone-700 hover:bg-white dark:bg-surface-dark dark:text-brand-200 dark:hover:bg-surface-dark'
               }`}
             >
               <Icon

@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mixedPaperQuestions } from '../test-support/exam-paper.js';
 import assert from 'node:assert/strict';
 import { fixture } from '../test-support/fixture.js';
 import { one } from '../src/db.js';
@@ -256,7 +257,7 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
     const rival = await context.user('student', '01812345678');
     const course = (await admin.request('POST', '/admin/courses', { slug: 'exam-edge', title: 'Exam Edge', category: 'FCPS', price: 1000, isPublished: true })).json();
     for (const user of [student, rival]) await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [user.id, course.id]);
-    const base = { courseId: course.id, title: 'Edge Paper', type: 'practice', questionType: 'mixed', durationMinutes: 60, scheduledAt: '2025-01-01T00:00:00Z', isPublished: true, questions };
+    const base = { courseId: course.id, title: 'Edge Paper', type: 'practice', questionType: 'mixed', durationMinutes: 60, scheduledAt: '2025-01-01T00:00:00Z', isPublished: true, questions: mixedPaperQuestions(), targetQuestionCount: 50 };
     for (const [patch, code] of [
       [{ questions: [] }, 'EMPTY_EXAM'],
       [{ questions: [{ ...questions[0], options: [{ id: 'first', text: 'First' }, { id: 'second', text: '' }] }] }, 'INCOMPLETE_QUESTIONS'],
@@ -327,7 +328,7 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
       { questionId: 'question-one', answer: { first: true } },
       { questionId: 'question-two', answer: 'first' },
       { questionId: 'question-two', answer: { ghost: true } },
-      { questionId: 'question-one', answer: 'third' },
+      { questionId: 'question-one', answer: 'missing' },
       { questionId: '__proto__', answer: 'first' },
       { questionId: 'question-one' },
       { questionId: 'question-one', answer: 'first', extra: 1 },
@@ -373,10 +374,10 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
     response = await rival.request('GET', `/exams/${live.id}/result`);
     assert.equal(response.json().rank, 1, 'equal scores share the top rank');
     assert.equal(response.json().participants, 2);
-    assert.equal(response.json().score, 3);
-    assert.equal(response.json().review[0].correctAnswer, 'second');
+    assert.equal(response.json().score, 2.8);
+    assert.equal(response.json().review.find(question => question.id === 'question-one').correctAnswer, 'second');
     assert.equal((await student.request('GET', '/me/progress')).json().examsTaken, 1);
-    assert.equal((await student.request('GET', '/me/progress')).json().averageScore, 100);
+    assert.equal((await student.request('GET', '/me/progress')).json().averageScore, 2.8);
     await context.database.query("UPDATE enrollments SET expires_at=now()-interval '1 second' WHERE user_id=$1", [rival.id]);
     assert.equal((await rival.request('GET', `/exams/${live.id}/result`)).statusCode, 403);
     assert.equal((await rival.request('GET', '/exams')).json().length, 0);

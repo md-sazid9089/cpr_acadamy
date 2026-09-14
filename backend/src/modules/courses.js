@@ -24,6 +24,10 @@ const courseFields = z.object({
   accessDays: z.number().int().min(1).max(3650).default(180), isPublished: z.boolean().default(false),
   ...metadata.shape,
 }).strict();
+const instructorReviewFields = z.object({
+  rating: z.number().int().min(1).max(5),
+  feedback: z.string().trim().min(1).max(2000),
+}).strict();
 const videoFields = z.object({
   courseId: uuid, title: text, src: z.union([webUrl, z.literal('')]).default(''), notesUrl: z.union([webUrl, z.literal('')]).default(''),
   durationMinutes: z.number().int().min(0).max(1440).default(0), scheduledAt: timestamp,
@@ -113,6 +117,40 @@ export function courseRoutes(route, database) {
     ensure(course, 404, 'COURSE_NOT_FOUND', 'This course could not be found.');
     const lessons = (await database.query("SELECT id,title,duration_minutes FROM lessons WHERE course_id=$1 AND status='published' ORDER BY position,id", [course.id])).rows;
     return { ...courseDto(course), curriculum: [{ id: course.id, title: 'Lectures', lessons: lessons.map(lesson => ({ id: lesson.id, title: lesson.title, durationMinutes: lesson.duration_minutes })) }] };
+  });
+  async function reviewCourse(slug) {
+    const course = await one(database, 'SELECT id FROM courses WHERE slug=$1 AND is_published', [slug]);
+    ensure(course, 404, 'COURSE_NOT_FOUND', 'This course could not be found.');
+    return course;
+  }
+  async function canReview(auth, courseId) {
+    if (auth.role !== 'student') return false;
+    return Boolean(await one(database, "SELECT id FROM enrollments WHERE user_id=$1 AND course_id=$2 AND status='active' AND starts_at<=now() AND expires_at>now()", [auth.user_id, courseId]));
+  }
+  route('GET', '/courses/:slug/reviews', { query: pageQuery }, async request => {
+    const course = await reviewCourse(request.params.slug);
+    const summary = await one(database, 'SELECT count(*) AS total, COALESCE(avg(rating),0) AS average FROM instructor_reviews WHERE course_id=$1', [course.id]);
+    const reviews = (await database.query(`SELECT review.id, review.rating, review.feedback, review.updated_at AS "updatedAt", student.full_name AS "studentName"
+      FROM instructor_reviews review JOIN users student ON student.id=review.user_id
+      WHERE review.course_id=$1 ORDER BY review.updated_at DESC,review.id LIMIT $2 OFFSET $3`, [course.id, request.query.limit, request.query.offset])).rows;
+    return { total: Number(summary.total), average: Number(summary.average), reviews };
+  });
+  route('GET', '/courses/:slug/review', { auth: 'active' }, async request => {
+    const course = await reviewCourse(request.params.slug);
+    const review = await one(database, 'SELECT id,rating,feedback FROM instructor_reviews WHERE course_id=$1 AND user_id=$2', [course.id, request.auth.user_id]);
+    return { canReview: await canReview(request.auth, course.id), review: review ?? null };
+  });
+  route('POST', '/courses/:slug/review', { auth: 'active', body: instructorReviewFields }, async request => {
+    const course = await reviewCourse(request.params.slug);
+    ensure(await canReview(request.auth, course.id), 403, 'ENROLLMENT_REQUIRED', 'An active student enrollment is required to review this instructor.');
+    return one(database, `INSERT INTO instructor_reviews(course_id,user_id,rating,feedback) VALUES ($1,$2,$3,$4)
+      ON CONFLICT(course_id,user_id) DO UPDATE SET rating=EXCLUDED.rating,feedback=EXCLUDED.feedback,updated_at=now()
+      RETURNING id,rating,feedback`, [course.id, request.auth.user_id, request.body.rating, request.body.feedback]);
+  });
+  route('DELETE', '/courses/:slug/review', { auth: 'active' }, async request => {
+    const course = await reviewCourse(request.params.slug);
+    await database.query('DELETE FROM instructor_reviews WHERE course_id=$1 AND user_id=$2', [course.id, request.auth.user_id]);
+    return { ok: true };
   });
   route('POST', '/courses/:id/enroll', { auth: 'active' }, async request => {
     const course = await one(database, 'SELECT * FROM courses WHERE id=$1 AND is_published', [request.params.id]);

@@ -31,7 +31,7 @@ export default function AddSubscription() {
             <Spinner size="lg" label="Loading packages…" />
           </div>
         ) : plans.length === 0 ? (
-          <p className="py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+          <p className="py-10 text-center text-sm text-stone-500 dark:text-brand-200">
             No subscription packages are on offer for this batch right now.
           </p>
         ) : (
@@ -39,16 +39,16 @@ export default function AddSubscription() {
             {plans.map((plan) => (
               <li
                 key={plan.id}
-                className="flex flex-col rounded-xl border-2 border-brand-300 bg-white p-5 shadow-sm transition-all hover:border-brand-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
+                className="flex flex-col rounded-xl border border-stone-200 bg-white p-5 transition-all hover:border-stone-200 dark:border-stone-200 dark:bg-surface-dark"
               >
                 <h2 className="text-center text-base font-bold text-brand-600 dark:text-brand-300">
                   {plan.name}
                 </h2>
-                <p className="mt-1 text-center text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-center text-xs text-stone-500 dark:text-brand-200">
                   {plan.durationLabel}
                 </p>
 
-                <p className="mt-3 text-center text-2xl font-extrabold text-slate-900 dark:text-white">
+                <p className="mt-3 text-center text-2xl font-extrabold text-stone-900 dark:text-white">
                   {formatBDT(plan.amount)}
                 </p>
 
@@ -56,11 +56,11 @@ export default function AddSubscription() {
                   {plan.features.map((feature) => (
                     <li
                       key={feature}
-                      className="flex gap-2 text-xs text-slate-600 dark:text-slate-300"
+                      className="flex gap-2 text-xs text-stone-600 dark:text-brand-200"
                     >
                       <FaCheck
                         aria-hidden="true"
-                        className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500"
+                        className="mt-0.5 h-3 w-3 shrink-0 text-brand-500"
                       />
                       {feature}
                     </li>
@@ -70,7 +70,7 @@ export default function AddSubscription() {
                 <Link
                   to={batch ? `/dashboard/checkout/${batch.slug}?batchId=${batchId}&planId=${plan.id}` : '#'}
                   aria-disabled={!batch}
-                  className="mt-5 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 aria-disabled:pointer-events-none aria-disabled:opacity-50 sm:text-sm"
+                  className="mt-5 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white border border-stone-200 transition hover:bg-brand-700 aria-disabled:pointer-events-none aria-disabled:opacity-50 sm:text-sm"
                 >
                   Subscribe
                 </Link>

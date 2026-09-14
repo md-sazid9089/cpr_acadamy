@@ -44,7 +44,7 @@ export default function AdminOverview() {
           }
         />
         <CardBody>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-stone-600 dark:text-brand-200">
             New accounts stay inactive until approved here. Students see a pending-approval screen
             and receive an SMS the moment you activate them.
           </p>

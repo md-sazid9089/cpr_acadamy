@@ -8,6 +8,7 @@ import {
   FaComments,
   FaClipboardList,
   FaIdCard,
+  FaTrophy,
 } from 'react-icons/fa6';
 import { useAuthStore } from '@/lib/auth';
 
@@ -62,6 +63,13 @@ const DASHBOARD_MENU = [
     iconColor: 'text-brand-600',
   },
   {
+    id: 'exam-positions',
+    title: 'Exam Positions',
+    to: '/dashboard/exam-positions',
+    icon: FaTrophy,
+    iconColor: 'text-brand-600',
+  },
+  {
     id: 'my-account',
     title: 'My Account',
     to: '/dashboard/account',
@@ -74,17 +82,7 @@ export default function Overview() {
   const user = useAuthStore((s) => s.user);
 
   return (
-    <div className="relative min-h-[75vh] overflow-hidden rounded-3xl bg-gradient-to-b from-brand-50/40 via-white to-brand-50/30 p-4 sm:p-8 md:p-10 dark:from-slate-900/60 dark:via-surface-dark dark:to-slate-900/40">
-      {/* Decorative background curves */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
-        style={{
-          backgroundImage: `radial-gradient(#1d4ed8 1px, transparent 1px)`,
-          backgroundSize: '24px 24px',
-        }}
-        aria-hidden="true"
-      />
-
+    <div className="relative min-h-[75vh] overflow-hidden p-4 sm:p-8 md:p-10">
       <div className="relative z-10 mx-auto max-w-4xl">
         {/* ── Title ── */}
         <div className="mb-6 text-center sm:mb-10">
@@ -92,7 +90,7 @@ export default function Overview() {
             My Dashboard
           </h1>
           {user?.fullName && (
-            <p className="mt-1 text-xs font-medium text-slate-500 sm:text-sm dark:text-slate-400">
+            <p className="mt-1 text-xs font-medium text-stone-500 sm:text-sm dark:text-brand-200">
               Welcome, <span className="font-semibold text-brand-700 dark:text-brand-400">{user.fullName}</span>
             </p>
           )}
@@ -106,13 +104,13 @@ export default function Overview() {
               <Link
                 key={item.id}
                 to={item.to}
-                className="group flex min-h-[135px] flex-col items-center justify-center rounded-2xl border-2 border-brand-400 bg-white p-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand-600 hover:shadow-md hover:shadow-brand-500/10 sm:min-h-[160px] sm:p-6 dark:border-slate-700 dark:bg-surface-dark-subtle dark:hover:border-brand-500"
+                className="ui-card group flex min-h-[135px] flex-col items-center justify-center rounded-2xl border border-stone-200 bg-white p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:border-stone-200 sm:min-h-[160px] sm:p-6 dark:border-stone-200 dark:bg-surface-dark-subtle dark:hover:border-stone-200"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 shadow-inner ring-1 ring-slate-100 transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14 dark:bg-slate-800 dark:ring-slate-700">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-50 border border-stone-200 transition-transform duration-300 group-hover:scale-110 sm:h-14 sm:w-14 dark:bg-surface-dark ">
                   <Icon className={`h-6 w-6 ${item.iconColor} sm:h-7 sm:w-7`} />
                 </div>
 
-                <span className="mt-3 text-xs font-bold text-brand-900 transition-colors group-hover:text-brand-600 sm:mt-4 sm:text-base dark:text-slate-100 dark:group-hover:text-brand-400">
+                <span className="mt-3 text-xs font-bold text-brand-900 transition-colors group-hover:text-brand-600 sm:mt-4 sm:text-base dark:text-brand-200 dark:group-hover:text-brand-400">
                   {item.title}
                 </span>
               </Link>

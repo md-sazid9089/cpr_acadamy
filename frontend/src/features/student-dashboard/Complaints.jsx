@@ -83,7 +83,7 @@ export default function Complaints() {
                 <li key={complaint.id}>
                   <Link
                     to={`/dashboard/complaints/${complaint.id}`}
-                    className="group flex items-center gap-4 rounded-xl border-2 border-brand-300 bg-white p-4 shadow-sm transition-all hover:border-brand-500 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60"
+                    className="group flex items-center gap-4 rounded-xl border border-stone-200 bg-white p-4 transition-all hover:border-stone-200 dark:border-stone-200 dark:bg-surface-dark"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -93,18 +93,18 @@ export default function Complaints() {
                         <ComplaintStatusBadge status={complaint.status} />
                       </div>
 
-                      <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 truncate text-xs text-stone-500 dark:text-brand-200">
                         {complaint.batchTitle}
                       </p>
 
-                      <p className="mt-2 line-clamp-1 text-sm text-slate-700 dark:text-slate-300">
+                      <p className="mt-2 line-clamp-1 text-sm text-stone-700 dark:text-brand-200">
                         <span className="font-semibold">
                           {last.from === 'student' ? 'You' : 'CPR Academy'}:
                         </span>{' '}
                         {last.body}
                       </p>
 
-                      <p className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">
+                      <p className="mt-1.5 text-[11px] text-stone-400 dark:text-brand-200">
                         {formatDateTime(last.sentAt)}
                       </p>
                     </div>
@@ -141,14 +141,14 @@ export default function Complaints() {
           <div className="space-y-1.5">
             <label
               htmlFor="complaint-topic"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+              className="block text-sm font-medium text-stone-700 dark:text-brand-200"
             >
               Related to<span className="ml-0.5 text-red-500">*</span>
             </label>
             <select
               id="complaint-topic"
               {...register('relatedTo')}
-              className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-brand-500 dark:border-slate-700 dark:bg-surface-dark-subtle dark:text-slate-100"
+              className="block w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-200 dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200"
             >
               <option value="">Select a topic…</option>
               {COMPLAINT_TOPICS.map((topic) => (
@@ -165,14 +165,14 @@ export default function Complaints() {
           <div className="space-y-1.5">
             <label
               htmlFor="complaint-batch"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+              className="block text-sm font-medium text-stone-700 dark:text-brand-200"
             >
               Batch<span className="ml-0.5 text-red-500">*</span>
             </label>
             <select
               id="complaint-batch"
               {...register('batchTitle')}
-              className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-brand-500 dark:border-slate-700 dark:bg-surface-dark-subtle dark:text-slate-100"
+              className="block w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-200 dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200"
             >
               <option value="">Select a batch…</option>
               {courses.map((course) => (
@@ -189,7 +189,7 @@ export default function Complaints() {
           <div className="space-y-1.5">
             <label
               htmlFor="complaint-body"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+              className="block text-sm font-medium text-stone-700 dark:text-brand-200"
             >
               Describe the problem<span className="ml-0.5 text-red-500">*</span>
             </label>
@@ -197,7 +197,7 @@ export default function Complaints() {
               id="complaint-body"
               rows={4}
               {...register('body')}
-              className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-brand-500 dark:border-slate-700 dark:bg-surface-dark-subtle dark:text-slate-100"
+              className="block w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-200 dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200"
             />
             {errors.body && (
               <p className="text-sm text-red-600 dark:text-red-400">{errors.body.message}</p>

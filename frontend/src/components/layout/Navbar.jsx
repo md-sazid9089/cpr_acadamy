@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 const NAV_LINKS = [
   { to: '/', label: 'Home', end: true },
   { to: '/batches', label: 'Batches' },
-  { to: '/class', label: 'Class' },
   { to: '/faq', label: 'FAQ' },
   { to: '/about', label: 'About' },
   { to: '/gallery', label: 'Gallery' },
@@ -25,7 +24,7 @@ const linkClasses = ({ isActive }) =>
     'hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950 dark:hover:text-brand-300',
     isActive
       ? 'text-brand-700 dark:text-brand-400'
-      : 'text-slate-600 dark:text-slate-300',
+      : 'text-stone-600 dark:text-brand-200',
   );
 
 /** Two-letter fallback shown when the user has no avatar image. */
@@ -90,14 +89,14 @@ function ProfileMenu({ user, dashboardPath, onLogout }) {
         onClick={() => setOpen((value) => !value)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 py-1.5 pl-1.5 pr-3 text-left transition-colors hover:bg-brand-50 dark:border-slate-700 dark:bg-slate-900/60 dark:hover:bg-slate-800"
+        className="flex items-center gap-2 rounded-full border border-stone-200 bg-white/70 py-1.5 pl-1.5 pr-3 text-left transition-colors hover:bg-brand-50 dark:border-stone-200 dark:bg-surface-dark dark:hover:bg-surface-dark"
       >
         <Avatar user={user} className="h-9 w-9 text-sm" />
-        <span className="max-w-[10rem] truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+        <span className="max-w-[10rem] truncate text-sm font-semibold text-stone-800 dark:text-brand-200">
           {user?.fullName ?? 'Account'}
         </span>
         <svg
-          className={cn('h-4 w-4 text-slate-500 transition-transform', open && 'rotate-180')}
+          className={cn('h-4 w-4 text-stone-500 transition-transform', open && 'rotate-180')}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -110,13 +109,13 @@ function ProfileMenu({ user, dashboardPath, onLogout }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-surface-dark"
+          className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 dark:border-stone-200 dark:bg-surface-dark"
         >
           <Link
             to={dashboardPath}
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="block px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="block px-4 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-brand-50 hover:text-brand-700 dark:text-brand-200 dark:hover:bg-surface-dark"
           >
             Go to Dashboard
           </Link>
@@ -127,7 +126,7 @@ function ProfileMenu({ user, dashboardPath, onLogout }) {
               setOpen(false);
               onLogout();
             }}
-            className="block w-full px-4 py-2.5 text-left text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40"
+            className="block w-full px-4 py-2.5 text-left text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950/40"
           >
             Log out
           </button>
@@ -160,7 +159,7 @@ export default function Navbar() {
         // The open mobile drawer counts as "solid" too, otherwise the panel
         // would hang off a see-through bar.
         isSolid
-          ? 'border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-surface-dark/90'
+          ? 'border-b border-stone-200 bg-white/90 backdrop-blur dark:border-stone-200 dark:bg-surface-dark/90'
           : 'border-b border-transparent bg-transparent',
       )}
     >
@@ -200,7 +199,7 @@ export default function Navbar() {
             onClick={() => setMobileOpen((open) => !open)}
             aria-expanded={mobileOpen}
             aria-label="Toggle navigation menu"
-            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="rounded-lg p-2 text-stone-600 hover:bg-stone-100 dark:text-brand-200 dark:hover:bg-surface-dark"
           >
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               {mobileOpen ? (
@@ -214,7 +213,7 @@ export default function Navbar() {
       </nav>
 
       {mobileOpen && (
-        <div className="border-t border-slate-200 bg-white lg:hidden dark:border-slate-800 dark:bg-surface-dark">
+        <div className="border-t border-stone-200 bg-white lg:hidden dark:border-stone-200 dark:bg-surface-dark">
           <div className="container-page space-y-1 py-4">
             {NAV_LINKS.map((link) => (
               <NavLink
@@ -227,7 +226,7 @@ export default function Navbar() {
                     'hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950 dark:hover:text-brand-300',
                     isActive
                       ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
-                      : 'text-slate-700 dark:text-slate-300',
+                      : 'text-stone-700 dark:text-brand-200',
                   )
                 }
               >
@@ -238,9 +237,9 @@ export default function Navbar() {
             <div className="grid grid-cols-2 gap-2 pt-3">
               {isAuthenticated ? (
                 <>
-                  <div className="col-span-2 mb-1 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900/40">
+                  <div className="col-span-2 mb-1 flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-200 dark:bg-surface-dark">
                     <Avatar user={user} className="h-10 w-10 text-sm" />
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-stone-800 dark:text-brand-200">
                       {user?.fullName ?? 'Account'}
                     </span>
                   </div>

@@ -1,0 +1,11 @@
+.homepage-hero {
+  min-height: calc(100svh / var(--homepage-scale-factor, 1));
+}
+
+@media (min-width: 1024px) {
+  .homepage-scale {
+    --homepage-scale-factor: 0.9;
+    zoom: var(--homepage-scale-factor);
+    min-height: 111.111111vh;
+  }
+}

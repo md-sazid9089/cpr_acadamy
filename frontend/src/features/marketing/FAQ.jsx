@@ -71,14 +71,14 @@ function FaqItem({ item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="border-b border-slate-200 last:border-0 dark:border-slate-800">
+    <div className="border-b border-stone-200 last:border-0 dark:border-stone-200">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-4 py-4 text-left"
       >
-        <span className="text-sm font-semibold text-slate-900 dark:text-white">{item.q}</span>
+        <span className="text-sm font-semibold text-stone-900 dark:text-white">{item.q}</span>
         <svg
           className={cn(
             'h-5 w-5 shrink-0 text-brand-600 transition-transform dark:text-brand-400',
@@ -92,7 +92,7 @@ function FaqItem({ item }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {open && <p className="pb-4 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{item.a}</p>}
+      {open && <p className="pb-4 text-sm leading-relaxed text-stone-600 dark:text-brand-200">{item.a}</p>}
     </div>
   );
 }
@@ -100,7 +100,7 @@ function FaqItem({ item }) {
 export default function FAQ() {
   return (
     <div>
-      <section className="border-b border-slate-200 bg-surface-subtle py-12 text-center dark:border-slate-800 dark:bg-surface-dark-subtle">
+      <section className="bg-surface-light py-12 text-center dark:bg-surface-dark">
         <div className="container-page">
           <h1 className="section-heading">সাধারণ জিজ্ঞাসা</h1>
           <p className="section-subheading mx-auto text-center">
@@ -125,10 +125,10 @@ export default function FAQ() {
 
         <aside>
           <Card className="sticky top-24 p-6">
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+            <h2 className="text-base font-semibold text-stone-900 dark:text-white">
               আরও কোনো প্রশ্ন আছে?
             </h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-2 text-sm text-stone-600 dark:text-brand-200">
               আমাদের ভর্তি টিম শনিবার থেকে বৃহস্পতিবার সকাল ১০টা থেকে রাত ৮টা পর্যন্ত হোয়াটসঅ্যাপে উত্তর দেয়।
             </p>
             <Button to="/contact" fullWidth className="mt-5">

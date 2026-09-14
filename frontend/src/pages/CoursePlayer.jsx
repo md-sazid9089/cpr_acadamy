@@ -57,7 +57,7 @@ function NotesPanel({ courseSlug, lessonId }) {
 
   return (
     <div>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-stone-500">
         Jot down key points while you watch. Your notes are saved to this device for each lesson.
       </p>
       <textarea
@@ -68,14 +68,14 @@ function NotesPanel({ courseSlug, lessonId }) {
         }}
         rows={8}
         placeholder="Type your notes here…"
-        className="mt-3 w-full resize-y rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+        className="mt-3 w-full resize-y rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-800 placeholder:text-stone-400 focus:border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
       />
       <div className="mt-3 flex items-center gap-3">
         <Button size="sm" onClick={save} disabled={!text.trim()}>
           Save Note
         </Button>
         {saved && (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600">
             <FaCheck aria-hidden="true" className="h-3 w-3" />
             Saved
           </span>
@@ -89,14 +89,14 @@ function NotesPanel({ courseSlug, lessonId }) {
 function LectureSheetPanel({ lesson }) {
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-600">
             <FaFilePdf aria-hidden="true" className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-sm font-semibold text-slate-900">Lecture Sheet (PDF)</p>
-            <p className="text-xs text-slate-500">{lesson.title}</p>
+            <p className="text-sm font-semibold text-stone-900">Lecture Sheet (PDF)</p>
+            <p className="text-xs text-stone-500">{lesson.title}</p>
           </div>
         </div>
         {lesson.notesUrl ? (
@@ -135,7 +135,7 @@ function DoubtPanel({ lesson, courseTitle }) {
 
   return (
     <form onSubmit={submit}>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-stone-500">
         Stuck on something in “{lesson.title}”? Send your question and a mentor will reply in your Complain Box.
       </p>
       <textarea
@@ -143,14 +143,14 @@ function DoubtPanel({ lesson, courseTitle }) {
         onChange={(e) => setQuestion(e.target.value)}
         rows={6}
         placeholder="Describe your doubt…"
-        className="mt-3 w-full resize-y rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+        className="mt-3 w-full resize-y rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-800 placeholder:text-stone-400 focus:border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
       />
       <div className="mt-3 flex items-center gap-3">
         <Button size="sm" type="submit" disabled={!question.trim()} isLoading={send.isPending}>
           Submit Doubt
         </Button>
         {send.isSuccess && !send.isPending && (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600">
             <FaCheck aria-hidden="true" className="h-3 w-3" />
             Sent to mentors
           </span>
@@ -206,7 +206,7 @@ export default function CoursePlayer() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-stone-50">
         <Spinner size="lg" label="Loading lecture…" />
       </div>
     );
@@ -214,29 +214,29 @@ export default function CoursePlayer() {
 
   if (!current) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-6 text-center">
-        <p className="text-lg font-semibold text-slate-900">This lecture could not be found.</p>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-stone-50 px-6 text-center">
+        <p className="text-lg font-semibold text-stone-900">This lecture could not be found.</p>
         <Button to={`/dashboard/course/${courseSlug}`}>Back to course</Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-stone-50 text-stone-900">
       {/* Top bar */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-stone-200 bg-white px-4 py-3 sm:px-6">
         <Link
           to={`/dashboard/course/${courseSlug}`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-stone-200 bg-white text-stone-600 transition hover:bg-stone-50 hover:text-stone-900"
           aria-label="Back to course"
         >
           <FaArrowLeft aria-hidden="true" className="h-4 w-4" />
         </Link>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900 sm:text-base">
+          <p className="truncate text-sm font-semibold text-stone-900 sm:text-base">
             {course?.title ?? 'Course'}
           </p>
-          <p className="truncate text-xs text-slate-500">
+          <p className="truncate text-xs text-stone-500">
             Lesson {currentIndex + 1} of {lessons.length}
           </p>
         </div>
@@ -247,22 +247,22 @@ export default function CoursePlayer() {
         <div className="min-w-0 space-y-5">
           <VideoPlayer src={current.src} title={current.title} watermark={watermark} onEnded={() => complete.mutate(current.id)} />
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h1 className="text-base font-bold leading-snug text-slate-900 sm:text-lg">
+          <div className="rounded-2xl border border-stone-200 bg-white p-5">
+            <h1 className="text-base font-bold leading-snug text-stone-900 sm:text-lg">
               {current.title}
             </h1>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-stone-500">
               {formatDateLabel(current.date)} · {current.time}
               {current.duration ? ` · ${current.duration}` : ''}
             </p>
 
             {/* Prev / Next */}
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+            <div className="mt-4 flex items-center justify-between gap-3 border-t border-stone-200 pt-4">
               <button
                 type="button"
                 disabled={!prev}
                 onClick={() => prev && navigate(`/learn/${courseSlug}/${prev.id}`)}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 disabled:pointer-events-none disabled:opacity-40"
               >
                 <FaChevronLeft aria-hidden="true" className="h-3 w-3" />
                 Previous
@@ -280,8 +280,8 @@ export default function CoursePlayer() {
           </div>
 
           {/* Tools: Note Down · Lecture Sheet · Ask a Doubt */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div role="tablist" className="flex gap-1.5 border-b border-slate-100 p-1.5">
+          <div className="rounded-2xl border border-stone-200 bg-white">
+            <div role="tablist" className="flex gap-1.5 border-b border-stone-200 p-1.5">
               {TOOL_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTool === tab.id;
@@ -295,8 +295,8 @@ export default function CoursePlayer() {
                     className={cn(
                       'flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all sm:text-sm',
                       isActive
-                        ? 'bg-brand-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-100',
+                        ? 'bg-brand-600 text-white border border-stone-200'
+                        : 'text-stone-600 hover:bg-stone-100',
                     )}
                   >
                     <Icon
@@ -319,12 +319,12 @@ export default function CoursePlayer() {
 
         {/* Playlist */}
         <aside className="lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="mb-3 text-sm font-semibold text-slate-900">Lessons in this batch</h2>
+          <div className="rounded-2xl border border-stone-200 bg-white p-4">
+            <h2 className="mb-3 text-sm font-semibold text-stone-900">Lessons in this batch</h2>
             <div className="space-y-4">
               {videoGroups.map((group) => (
                 <div key={group.date}>
-                  <p className="mb-2 text-xs font-medium text-slate-400">
+                  <p className="mb-2 text-xs font-medium text-stone-400">
                     {formatDateLabel(group.date)} · {group.time}
                   </p>
                   <div className="space-y-1.5">
@@ -336,14 +336,14 @@ export default function CoursePlayer() {
                           to={`/learn/${courseSlug}/${video.id}`}
                           className={cn(
                             'flex items-start gap-3 rounded-lg px-3 py-2.5 text-left transition',
-                            isCurrent ? 'bg-brand-50 ring-1 ring-brand-200' : 'hover:bg-slate-50',
+                            isCurrent ? 'bg-brand-50 border border-stone-200 ' : 'hover:bg-stone-50',
                           )}
                           aria-current={isCurrent ? 'true' : undefined}
                         >
                           <span
                             className={cn(
                               'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md',
-                              isCurrent ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-500',
+                              isCurrent ? 'bg-brand-600 text-white' : 'bg-stone-100 text-stone-500',
                             )}
                           >
                             <FaPlay aria-hidden="true" className="h-2.5 w-2.5" />
@@ -352,13 +352,13 @@ export default function CoursePlayer() {
                             <span
                               className={cn(
                                 'block text-xs font-medium leading-snug line-clamp-2',
-                                isCurrent ? 'text-brand-800' : 'text-slate-700',
+                                isCurrent ? 'text-brand-800' : 'text-stone-700',
                               )}
                             >
                               {video.title}
                             </span>
                             {video.duration && (
-                              <span className="mt-0.5 block text-[11px] text-slate-400">
+                              <span className="mt-0.5 block text-[11px] text-stone-400">
                                 {video.duration}
                               </span>
                             )}

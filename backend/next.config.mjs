@@ -3,7 +3,7 @@ const nextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   serverExternalPackages: ['pg', '@electric-sql/pglite'],
-  outputFileTracingIncludes: { '/*': ['./migrations/**/*.sql'] },
+  outputFileTracingIncludes: { '/*': ['./migrations/**/*.sql', './migrations/**/*.js'] },
 };
 
 export default nextConfig;

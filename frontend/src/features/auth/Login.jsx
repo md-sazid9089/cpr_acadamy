@@ -99,10 +99,10 @@ export default function Login() {
         />
 
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+          <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-brand-200">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-800"
+              className="h-4 w-4 rounded border-stone-200 text-brand-600 focus:ring-brand-500 dark:border-stone-200 dark:bg-surface-dark"
               {...register('rememberMe')}
             />
             Keep me signed in
@@ -116,12 +116,12 @@ export default function Login() {
           </Link>
         </div>
 
-        <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
+        <Button type="submit" fullWidth isLoading={isSubmitting}>
           Sign in
         </Button>
       </form>
 
-      <p className="mt-5 rounded-lg bg-surface-subtle p-3 text-xs text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+      <p className="mt-5 rounded-lg bg-surface-subtle p-3 text-xs text-stone-500 dark:bg-surface-dark dark:text-brand-200">
         One device at a time: signing in here ends any session already open on another phone or
         computer.
       </p>

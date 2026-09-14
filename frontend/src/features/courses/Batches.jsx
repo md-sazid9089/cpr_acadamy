@@ -93,7 +93,7 @@ export default function Batches() {
 
   return (
     <div className="bg-white dark:bg-surface-dark">
-      <section className="bg-white py-12 dark:bg-surface-dark">
+      <section className="bg-surface-light py-12 dark:bg-surface-dark">
         <div className="container-page text-center">
           {showResults && (
             <Link
@@ -160,7 +160,7 @@ export default function Batches() {
               />
             ) : (
               <>
-                <p className="mb-5 text-sm text-slate-600 dark:text-slate-400">
+                <p className="mb-5 text-sm text-stone-600 dark:text-brand-200">
                   {courses.length} {courses.length === 1 ? 'batch' : 'batches'} available
                 </p>
                 {/* Two-up beside the sidebar: the card's overlapping info block

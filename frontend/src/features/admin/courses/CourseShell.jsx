@@ -65,7 +65,7 @@ export default function CourseShell() {
     <div className="space-y-5">
       <Link
         to="/admin/courses"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-brand-600 dark:text-brand-200 dark:hover:text-brand-400"
       >
         <FaArrowLeftLong aria-hidden="true" className="h-3 w-3" />
         All courses
@@ -78,12 +78,12 @@ export default function CourseShell() {
             {group && <Badge tone="neutral">{group.label}</Badge>}
             <StatusBadge status={course.status} />
           </div>
-          <h2 className="mt-2 text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{course.title}</h2>
+          <h2 className="mt-2 text-xl font-bold text-stone-900 dark:text-white sm:text-2xl">{course.title}</h2>
           {course.subtitle && (
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{course.subtitle}</p>
+            <p className="mt-1 text-sm text-stone-500 dark:text-brand-200">{course.subtitle}</p>
           )}
           {course.status !== COURSE_STATUS.PUBLISHED && (
-            <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+            <p className="mt-1 text-sm text-brand-700 dark:text-brand-400">
               Draft — not on the public site yet. Publish when you are ready.
             </p>
           )}
@@ -101,7 +101,7 @@ export default function CourseShell() {
       </div>
 
       <nav
-        className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1.5 shadow-sm dark:bg-surface-dark-subtle"
+        className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1.5 border border-stone-200 dark:bg-surface-dark-subtle"
         aria-label="Course sections"
       >
         {TABS.map(({ to, label, icon: Icon }) => (
@@ -112,8 +112,8 @@ export default function CourseShell() {
               cn(
                 'flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
                 isActive
-                  ? 'bg-brand-600 text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
+                  ? 'bg-brand-600 text-white border border-stone-200'
+                  : 'text-stone-600 hover:bg-stone-100 dark:text-brand-200 dark:hover:bg-surface-dark',
               )
             }
           >

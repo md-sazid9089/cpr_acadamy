@@ -10,27 +10,27 @@ function DeviceRow({ device, verified }) {
   const Icon = device.type === 'desktop' ? FaDesktop : FaMobileScreen;
 
   return (
-    <div className="relative inline-flex w-full max-w-md items-center gap-3 rounded-lg border border-brand-300 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900/60">
-      <Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-slate-600 dark:text-slate-300" />
+    <div className="relative inline-flex w-full max-w-md items-center gap-3 rounded-lg border border-stone-200 bg-white px-4 py-3 dark:border-stone-200 dark:bg-surface-dark">
+      <Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-stone-600 dark:text-brand-200" />
 
-      <p className="min-w-0 flex-1 text-sm text-slate-800 dark:text-slate-200">
+      <p className="min-w-0 flex-1 text-sm text-stone-800 dark:text-brand-200">
         {device.label} . {device.platform} . {device.browser}
       </p>
 
       {verified ? (
         <FaCircleCheck
           aria-label="Verified device"
-          className="h-5 w-5 shrink-0 text-emerald-500"
+          className="h-5 w-5 shrink-0 text-brand-500"
         />
       ) : (
         <span className="relative shrink-0">
           <FaCircleInfo
             aria-label="This device is not verified"
-            className="h-5 w-5 text-slate-400 dark:text-slate-500"
+            className="h-5 w-5 text-stone-400 dark:text-brand-200"
           />
           <span
             aria-hidden="true"
-            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brand-500 border border-stone-200  "
           />
         </span>
       )}
@@ -40,7 +40,7 @@ function DeviceRow({ device, verified }) {
 
 function GroupHeading({ children }) {
   return (
-    <h2 className="mb-3 border-b-2 border-brand-200 pb-1.5 text-base font-bold text-brand-600 sm:text-lg dark:border-slate-700 dark:text-brand-300">
+    <h2 className="mb-3 border-b-2 border-stone-200 pb-1.5 text-base font-bold text-brand-600 sm:text-lg dark:border-stone-200 dark:text-brand-300">
       {children}
     </h2>
   );
@@ -73,11 +73,11 @@ export default function DeviceTab() {
   };
 
   return (
-    <div className="rounded-xl bg-emerald-50/60 p-5 dark:bg-slate-900/40">
+    <div className="rounded-xl bg-brand-50/60 p-5 dark:bg-surface-dark">
       <section>
         <GroupHeading>Verified Devices (Device and Browser)</GroupHeading>
         {data.verified.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-stone-500 dark:text-brand-200">
             No device has been verified yet.
           </p>
         ) : (
@@ -113,7 +113,7 @@ export default function DeviceTab() {
 
           <div className="mt-5 text-center">
             {submitted ? (
-              <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+              <p className="text-sm font-bold text-brand-700 dark:text-brand-400">
                 Your verification request has been sent for review.
               </p>
             ) : (
@@ -145,7 +145,7 @@ export default function DeviceTab() {
       >
         <label
           htmlFor="verify-reason"
-          className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          className="block text-sm font-medium text-stone-700 dark:text-brand-200"
         >
           Reason
         </label>
@@ -155,9 +155,9 @@ export default function DeviceTab() {
           value={reason}
           onChange={(event) => setReason(event.target.value)}
           placeholder="e.g. My previous phone was lost and I now study on my laptop."
-          className="mt-1.5 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 transition-colors focus:border-brand-500 dark:border-slate-700 dark:bg-surface-dark-subtle dark:text-slate-100"
+          className="mt-1.5 block w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 transition-colors focus:border-stone-200 dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200"
         />
-        <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-1.5 text-xs text-stone-500 dark:text-brand-200">
           Minimum 10 characters.
         </p>
       </Modal>

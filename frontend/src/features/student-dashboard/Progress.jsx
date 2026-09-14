@@ -33,19 +33,19 @@ export default function Progress() {
         <CardHeader title="This week" description="Minutes studied per day." />
         <CardBody>
           {data.weeklyActivity.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Nothing watched in the last seven days yet.</p>
+            <p className="text-sm text-stone-500 dark:text-brand-200">Nothing watched in the last seven days yet.</p>
           ) : (
           <div className="flex h-40 items-end justify-between gap-3">
             {data.weeklyActivity.map((day) => (
               <div key={day.day} className="flex flex-1 flex-col items-center gap-2">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                <span className="text-xs font-medium text-stone-500 dark:text-brand-200">
                   {day.minutes}m
                 </span>
                 <div
                   className="w-full rounded-t-lg bg-brand-500 dark:bg-brand-600"
                   style={{ height: `${(day.minutes / peakMinutes) * 100}%` }}
                 />
-                <span className="text-xs text-slate-500 dark:text-slate-400">{day.day}</span>
+                <span className="text-xs text-stone-500 dark:text-brand-200">{day.day}</span>
               </div>
             ))}
           </div>
