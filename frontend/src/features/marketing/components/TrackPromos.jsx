@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { FaBookOpen, FaHospital, FaStethoscope, FaLightbulb } from 'react-icons/fa6';
 
 /**
  * Promotional track cards — 2-in-a-row on mobile and 2-column on desktop.
@@ -14,7 +13,6 @@ const TRACK_CARDS = [
     subtitle: 'Phase A & B, Combined Batch — Online & Offline',
     cta: 'See Batches',
     ctaTo: '/batches?group=fcps-p1-medicine',
-    Icon: FaBookOpen,
   },
   {
     id: 'bcs',
@@ -24,7 +22,6 @@ const TRACK_CARDS = [
     subtitle: 'BCS (Health) written & viva preparation',
     cta: 'See Batches',
     ctaTo: '/batches',
-    Icon: FaHospital,
   },
   {
     id: 'mbbs',
@@ -34,7 +31,6 @@ const TRACK_CARDS = [
     subtitle: '1st–4th professional exam coaching',
     cta: 'See Batches',
     ctaTo: '/batches?group=bmdc-licensing',
-    Icon: FaStethoscope,
   },
   {
     id: 'guidance',
@@ -44,7 +40,6 @@ const TRACK_CARDS = [
     subtitle: 'Free consultation with our expert mentors',
     cta: 'পরামর্শ নিন',
     ctaTo: '/contact',
-    Icon: FaLightbulb,
   },
 ];
 
@@ -72,11 +67,23 @@ export default function TrackPromos() {
             >
               {/* Text content */}
               <div className="relative z-10 flex flex-1 flex-col">
-                <span
-                  className={`w-fit rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:px-3.5 sm:py-1 sm:text-xs ${card.badgeColor}`}
-                >
-                  {card.badge}
-                </span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span
+                    className={`w-fit rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:px-3.5 sm:py-1 sm:text-xs ${card.badgeColor}`}
+                  >
+                    {card.badge}
+                  </span>
+                  <img
+                    src="/assets/bg/Medicine-amico.svg"
+                    alt=""
+                    aria-hidden="true"
+                    width={500}
+                    height={500}
+                    loading="lazy"
+                    decoding="async"
+                    className="pointer-events-none h-16 w-16 shrink-0 object-contain sm:h-24 sm:w-24"
+                  />
+                </div>
 
                 <h3
                   className="mt-2.5 text-xs font-extrabold leading-tight tracking-tight text-stone-800 sm:mt-4 sm:text-xl lg:text-2xl dark:text-white"
@@ -111,11 +118,6 @@ export default function TrackPromos() {
                 </span>
               </div>
 
-              {/* Decorative icon */}
-              <card.Icon
-                aria-hidden="true"
-                className="pointer-events-none absolute -bottom-2 -right-2 h-12 w-12 text-stone-900/20 transition-transform duration-300 group-hover:scale-110 sm:-bottom-3 sm:-right-3 sm:h-28 sm:w-28 lg:h-32 lg:w-32 dark:text-white/20"
-              />
             </Link>
           ))}
         </div>
