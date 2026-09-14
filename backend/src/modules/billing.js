@@ -57,11 +57,33 @@ export function billingRoutes(route, database) {
   route('GET', '/invoices/:id', { auth: 'active' }, async request => {
     const payment = await one(database, 'SELECT * FROM payments WHERE id=$1 AND user_id=$2', [request.params.id, request.auth.user_id]);
     ensure(payment, 404, 'INVOICE_NOT_FOUND', 'Invoice not found.');
-    return { id: payment.id, invoiceNo: payment.invoice_no, issuedAt: payment.created_at, status: payment.status,
+    return { id: payment.id, invoiceNo: payment.invoice_no, issuedAt: payment.created_at, paidAt: payment.paid_at, status: payment.status,
       method: payment.method, transactionId: payment.transaction_id, billedTo: payment.billed_to,
       lines: [{ id: payment.id, description: payment.description, quantity: 1, unitPrice: payment.amount_minor / 100 }], discount: 0, total: payment.amount_minor / 100 };
   });
   route('GET', '/me/payments', { auth: 'active', query: pageQuery }, async request => (await database.query('SELECT * FROM payments WHERE user_id=$1 ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.auth.user_id, request.query.limit, request.query.offset])).rows.map(paymentDto));
+  route('GET', '/me/payment-history', { auth: 'active', query: pageQuery.extend({
+    from: z.string().date().optional(), to: z.string().date().optional(),
+    sort: z.enum(['date-desc', 'date-asc', 'amount-desc', 'amount-asc']).default('date-desc'),
+  }).refine(query => !query.from || !query.to || query.from <= query.to, { message: 'The end date must not precede the start date.' }) }, async request => {
+    const { from, to, sort, limit, offset } = request.query;
+    const filter = `user_id=$1
+      AND ($2::date IS NULL OR (COALESCE(paid_at,created_at) AT TIME ZONE 'Asia/Dhaka')::date >= $2::date)
+      AND ($3::date IS NULL OR (COALESCE(paid_at,created_at) AT TIME ZONE 'Asia/Dhaka')::date <= $3::date)`;
+    const values = [request.auth.user_id, from || null, to || null];
+    const order = { 'date-desc': 'COALESCE(paid_at,created_at) DESC', 'date-asc': 'COALESCE(paid_at,created_at) ASC', 'amount-desc': 'amount_minor DESC', 'amount-asc': 'amount_minor ASC' }[sort];
+    const rows = (await database.query(`SELECT * FROM payments WHERE ${filter} ORDER BY ${order},id LIMIT $4 OFFSET $5`, [...values, limit, offset])).rows;
+    const totals = await one(database, `SELECT count(*)::int AS count,
+      COALESCE(sum(amount_minor) FILTER (WHERE status='paid'),0) AS paid,
+      COALESCE(sum(amount_minor) FILTER (WHERE status='pending'),0) AS pending,
+      COALESCE(sum(amount_minor) FILTER (WHERE status='refunded'),0) AS refunded,
+      COALESCE(sum(amount_minor) FILTER (WHERE status='failed'),0) AS failed
+      FROM payments WHERE ${filter}`, values);
+    return { items: rows.map(paymentDto), total: totals.count, totals: {
+      paid: Number(totals.paid) / 100, pending: Number(totals.pending) / 100,
+      refunded: Number(totals.refunded) / 100, failed: Number(totals.failed) / 100,
+    } };
+  });
   route('GET', '/admin/payments', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => (await database.query('SELECT * FROM payments WHERE ($1::text IS NULL OR status=$1) ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.query.status || null, request.query.limit, request.query.offset])).rows.map(row => ({ ...paymentDto(row), userId: row.user_id })));
 
   route('POST', '/admin/payments/:id/confirm', { auth: 'admin', body: z.object({ transactionId: text.min(3).max(120), amount: money, evidence: z.string().trim().min(10).max(2000) }).strict() }, async request => database.transaction(async transaction => {

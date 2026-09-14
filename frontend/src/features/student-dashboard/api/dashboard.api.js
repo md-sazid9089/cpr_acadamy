@@ -19,9 +19,14 @@ export async function fetchUpcomingExams() {
 }
 
 /** Academy-wide notices, pinned first. */
-export async function fetchNotices() {
-  const { data } = await apiClient.get('/announcements', { params: { limit: 50 } });
-  return data;
+export async function fetchNotices({ signal } = {}) {
+  const notices = new Map();
+  const limit = 50;
+  for (let offset = 0; ; offset += limit) {
+    const { data } = await apiClient.get('/announcements', { params: { limit, offset }, signal });
+    for (const notice of data) notices.set(notice.id, notice);
+    if (data.length < limit) return [...notices.values()];
+  }
 }
 
 export async function fetchPaymentHistory() {

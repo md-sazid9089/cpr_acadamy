@@ -55,6 +55,10 @@ export default function Register() {
     <AuthCard
       title="Create your account"
       description="Register with your mobile number. We'll send a verification code by SMS."
+      illustrations={[
+        { src: '/assets/bg/undraw_doctors_djoj.svg', width: 693, height: 597 },
+        { src: '/assets/bg/undraw_medicine_hqqg.svg', width: 1105, height: 783 },
+      ]}
       footer={
         <>
           Already registered?{' '}

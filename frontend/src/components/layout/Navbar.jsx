@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { FiShield } from 'react-icons/fi';
+import { FaChevronDown } from 'react-icons/fa6';
 import Logo from './Logo.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useAuthStore } from '@/lib/auth';
-import { useScrolled } from '@/hooks/useScrolled';
 import { cn } from '@/lib/utils';
+import { useNotices } from '@/features/student-dashboard/api/dashboard.queries.js';
+import { EMPTY_READ_NOTICES, useNoticeReadStore } from '@/features/student-dashboard/notice-read-store.js';
+import { isNoticeUnread } from '@/features/student-dashboard/notices.js';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', end: true },
@@ -15,6 +18,20 @@ const NAV_LINKS = [
   { to: '/about', label: 'About' },
   { to: '/gallery', label: 'Gallery' },
   { to: '/contact', label: 'Contact' },
+];
+
+const STUDENT_LINKS = [
+  { to: '/dashboard', label: 'Dashboard', end: true },
+  { to: '/dashboard/courses', label: 'My Courses' },
+  { to: '/dashboard/exams', label: 'My Exams' },
+  { to: '/dashboard/payments', label: 'Payments' },
+  { to: '/dashboard/subscriptions', label: 'Subscriptions' },
+  { to: '/batches', label: 'Available Batches' },
+  { to: '/dashboard/notice', label: 'Notices' },
+  { to: '/dashboard/complaints', label: 'Complaint Box' },
+  { to: '/dashboard/exam-positions', label: 'Exam Positions' },
+  { to: '/dashboard/progress', label: 'Progress' },
+  { to: '/dashboard/account', label: 'My Account' },
 ];
 
 const linkClasses = ({ isActive }) =>
@@ -139,43 +156,62 @@ function ProfileMenu({ user, dashboardPath, onLogout }) {
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const moreNavigation = useRef(null);
   const { pathname } = useLocation();
-  const scrolled = useScrolled();
-  const isSolid = scrolled || mobileOpen;
 
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const logout = useAuthStore((s) => s.logout);
   const isAuthenticated = Boolean(user && accessToken);
   const isAdmin = isAuthenticated && user.role === 'admin';
+  const isStudent = isAuthenticated && !isAdmin;
+  const { data: notices = [], isError: noticesError } = useNotices({ enabled: isStudent });
+  const readNotices = useNoticeReadStore((state) => state.accounts[user?.id] ?? EMPTY_READ_NOTICES);
+  const unreadCount = isStudent && !noticesError ? notices.filter((notice) => isNoticeUnread(notice, readNotices)).length : 0;
+  const unreadBadge = unreadCount > 0 ? <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-brand-700 px-1.5 text-xs font-bold leading-5 text-white" aria-label={`${unreadCount} unread notices`}>{unreadCount > 99 ? '99+' : unreadCount}</span> : null;
+  const navigationLinks = isStudent ? STUDENT_LINKS : NAV_LINKS;
   const dashboardPath = user?.role === 'admin' ? '/admin' : '/dashboard';
 
   // Close the drawer whenever the route changes.
   useEffect(() => setMobileOpen(false), [pathname]);
+  useEffect(() => { moreNavigation.current?.removeAttribute('open'); }, [pathname]);
+  useEffect(() => {
+    const dismiss = (event) => {
+      if (event.key === 'Escape' || (event.type === 'pointerdown' && !moreNavigation.current?.contains(event.target))) {
+        moreNavigation.current?.removeAttribute('open');
+      }
+    };
+    document.addEventListener('pointerdown', dismiss);
+    document.addEventListener('keydown', dismiss);
+    return () => {
+      document.removeEventListener('pointerdown', dismiss);
+      document.removeEventListener('keydown', dismiss);
+    };
+  }, []);
 
   return (
-    <header
-      className={cn(
-        'sticky top-0 z-40 transition-colors duration-300',
-        // Transparent while at the very top; the surface fades in on scroll.
-        // The open mobile drawer counts as "solid" too, otherwise the panel
-        // would hang off a see-through bar.
-        isSolid
-          ? 'border-b border-stone-200 bg-white/90 backdrop-blur dark:border-stone-200 dark:bg-surface-dark/90'
-          : 'border-b border-transparent bg-transparent',
-      )}
-    >
+    <header className={cn('sticky top-0 z-40 border-b border-transparent', isStudent && (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) ? 'bg-white dark:bg-stone-900' : 'bg-transparent')}>
       {/* h-20 so the round logo (h-16) has breathing room. PublicLayout's
           overlay offset and the Hero's top padding both track this height. */}
       <nav className="container-page flex h-20 items-center justify-between gap-4" aria-label="Main">
         <Logo />
 
         <div className="hidden items-center gap-2 xl:flex xl:gap-4">
-          {NAV_LINKS.map((link) => (
+          {(isStudent ? navigationLinks.slice(0, 3) : navigationLinks).map((link) => (
             <NavLink key={link.to} to={link.to} end={link.end} className={linkClasses}>
               {link.label}
             </NavLink>
           ))}
+          {isStudent && (
+            <details ref={moreNavigation} className="relative">
+              <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 rounded-lg px-3 text-sm font-medium text-stone-700 dark:text-brand-200">More {unreadBadge}<FaChevronDown aria-hidden="true" className="h-3 w-3" /></summary>
+              <div className="absolute right-0 z-50 mt-2 max-h-[70dvh] w-60 overflow-y-auto rounded-lg border border-stone-200 bg-white p-2 dark:bg-surface-dark">
+                {STUDENT_LINKS.slice(3).map((link) => <NavLink key={link.to} to={link.to} className={(state) => cn('block', linkClasses(state))} onClick={() => moreNavigation.current?.removeAttribute('open')}>{link.label}{link.to === '/dashboard/notice' && unreadBadge}</NavLink>)}
+                <p className="mt-2 border-t border-stone-200 px-4 pb-2 pt-3 text-xs font-semibold text-stone-500 dark:text-brand-200">Academy</p>
+                {NAV_LINKS.map((link) => <NavLink key={link.to} to={link.to} end={link.end} className={(state) => cn('block', linkClasses(state))} onClick={() => moreNavigation.current?.removeAttribute('open')}>{link.label}</NavLink>)}
+              </div>
+            </details>
+          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-3">
@@ -209,7 +245,7 @@ export default function Navbar() {
             onClick={() => setMobileOpen((open) => !open)}
             aria-expanded={mobileOpen}
             aria-label="Toggle navigation menu"
-            className="rounded-lg p-2 text-stone-600 hover:bg-stone-100 dark:text-brand-200 dark:hover:bg-surface-dark"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 text-stone-600 hover:bg-stone-100 dark:text-brand-200 dark:hover:bg-surface-dark"
           >
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               {mobileOpen ? (
@@ -218,15 +254,16 @@ export default function Navbar() {
                 <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
               )}
             </svg>
+            {unreadBadge}
           </button>
         </div>
         </div>
       </nav>
 
       {mobileOpen && (
-        <div className="border-t border-stone-200 bg-white xl:hidden dark:border-stone-200 dark:bg-surface-dark">
+        <div className="max-h-[calc(100dvh-80px)] overflow-y-auto border-t border-stone-200 bg-white xl:hidden dark:border-stone-200 dark:bg-surface-dark">
           <div className="container-page space-y-1 py-4">
-            {NAV_LINKS.map((link) => (
+            {navigationLinks.map((link) => (
               <NavLink
                 key={link.to}
                 to={link.to}
@@ -242,8 +279,14 @@ export default function Navbar() {
                 }
               >
                 {link.label}
+                {link.to === '/dashboard/notice' && unreadBadge}
               </NavLink>
             ))}
+
+            {isStudent && <details className="border-t border-stone-200 pt-2">
+              <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-stone-700 dark:text-brand-200">Academy</summary>
+              {NAV_LINKS.map((link) => <NavLink key={link.to} to={link.to} end={link.end} className={(state) => cn('block', linkClasses(state))}>{link.label}</NavLink>)}
+            </details>}
 
             <div className="grid grid-cols-2 gap-2 pt-3">
               {isAuthenticated ? (

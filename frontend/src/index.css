@@ -241,3 +241,11 @@ button, input:not([type='checkbox']):not([type='radio']), select, textarea {
 .dark .dashboard-content .ui-card {
   background-color: color-mix(in srgb, var(--blue-900) 35%, transparent);
 }
+
+.dashboard-content .dashboard-menu-card {
+  border-color: var(--blue-500);
+}
+
+.dark .dashboard-content .dashboard-menu-card {
+  border-color: var(--blue-400);
+}

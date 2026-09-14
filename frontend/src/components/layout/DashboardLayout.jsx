@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, ScrollRestoration } from 'react-router-dom';
+import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
 import { FaArrowRightFromBracket, FaBars } from 'react-icons/fa6';
 import Navbar from './Navbar.jsx';
 import Logo from './Logo.jsx';
@@ -23,6 +23,11 @@ export default function DashboardLayout({ variant = ROLES.STUDENT }) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const isAdmin = variant === ROLES.ADMIN;
+  const { pathname } = useLocation();
+  const isCoursesPage = pathname.replace(/\/$/, '') === '/dashboard/courses';
+  const isNoticesPage = pathname.replace(/\/$/, '') === '/dashboard/notice';
+  const isPaymentsPage = pathname.replace(/\/$/, '') === '/dashboard/payments';
+  const isInvoicePage = pathname.startsWith('/dashboard/invoices/');
 
   // Sends the student to /login if the backend revokes this session mid-visit.
   useForcedLogoutRedirect();
@@ -30,10 +35,10 @@ export default function DashboardLayout({ variant = ROLES.STUDENT }) {
 
   if (!isAdmin) {
     return (
-      <div className="relative isolate min-h-screen bg-surface-light dark:bg-surface-dark">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <div className={`relative isolate min-h-screen bg-surface-light dark:bg-surface-dark ${isCoursesPage ? 'course-dashboard-layout' : ''} ${isNoticesPage ? 'notice-dashboard-layout' : ''} ${isPaymentsPage || isInvoicePage ? 'payment-dashboard-layout' : ''} ${isInvoicePage ? 'invoice-print-layout' : ''}`}>
+        {!isCoursesPage && !isNoticesPage && !isPaymentsPage && !isInvoicePage && <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
           <MolecularBackground />
-        </div>
+        </div>}
         <Navbar />
         <main className="dashboard-content container-page relative z-10 py-8">
           <Outlet />

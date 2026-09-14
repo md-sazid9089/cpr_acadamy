@@ -46,8 +46,8 @@ export function useUpcomingExams() {
   return useQuery({ queryKey: dashboardKeys.upcomingExams, queryFn: fetchUpcomingExams });
 }
 
-export function useNotices() {
-  return useQuery({ queryKey: dashboardKeys.notices, queryFn: fetchNotices });
+export function useNotices({ enabled = true } = {}) {
+  return useQuery({ queryKey: dashboardKeys.notices, queryFn: fetchNotices, enabled });
 }
 
 export function usePaymentHistory() {

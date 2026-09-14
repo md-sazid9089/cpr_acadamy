@@ -66,6 +66,10 @@ export default function Login() {
     <AuthCard
       title="Sign in"
       description="Use the mobile number you registered with."
+      illustrations={[
+        { src: '/assets/bg/undraw_doctors_djoj.svg', width: 693, height: 597 },
+        { src: '/assets/bg/undraw_medicine_hqqg.svg', width: 1105, height: 783 },
+      ]}
       footer={
         <>
           New to CPR Medical Academy?{' '}

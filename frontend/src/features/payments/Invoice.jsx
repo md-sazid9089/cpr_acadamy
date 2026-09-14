@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom';
+import { FaArrowLeft, FaPrint } from 'react-icons/fa6';
 import { useQuery } from '@tanstack/react-query';
 import { fetchInvoice } from './api/payments.api.js';
 import Card from '@/components/ui/Card.jsx';
@@ -8,6 +9,7 @@ import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { PAYMENT_METHODS, CONTACT } from '@/constants';
 import { formatBDT, formatDate } from '@/lib/utils';
+import './payments.css';
 
 const methodLabel = (id) => PAYMENT_METHODS.find((method) => method.id === id)?.label ?? id;
 
@@ -42,16 +44,16 @@ export default function Invoice() {
   const isPending = invoice.status === 'pending';
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <div className="flex justify-end gap-3 print:hidden">
+    <div className="invoice-page mx-auto max-w-3xl space-y-4">
+      <div className="invoice-toolbar flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Button to="/dashboard/payments" variant="outline">
-          Back
+          <FaArrowLeft aria-hidden="true" /> Payment history
         </Button>
-        <Button onClick={() => window.print()}>Print / save PDF</Button>
+        <Button onClick={() => window.print()}><FaPrint aria-hidden="true" /> Print / save PDF</Button>
       </div>
 
       {isPending && (
-        <Card className="border-stone-200 bg-brand-50 p-5 text-sm text-brand-900 print:hidden dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-100">
+        <Card className="invoice-payment-notice border-stone-200 bg-brand-50 p-5 text-sm text-brand-900 print:hidden dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-100">
           <p className="font-semibold">Awaiting your payment</p>
           <p className="mt-1">
             Send <strong>{formatBDT(invoice.total)}</strong> to the academy ({CONTACT.phone}) by bKash, Nagad, Rocket or bank
@@ -61,9 +63,11 @@ export default function Invoice() {
         </Card>
       )}
 
-      <Card className="p-8">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 pb-6 dark:border-stone-200">
-          <div>
+      <Card className="invoice-document p-5 sm:p-8">
+        <div className="invoice-heading flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 pb-6 dark:border-stone-200">
+          <div className="invoice-brand">
+            <img src="/assets/spotlight/cpr-logo.png" alt="CPR Medical Academy logo" width="52" height="52" className="invoice-logo" />
+            <div>
             <p className="text-lg font-extrabold text-stone-900 dark:text-white">
               CPR <span className="text-brand-600 dark:text-brand-400">Medical Academy</span>
             </p>
@@ -71,31 +75,34 @@ export default function Invoice() {
               {CONTACT.address}
             </p>
             <p className="text-xs text-stone-500 dark:text-brand-200">{CONTACT.email}</p>
+            </div>
           </div>
 
-          <div className="text-right">
-            <p className="text-sm font-semibold text-stone-900 dark:text-white">
-              Invoice {invoice.invoiceNo}
+          <div className="invoice-reference">
+            <h1 className="text-lg font-bold">Invoice</h1>
+            <p className="invoice-full-id text-xs font-semibold text-stone-900 dark:text-white">
+              {invoice.invoiceNo}
             </p>
             <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">
               Issued {formatDate(invoice.issuedAt)}
             </p>
+            {invoice.paidAt && <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">Paid {formatDate(invoice.paidAt)}</p>}
             <div className="mt-2">
               <StatusBadge status={invoice.status} />
             </div>
           </div>
         </div>
 
-        <div className="grid gap-6 py-6 sm:grid-cols-2">
+        <div className="invoice-parties grid gap-6 py-6 sm:grid-cols-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">Billed to</p>
             <p className="mt-1 text-sm font-medium text-stone-900 dark:text-white">
               {invoice.billedTo.name}
             </p>
             <p className="text-xs text-stone-500 dark:text-brand-200">{invoice.billedTo.mobile}</p>
-            <p className="text-xs text-stone-500 dark:text-brand-200">
-              {invoice.billedTo.institution}
-            </p>
+            {invoice.billedTo.institution && <p className="text-xs text-stone-500 dark:text-brand-200">
+              Institution: {invoice.billedTo.institution}
+            </p>}
           </div>
 
           <div className="sm:text-right">
@@ -105,13 +112,14 @@ export default function Invoice() {
             </p>
             {invoice.transactionId && (
               <p className="text-xs text-stone-500 dark:text-brand-200">
-                Txn {invoice.transactionId}
+                Transaction ID: {invoice.transactionId}
               </p>
             )}
           </div>
         </div>
 
-        <table className="w-full text-sm">
+        <table className="invoice-lines w-full text-sm">
+          <colgroup><col /><col style={{ width: '3rem' }} /><col style={{ width: '30%' }} /></colgroup>
           <thead>
             <tr className="border-y border-stone-200 text-left dark:border-stone-200">
               <th className="py-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
@@ -150,7 +158,7 @@ export default function Invoice() {
             </div>
           )}
           <div className="flex justify-between border-t border-stone-200 pt-2 text-base font-bold dark:border-stone-200">
-            <dt className="text-stone-900 dark:text-white">{invoice.status === 'paid' ? 'Total paid' : 'Total due'}</dt>
+            <dt className="text-stone-900 dark:text-white">{invoice.status === 'paid' ? 'Total paid' : invoice.status === 'refunded' ? 'Total refunded' : invoice.status === 'pending' ? 'Total due' : 'Invoice total'}</dt>
             <dd className="text-brand-700 dark:text-brand-400">{formatBDT(invoice.total)}</dd>
           </div>
         </dl>

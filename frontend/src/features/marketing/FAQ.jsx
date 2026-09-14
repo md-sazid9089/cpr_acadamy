@@ -124,17 +124,27 @@ export default function FAQ() {
         </div>
 
         <aside>
-          <Card className="sticky top-24 p-6">
-            <h2 className="text-base font-semibold text-stone-900 dark:text-white">
-              আরও কোনো প্রশ্ন আছে?
-            </h2>
-            <p className="mt-2 text-sm text-stone-600 dark:text-brand-200">
-              আমাদের ভর্তি টিম শনিবার থেকে বৃহস্পতিবার সকাল ১০টা থেকে রাত ৮টা পর্যন্ত হোয়াটসঅ্যাপে উত্তর দেয়।
-            </p>
-            <Button to="/contact" fullWidth className="mt-5">
-              যোগাযোগ করুন
-            </Button>
-          </Card>
+          <div className="sticky top-24 space-y-6">
+            <img
+              src="/assets/bg/Online%20Doctor-rafiki.svg"
+              alt=""
+              aria-hidden="true"
+              width={500}
+              height={500}
+              className="mx-auto aspect-square w-full max-w-xs object-contain"
+            />
+            <Card className="p-6">
+              <h2 className="text-base font-semibold text-stone-900 dark:text-white">
+                আরও কোনো প্রশ্ন আছে?
+              </h2>
+              <p className="mt-2 text-sm text-stone-600 dark:text-brand-200">
+                আমাদের ভর্তি টিম শনিবার থেকে বৃহস্পতিবার সকাল ১০টা থেকে রাত ৮টা পর্যন্ত হোয়াটসঅ্যাপে উত্তর দেয়।
+              </p>
+              <Button to="/contact" fullWidth className="mt-5">
+                যোগাযোগ করুন
+              </Button>
+            </Card>
+          </div>
         </aside>
       </section>
     </div>

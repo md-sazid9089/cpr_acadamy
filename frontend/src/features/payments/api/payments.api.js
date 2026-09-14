@@ -30,3 +30,8 @@ export async function fetchInvoice(invoiceId) {
   const { data } = await apiClient.get(`/invoices/${invoiceId}`);
   return data;
 }
+
+export async function fetchPaymentHistoryPage(params, signal) {
+  const { data } = await apiClient.get('/me/payment-history', { params, signal });
+  return data;
+}
