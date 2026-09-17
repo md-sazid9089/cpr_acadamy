@@ -18,6 +18,21 @@ export async function fetchUpcomingExams() {
   return data;
 }
 
+export async function fetchCourseLeaderboard(slug) {
+  const { data } = await apiClient.get(`/courses/${slug}/leaderboard`, { params: { limit: 500 } });
+  return data;
+}
+
+export async function fetchCourseExams(slug) {
+  const { data } = await apiClient.get(`/courses/${slug}/exams`, { params: { limit: 100 } });
+  return data;
+}
+
+export async function fetchExamPositions(examId) {
+  const { data } = await apiClient.get(`/exams/${examId}/positions`, { params: { limit: 500 } });
+  return data;
+}
+
 /** Academy-wide notices, pinned first. */
 export async function fetchNotices({ signal } = {}) {
   const notices = new Map();

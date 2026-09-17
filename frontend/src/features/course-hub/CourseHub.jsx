@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaEye, FaClipboardList, FaCalendarDays, FaMagnifyingGlass } from 'react-icons/fa6';
+import { FaEye, FaClipboardList, FaCalendarDays, FaMagnifyingGlass, FaTrophy } from 'react-icons/fa6';
 import AtAGlanceTab from './tabs/AtAGlanceTab.jsx';
 import ExamTab from './tabs/ExamTab.jsx';
 import ScheduleTab from './tabs/ScheduleTab.jsx';
+import LeaderboardTab from './tabs/LeaderboardTab.jsx';
 import DashboardPageHeader from '@/features/student-dashboard/components/DashboardPageHeader.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'at-a-glance', label: 'At a glance', icon: FaEye },
   { id: 'exam', label: 'Exam', icon: FaClipboardList },
   { id: 'schedule', label: 'Schedule', icon: FaCalendarDays },
+  { id: 'leaderboard', label: 'Leaderboard', icon: FaTrophy },
 ];
 
 /**
@@ -116,7 +118,7 @@ export default function CourseHub() {
         role="tablist"
         className="overflow-hidden rounded-xl border border-stone-200 bg-white p-1.5 dark:border-stone-200 dark:bg-surface-dark"
       >
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -150,6 +152,7 @@ export default function CourseHub() {
         {activeTab === 'at-a-glance' && <AtAGlanceTab courseSlug={slug} />}
         {activeTab === 'exam' && <ExamTab courseSlug={slug} />}
         {activeTab === 'schedule' && <ScheduleTab courseSlug={slug} />}
+        {activeTab === 'leaderboard' && <LeaderboardTab courseSlug={slug} />}
       </div>
     </div>
   );

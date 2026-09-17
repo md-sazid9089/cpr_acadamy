@@ -46,11 +46,6 @@ function totalMarks(questions) {
 export function validatePublication(input) {
   if (!input.isPublished) return;
   ensure(input.questions.length === input.targetQuestionCount, 400, 'QUESTION_COUNT_MISMATCH', 'The paper must contain exactly the target number of questions.');
-  ensure(input.questions.every(question => question.type !== 'mtf' || question.options.length === 5), 400, 'MTF_OPTION_COUNT', 'Every MTF question must have exactly five statements.');
-  if (input.questionType !== 'mixed') return;
-  ensure(input.targetQuestionCount === 50 && input.questions.every((question, index) => question.type === (index < 30 ? 'mtf' : 'sba')), 400, 'MIXED_PAPER_ORDER', 'A mixed paper must have 30 MCQ questions followed by 20 SBA questions.');
-  ensure(input.questions.every(question => question.marks === (question.type === 'mtf' ? 0.4 : 2)), 400, 'MIXED_PAPER_MARKS', 'Mixed papers require 0.4 marks per MTF statement and 2 marks per SBA question.');
-  ensure(input.negativeMarking === 0 && input.passMark === 70, 400, 'MIXED_PAPER_POLICY', 'Mixed papers require no negative marking and a 70% pass mark.');
 }
 
 export function validateAnswers(questions, answers) {
@@ -121,7 +116,7 @@ async function examPositions(transaction, exam, userId, limit = 10, offset = 0) 
     FROM participants WHERE submitted_at IS NOT NULL AND result IS NOT NULL
   ), entries AS (
     SELECT user_id,rank,jsonb_build_object(
-      'rank',rank,'name',full_name,'score',(result->>'score')::numeric,
+      'userId', user_id, 'rank',rank,'name',full_name,'score',(result->>'score')::numeric,
       'totalMarks',(result->>'totalMarks')::numeric,'passed',(result->>'passed')::boolean,
       'tied',tied_count>1,'isMe',user_id=$2::uuid
     ) AS entry FROM ranked
@@ -240,6 +235,20 @@ export function examRoutes(route, database) {
     ensure(exam, 404, 'NOT_FOUND', 'Exam not found.');
     return { ...examDto(exam), questions: exam.questions, attemptCount: exam.attempt_count };
   });
+
+  route('GET', '/admin/exams/:id/positions', { auth: 'admin', query: pageQuery }, async request => database.transaction(async transaction => {
+    const exam = await one(transaction, 'SELECT * FROM exams WHERE id=$1', [request.params.id]);
+    ensure(exam, 404, 'NOT_FOUND', 'Exam not found.');
+    return examPositions(transaction, exam, request.auth.user_id, request.query.limit, request.query.offset);
+  }));
+
+  route('PATCH', '/admin/exams/:id/attempts/:userId', { auth: 'admin', body: z.object({ score: z.number().min(0) }).strict() }, async request => database.transaction(async transaction => {
+    const attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE exam_id=$1 AND user_id=$2 FOR UPDATE', [request.params.id, request.params.userId]);
+    ensure(attempt && attempt.submitted_at, 404, 'NOT_FOUND', 'Completed attempt not found.');
+    const newResult = { ...attempt.result, score: request.body.score, isEdited: true };
+    await transaction.query('UPDATE exam_attempts SET result=$1::jsonb WHERE id=$2', [JSON.stringify(newResult), attempt.id]);
+    return { ok: true };
+  }));
   async function saveExam(request, creating) {
     return database.transaction(async transaction => {
       const existing = creating ? null : await one(transaction, 'SELECT * FROM exams WHERE id=$1 FOR UPDATE', [request.params.id]);

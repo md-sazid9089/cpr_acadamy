@@ -140,7 +140,6 @@ function ExamEditor({ exam, course }) {
   const setField = (field) => (event) => setSettings((prev) => ({
     ...prev,
     [field]: event.target.value,
-    ...(field === 'type' && event.target.value === 'mixed' ? { questionCount: 50, marksPerQuestion: 2, deductionPercent: 0, passMark: 70 } : {}),
   }));
 
   // ── Questions ──
@@ -242,7 +241,7 @@ function ExamEditor({ exam, course }) {
   const typeLocked = locked;
   const saving = settingsMutation.isPending || questionsMutation.isPending;
 
-  const mixedReady = !isMixed || (target === 50 && questions.every((question, index) => question.type === (index < 30 ? 'mtf' : 'sba') && question.marks === (index < 30 ? 0.4 : 2)));
+  const mixedReady = true;
   const complete = written === target && target > 0 && incomplete === 0 && mixedReady;
 
   return (
@@ -363,7 +362,6 @@ function ExamEditor({ exam, course }) {
                 required
                 min={1}
                 value={settings.questionCount}
-                disabled={isMixed}
                 onChange={setField('questionCount')}
                 hint="How many the paper should have."
               />
@@ -373,7 +371,6 @@ function ExamEditor({ exam, course }) {
                 required
                 min={0.05}
                 step={0.05}
-                disabled={isMixed}
                 value={settings.marksPerQuestion}
                 onChange={setField('marksPerQuestion')}
               />
@@ -384,12 +381,11 @@ function ExamEditor({ exam, course }) {
                 min={0}
                 max={1000}
                 step={0.001}
-                disabled={isMixed}
                 value={settings.deductionPercent}
                 onChange={setField('deductionPercent')}
                 hint="Of the marks per answer, taken for a wrong one."
               />
-              <Input label="Pass mark (%)" type="number" min={0} max={100} step={0.001} required disabled={isMixed} value={settings.passMark} onChange={setField('passMark')} />
+              <Input label="Pass mark (%)" type="number" min={0} max={100} step={0.001} required value={settings.passMark} onChange={setField('passMark')} />
             </div>
 
             <p
@@ -432,7 +428,6 @@ function ExamEditor({ exam, course }) {
             {questionsMutation.isPending && <Badge tone="neutral">Saving…</Badge>}
             {incomplete > 0 && <Badge tone="warning">{incomplete} incomplete</Badge>}
             {complete && <Badge tone="success">Complete</Badge>}
-            {isMixed && <Badge tone={mixedReady ? 'neutral' : 'warning'}>MCQ 1-30 / SBA 31-50</Badge>}
           </div>
         </div>
         <div

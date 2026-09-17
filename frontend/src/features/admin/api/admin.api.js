@@ -162,6 +162,11 @@ export async function fetchAdminCourse(id) {
   return data;
 }
 
+export async function fetchAdminCourseLeaderboard(id) {
+  const { data } = await apiClient.get(`/admin/courses/${id}/leaderboard`, { params: { limit: 500 } });
+  return data;
+}
+
 /**
  * Creates a draft. Only what the New-course dialog collects is required; the
  * Detail tab fills the rest in.
@@ -336,6 +341,16 @@ export async function fetchAdminExams({ courseId, type } = {}) {
 export async function fetchAdminExam(id) {
   const { data } = await apiClient.get(`/admin/exams/${id}`);
   return toEditorExam(data);
+}
+
+export async function fetchAdminExamPositions(id) {
+  const { data } = await apiClient.get(`/admin/exams/${id}/positions`, { params: { limit: 500 } });
+  return data;
+}
+
+export async function updateAdminExamScore(examId, userId, score) {
+  const { data } = await apiClient.patch(`/admin/exams/${examId}/attempts/${userId}`, { score });
+  return data;
 }
 
 export async function createExam(exam) {

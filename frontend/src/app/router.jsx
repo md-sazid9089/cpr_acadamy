@@ -81,6 +81,7 @@ const CourseVideosTab = lazy(() => import('@/features/admin/courses/CourseVideos
 const CourseExamsTab = lazy(() => import('@/features/admin/courses/CourseExamsTab.jsx'));
 const ExamBuilder = lazy(() => import('@/features/admin/courses/ExamBuilder.jsx'));
 const CourseScheduleTab = lazy(() => import('@/features/admin/courses/CourseScheduleTab.jsx'));
+const CourseLeaderboardTab = lazy(() => import('@/features/admin/courses/CourseLeaderboardTab.jsx'));
 
 /**
  * Wraps a lazily-imported page in its own Suspense boundary so only the routed
@@ -198,6 +199,7 @@ const router = createBrowserRouter([
           { path: 'exams', element: suspend(<CourseExamsTab />) },
           { path: 'exams/:examId', element: suspend(<ExamBuilder />) },
           { path: 'schedule', element: suspend(<CourseScheduleTab />) },
+          { path: 'leaderboard', element: suspend(<CourseLeaderboardTab />) },
           { path: '*', element: <Navigate to="detail" replace /> },
         ],
       },

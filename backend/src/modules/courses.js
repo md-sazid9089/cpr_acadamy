@@ -185,6 +185,51 @@ export function courseRoutes(route, database) {
     ensure(course, 404, 'COURSE_NOT_FOUND', 'This course could not be found.');
     return (await database.query('SELECT * FROM schedules WHERE course_id=$1 ORDER BY scheduled_at,id', [course.id])).rows.map(scheduleDto);
   });
+  async function courseLeaderboard(database, courseId, userId, limit = 50, offset = 0) {
+    const standings = await one(database, `WITH course_exams AS (
+      SELECT id FROM exams WHERE course_id=$1 AND is_published=true
+    ), user_scores AS (
+      SELECT a.user_id, u.full_name, sum((a.result->>'score')::numeric) as total_score
+      FROM exam_attempts a
+      JOIN users u ON u.id = a.user_id
+      WHERE a.exam_id IN (SELECT id FROM course_exams) AND a.submitted_at IS NOT NULL AND u.role='student'
+      GROUP BY a.user_id, u.full_name
+    ), ranked AS (
+      SELECT user_id, full_name, total_score,
+        rank() OVER (ORDER BY total_score DESC)::int AS rank,
+        count(*) OVER (PARTITION BY total_score)::int AS tied_count
+      FROM user_scores
+    ), entries AS (
+      SELECT user_id,rank,jsonb_build_object(
+        'userId', user_id, 'rank',rank,'name',full_name,'score',total_score,
+        'tied',tied_count>1,'isMe',user_id=$2::uuid
+      ) AS entry FROM ranked
+    ), page AS (
+      SELECT * FROM entries ORDER BY rank,user_id LIMIT $3 OFFSET $4
+    )
+    SELECT (SELECT count(*)::int FROM ranked) AS participants,
+      (SELECT max(total_score) FROM ranked) AS highest_score,
+      (SELECT round(avg(total_score),3) FROM ranked) AS average_score,
+      (SELECT entry FROM entries WHERE user_id=$2::uuid) AS me,
+      COALESCE((SELECT jsonb_agg(entry ORDER BY rank,user_id) FROM page),'[]'::jsonb) AS items`,
+    [courseId, userId, limit, offset]);
+
+    return { participants: standings.participants, highestScore: standings.highest_score === null ? null : Number(standings.highest_score), averageScore: standings.average_score === null ? null : Number(standings.average_score), me: standings.me, items: standings.items, limit, offset };
+  }
+
+  route('GET', '/courses/:slug/leaderboard', { auth: 'active', query: pageQuery }, async request => {
+    const course = await one(database, 'SELECT id FROM courses WHERE slug=$1', [request.params.slug]);
+    ensure(course, 404, 'COURSE_NOT_FOUND', 'Course not found.');
+    await requireCourseAccess(database, request.auth, course.id);
+    return courseLeaderboard(database, course.id, request.auth.user_id, request.query.limit, request.query.offset);
+  });
+
+  route('GET', '/admin/courses/:id/leaderboard', { auth: 'admin', query: pageQuery }, async request => {
+    const course = await one(database, 'SELECT id FROM courses WHERE id=$1', [request.params.id]);
+    ensure(course, 404, 'COURSE_NOT_FOUND', 'Course not found.');
+    return courseLeaderboard(database, course.id, request.auth.user_id, request.query.limit, request.query.offset);
+  });
+
   route('GET', '/admin/courses', { auth: 'admin', query: pageQuery }, async request => (await database.query(`${courseSelect} ORDER BY c.created_at DESC,c.id LIMIT $1 OFFSET $2`, [request.query.limit, request.query.offset])).rows.map(courseDto));
   route('GET', '/admin/courses/:id', { auth: 'admin' }, async request => {
     const course = await one(database, `${courseSelect} WHERE c.id=$1`, [request.params.id]);

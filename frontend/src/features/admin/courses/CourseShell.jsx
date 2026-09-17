@@ -7,6 +7,7 @@ import {
   FaCircleInfo,
   FaClipboardList,
   FaPlay,
+  FaTrophy,
 } from 'react-icons/fa6';
 import { fetchAdminCourse } from '../api/admin.api.js';
 import { adminCourseKey } from './keys.js';
@@ -23,6 +24,7 @@ const TABS = [
   { to: 'videos', label: 'Videos', icon: FaPlay },
   { to: 'exams', label: 'Exams', icon: FaClipboardList },
   { to: 'schedule', label: 'Schedule', icon: FaCalendarDays },
+  { to: 'leaderboard', label: 'Leaderboard', icon: FaTrophy },
 ];
 
 /**
