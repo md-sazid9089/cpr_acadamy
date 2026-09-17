@@ -12,21 +12,7 @@
       rel="icon"
       href="/assets/spotlight/cpr-logo.png"
     />
-    <script>
-      // Apply the stored theme before first paint so dark mode never flashes white.
-      (function () {
-        try {
-          var stored = JSON.parse(localStorage.getItem('cpr-theme') || 'null');
-          var mode = stored && stored.state && stored.state.theme;
-          if (!mode || mode === 'system') {
-            mode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          }
-          document.documentElement.classList.toggle('dark', mode === 'dark');
-        } catch (e) {
-          /* no-op */
-        }
-      })();
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

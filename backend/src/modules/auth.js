@@ -21,10 +21,11 @@ export function authRoutes(route, database, config) {
   async function issueSession(transaction, user, deviceId) {
     const accessToken = newToken();
     const refreshToken = newToken();
+    const refreshSeconds = user.role === 'admin' ? config.adminRefreshSeconds : config.refreshSeconds;
     await transaction.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [user.id]);
     const session = await one(transaction, `INSERT INTO sessions(user_id,device_id,access_hash,refresh_hash,expires_at,refresh_expires_at)
       VALUES ($1,$2,$3,$4,now()+$5*interval '1 second',now()+$6*interval '1 second') RETURNING expires_at`,
-    [user.id, deviceId, digestToken(accessToken, secret), digestToken(refreshToken, secret), config.accessSeconds, config.refreshSeconds]);
+    [user.id, deviceId, digestToken(accessToken, secret), digestToken(refreshToken, secret), config.accessSeconds, refreshSeconds]);
     return { user: publicUser(user), accessToken, refreshToken, deviceId, expiresAt: new Date(session.expires_at).getTime() };
   }
 

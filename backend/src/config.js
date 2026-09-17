@@ -35,5 +35,7 @@ export function loadConfig(env = process.env) {
     smsWebhookToken: env.SMS_WEBHOOK_TOKEN,
     accessSeconds: 3600,
     refreshSeconds: 30 * 86400,
+    // Admin sessions carry more blast radius (payments, scores, approvals), so they expire sooner and must reauthenticate more often.
+    adminRefreshSeconds: 7 * 86400,
   };
 }

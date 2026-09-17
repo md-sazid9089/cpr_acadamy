@@ -20,7 +20,7 @@ export const fullNameSchema = z
 
 export const passwordSchema = z
   .string()
-  .min(8, 'Password must be at least 8 characters')
+  .min(10, 'Password must be at least 10 characters')
   .regex(/[a-zA-Z]/, 'Include at least one letter')
   .regex(/\d/, 'Include at least one number');
 

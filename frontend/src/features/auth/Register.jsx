@@ -132,7 +132,7 @@ export default function Register() {
             required
             type="password"
             autoComplete="new-password"
-            hint="At least 8 characters."
+            hint="At least 10 characters, with a letter and a number."
             error={errors.password?.message}
             {...register('password')}
           />

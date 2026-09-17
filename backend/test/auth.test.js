@@ -4,6 +4,7 @@ import { openDatabase, migrate, one } from '../src/db.js';
 import { loadConfig } from '../src/config.js';
 import { buildApp } from '../src/app.js';
 import { deliverSms } from '../src/sms.js';
+import { fixture } from '../test-support/fixture.js';
 
 test('registration, OTP limits, pending gate, session rotation, and password reset', async () => {
   const config = loadConfig({ NODE_ENV: 'test', SMS_MODE: 'test', TOKEN_SECRET: 'test-secret-with-at-least-32-characters' });
@@ -55,5 +56,22 @@ test('registration, OTP limits, pending gate, session rotation, and password res
   } finally {
     await app.close();
     await database.close();
+  }
+});
+
+test('admin sessions expire sooner than student sessions', async () => {
+  const context = await fixture();
+  try {
+    const student = await context.user('student', '01712345671');
+    const admin = await context.user('admin', '01712345672');
+    const studentSession = await one(context.database, "SELECT refresh_expires_at FROM sessions WHERE user_id=$1 AND revoked_at IS NULL", [student.id]);
+    const adminSession = await one(context.database, "SELECT refresh_expires_at FROM sessions WHERE user_id=$1 AND revoked_at IS NULL", [admin.id]);
+    const studentDays = (new Date(studentSession.refresh_expires_at) - Date.now()) / 86400000;
+    const adminDays = (new Date(adminSession.refresh_expires_at) - Date.now()) / 86400000;
+    assert.ok(adminDays < studentDays, `expected admin refresh window (${adminDays}d) to be shorter than student's (${studentDays}d)`);
+    assert.ok(adminDays <= 7.01 && adminDays > 6.9, `expected admin refresh window to be ~7 days, got ${adminDays}`);
+    assert.ok(studentDays <= 30.01 && studentDays > 29.9, `expected student refresh window to be ~30 days, got ${studentDays}`);
+  } finally {
+    await context.close();
   }
 });

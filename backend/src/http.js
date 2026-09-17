@@ -18,7 +18,7 @@ export function ensure(condition, status, code, message) {
 export const uuid = z.string().uuid();
 export const text = z.string().trim().min(1).max(200);
 export const mobile = z.string().regex(/^01[3-9]\d{8}$/, 'Enter a valid Bangladesh mobile number');
-export const password = z.string().min(8).max(128);
+export const password = z.string().min(10).max(128);
 export const pageQuery = z.object({ limit: z.coerce.number().int().min(1).max(100).default(50), offset: z.coerce.number().int().min(0).max(100000).default(0) });
 
 export function installRoutes(app, database, config, contract) {
