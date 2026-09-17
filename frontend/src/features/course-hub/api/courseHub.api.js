@@ -5,7 +5,7 @@ import apiClient from '@/lib/api-client';
  * endpoint requires an active enrolment (admins bypass the check).
  */
 
-/** Video lessons released so far, grouped by release date and time. */
+/** Video lessons released so far, grouped by chapter. */
 export async function fetchCourseVideos(slug) {
   const { data } = await apiClient.get(`/courses/${encodeURIComponent(slug)}/videos`);
   return data;

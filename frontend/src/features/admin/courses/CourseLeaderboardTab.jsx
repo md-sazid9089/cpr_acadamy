@@ -4,11 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdminExams, fetchAdminCourseLeaderboard, fetchAdminExamPositions, updateAdminExamScore } from '../api/admin.api.js';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
-import { Select, Input } from '@/components/ui/Input.jsx';
+import Input, { Select } from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
-import { FaEdit } from 'react-icons/fa6';
+import { FaPenToSquare } from 'react-icons/fa6';
 import { adminExamsKey } from './keys.js';
 
 export default function CourseLeaderboardTab() {
@@ -62,7 +62,7 @@ export default function CourseLeaderboardTab() {
           setEditingMark(row);
           setNewScore(String(row.score));
         }}>
-          <FaEdit aria-hidden="true" className="h-3.5 w-3.5" />
+          <FaPenToSquare aria-hidden="true" className="h-3.5 w-3.5" />
           Edit
         </Button>
       )

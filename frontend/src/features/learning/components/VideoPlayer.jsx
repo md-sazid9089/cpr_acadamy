@@ -1,14 +1,35 @@
 import { useRef, useState } from 'react';
 import Button from '@/components/ui/Button.jsx';
+import YouTubePlayer from './YouTubePlayer.jsx';
+
+/** 'https://youtu.be/ID', '…/watch?v=ID', '…/embed/ID', '…/shorts/ID' -> 'ID', else null. */
+function extractYouTubeId(url) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^(www|m)\./, '');
+    if (host === 'youtu.be') return parsed.pathname.slice(1).split('/')[0] || null;
+    if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+      if (parsed.pathname === '/watch') return parsed.searchParams.get('v');
+      const match = parsed.pathname.match(/^\/(?:embed|shorts)\/([^/?]+)/);
+      if (match) return match[1];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Lecture video surface.
  *
- * Playback is deliberately thin for now: when `src` is absent it renders a
- * placeholder instead of a broken <video>. A watermark with the viewer's
- * identity is overlaid to discourage screen recording, and the context menu is
- * suppressed so the file URL is not one right-click away. Neither is real DRM —
- * TODO: move to a signed-URL HLS stream with token rotation.
+ * A YouTube link (the recommended host for unlisted lectures — see
+ * YouTubePlayer) renders through a hardened embed with YouTube's own chrome
+ * replaced. Any other HTTPS link falls back to a plain <video> tag. When
+ * `src` is absent it renders a placeholder instead of a broken player. A
+ * watermark with the viewer's identity is overlaid to discourage screen
+ * recording, and the context menu is suppressed so the file URL is not one
+ * right-click away. Neither is real DRM — the actual access boundary is
+ * server-side enrollment gating, not the player.
  */
 export default function VideoPlayer({ src, poster, title, watermark, onEnded }) {
   const videoRef = useRef(null);
@@ -25,12 +46,16 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
           </div>
           <p className="mt-4 text-sm font-medium text-white">{title ?? 'Lecture video'}</p>
           <p className="mt-1 text-xs text-stone-400">
-            {/* TODO: stream from the media backend once lectures are uploaded. */}
             Video source not connected yet.
           </p>
         </div>
       </div>
     );
+  }
+
+  const youTubeId = extractYouTubeId(src);
+  if (youTubeId) {
+    return <YouTubePlayer videoId={youTubeId} title={title} watermark={watermark} onEnded={onEnded} onError={() => setError(true)} />;
   }
 
   return (

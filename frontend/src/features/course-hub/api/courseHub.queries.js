@@ -11,7 +11,7 @@ export const courseHubKeys = {
   schedule: (slug) => ['course-hub', 'schedule', slug],
 };
 
-/** Videos for the At a Glance tab, grouped by date. */
+/** Videos for the At a Glance tab, grouped by chapter. */
 export function useCourseVideos(slug) {
   return useQuery({
     queryKey: courseHubKeys.videos(slug),

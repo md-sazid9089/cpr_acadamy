@@ -32,3 +32,40 @@ test('catalog publication, admin permissions, and enrollment-protected lessons',
     assert.equal((await student.request('GET', `/courses/${course.slug}/videos`)).statusCode, 403);
   } finally { await context.close(); }
 });
+
+test('chapters group a course\'s lessons for admins and students', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user();
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'airway-management', title: 'Airway Management', category: 'FCPS', price: 500 })).json();
+    await admin.request('PATCH', `/admin/courses/${course.id}`, { isPublished: true });
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [student.id, course.id]);
+
+    let response = await admin.request('POST', '/admin/chapters', { courseId: course.id, title: 'Basic Airway' });
+    assert.equal(response.statusCode, 200, response.body);
+    const chapter = response.json();
+    assert.equal(chapter.title, 'Basic Airway');
+
+    // A lesson may not point at another course's chapter.
+    const otherCourse = (await admin.request('POST', '/admin/courses', { slug: 'other-course', title: 'Other', category: 'FCPS', price: 100 })).json();
+    const otherChapter = (await admin.request('POST', '/admin/chapters', { courseId: otherCourse.id, title: 'Foreign' })).json();
+    assert.equal((await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Mismatched', scheduledAt: '2025-01-01T00:00:00Z', chapterId: otherChapter.id })).statusCode, 400);
+
+    response = await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Bag-valve-mask', src: 'https://media.example.test/bvm.mp4', scheduledAt: '2025-01-01T00:00:00Z', status: 'published', chapterId: chapter.id });
+    assert.equal(response.statusCode, 200, response.body);
+    await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Unsorted clip', src: 'https://media.example.test/misc.mp4', scheduledAt: '2025-01-02T00:00:00Z', status: 'published' });
+
+    const groups = (await student.request('GET', `/courses/${course.slug}/videos`)).json();
+    assert.equal(groups.length, 2);
+    assert.equal(groups[0].chapterTitle, 'Basic Airway');
+    assert.equal(groups[0].videos[0].title, 'Bag-valve-mask');
+    assert.equal(groups[1].chapterTitle, 'Uncategorized');
+    assert.equal(groups[1].videos[0].title, 'Unsorted clip');
+
+    await admin.request('DELETE', `/admin/chapters/${chapter.id}`);
+    const afterDelete = (await student.request('GET', `/courses/${course.slug}/videos`)).json();
+    assert.equal(afterDelete.length, 1);
+    assert.equal(afterDelete[0].chapterTitle, 'Uncategorized');
+  } finally { await context.close(); }
+});

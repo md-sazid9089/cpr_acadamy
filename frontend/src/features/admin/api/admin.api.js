@@ -208,6 +208,7 @@ function toVideoPayload(video) {
   if (video.status !== undefined) payload.status = video.status;
   if (video.duration !== undefined) payload.durationMinutes = parseDuration(video.duration);
   if (video.scheduledDate && video.scheduledTime) payload.scheduledAt = dhakaInstant(video.scheduledDate, video.scheduledTime);
+  if (video.chapterId !== undefined) payload.chapterId = video.chapterId || null;
   return payload;
 }
 
@@ -231,6 +232,29 @@ export async function updateVideo({ id, ...updates }) {
 
 export async function deleteVideo(id) {
   const { data } = await apiClient.delete(`/admin/videos/${id}`);
+  return data;
+}
+
+// ─── Chapters ──────────────────────────────────────────────────────────────
+
+/** @param {string} courseId */
+export async function fetchAdminChapters(courseId) {
+  const { data } = await apiClient.get('/admin/chapters', { params: { courseId, limit: 100 } });
+  return data;
+}
+
+export async function createChapter({ courseId, title }) {
+  const { data } = await apiClient.post('/admin/chapters', { courseId, title });
+  return data;
+}
+
+export async function updateChapter({ id, title }) {
+  const { data } = await apiClient.patch(`/admin/chapters/${id}`, { title });
+  return data;
+}
+
+export async function deleteChapter(id) {
+  const { data } = await apiClient.delete(`/admin/chapters/${id}`);
   return data;
 }
 

@@ -187,15 +187,9 @@ export default function CoursePlayer() {
     },
   });
 
-  // Flatten the date-grouped playlist so we can find the current lesson and
-  // step to the one before / after it.
-  const lessons = useMemo(
-    () =>
-      videoGroups.flatMap((group) =>
-        group.videos.map((video) => ({ ...video, date: group.date, time: group.time })),
-      ),
-    [videoGroups],
-  );
+  // Flatten the chapter-grouped playlist so we can find the current lesson
+  // and step to the one before / after it.
+  const lessons = useMemo(() => videoGroups.flatMap((group) => group.videos), [videoGroups]);
 
   const currentIndex = lessons.findIndex((lesson) => lesson.id === lessonId);
   const current = currentIndex >= 0 ? lessons[currentIndex] : null;
@@ -250,7 +244,7 @@ export default function CoursePlayer() {
               {current.title}
             </h1>
             <p className="mt-1 text-xs text-stone-500">
-              {formatDateLabel(current.date)} · {current.time}
+              {formatDateLabel(current.scheduledDate)} · {current.scheduledTime}
               {current.duration ? ` · ${current.duration}` : ''}
             </p>
 
@@ -321,9 +315,9 @@ export default function CoursePlayer() {
             <h2 className="mb-3 text-sm font-semibold text-stone-900">Lessons in this batch</h2>
             <div className="space-y-4">
               {videoGroups.map((group) => (
-                <div key={group.date}>
+                <div key={group.chapterId ?? 'uncategorized'}>
                   <p className="mb-2 text-xs font-medium text-stone-400">
-                    {formatDateLabel(group.date)} · {group.time}
+                    {group.chapterTitle}
                   </p>
                   <div className="space-y-1.5">
                     {group.videos.map((video) => {
@@ -355,11 +349,10 @@ export default function CoursePlayer() {
                             >
                               {video.title}
                             </span>
-                            {video.duration && (
-                              <span className="mt-0.5 block text-[11px] text-stone-400">
-                                {video.duration}
-                              </span>
-                            )}
+                            <span className="mt-0.5 block text-[11px] text-stone-400">
+                              {formatDateLabel(video.scheduledDate)}
+                              {video.duration ? ` · ${video.duration}` : ''}
+                            </span>
                           </span>
                         </Link>
                       );

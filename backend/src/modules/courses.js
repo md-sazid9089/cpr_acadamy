@@ -32,6 +32,10 @@ const videoFields = z.object({
   courseId: uuid, title: text, src: z.union([webUrl, z.literal('')]).default(''), notesUrl: z.union([webUrl, z.literal('')]).default(''),
   durationMinutes: z.number().int().min(0).max(1440).default(0), scheduledAt: timestamp,
   status: z.enum(['draft', 'published']).default('draft'), position: z.number().int().min(0).max(100000).default(0),
+  chapterId: uuid.nullable().default(null),
+}).strict();
+const chapterFields = z.object({
+  courseId: uuid, title: text, position: z.number().int().min(0).max(100000).default(0),
 }).strict();
 const scheduleFields = z.object({
   courseId: uuid, scheduledAt: timestamp, exam: text.default('NO EXAM'), solveClass: text.default('NO CLASS'), lecture: text.default('NO CLASS'),
@@ -79,8 +83,13 @@ export async function requireCourseAccess(database, auth, courseId) {
 export function videoDto(row) {
   const date = new Date(row.scheduled_at);
   return { id: row.id, courseId: row.course_id, courseName: row.course_name, title: row.title, src: row.src, videoUrl: row.src, notesUrl: row.notes_url ?? '',
+    chapterId: row.chapter_id ?? null, chapterTitle: row.chapter_title ?? null,
     scheduledAt: row.scheduled_at, scheduledDate: isoDate.format(date), scheduledTime: clock12.format(date), duration: formatMinutes(row.duration_minutes),
     durationMinutes: row.duration_minutes, status: row.status, position: row.position };
+}
+
+export function chapterDto(row) {
+  return { id: row.id, courseId: row.course_id, title: row.title, position: row.position, videoCount: Number(row.video_count || 0) };
 }
 
 export function scheduleDto(row) {
@@ -163,12 +172,14 @@ export function courseRoutes(route, database) {
     const course = await one(database, 'SELECT id FROM courses WHERE slug=$1', [request.params.slug]);
     ensure(course, 404, 'COURSE_NOT_FOUND', 'This course could not be found.');
     await requireCourseAccess(database, request.auth, course.id);
-    const rows = (await database.query("SELECT * FROM lessons WHERE course_id=$1 AND status='published' AND scheduled_at<=now() ORDER BY scheduled_at,position,id", [course.id])).rows;
+    const rows = (await database.query(`SELECT l.*, ch.title AS chapter_title FROM lessons l LEFT JOIN chapters ch ON ch.id=l.chapter_id
+      WHERE l.course_id=$1 AND l.status='published' AND l.scheduled_at<=now()
+      ORDER BY COALESCE(ch.position,999999), l.chapter_id IS NULL, l.position, l.scheduled_at, l.id`, [course.id])).rows;
     const groups = new Map();
     for (const row of rows) {
       const video = videoDto(row);
-      const key = `${video.scheduledDate}:${video.scheduledTime}`;
-      if (!groups.has(key)) groups.set(key, { date: video.scheduledDate, time: video.scheduledTime, videos: [] });
+      const key = video.chapterId ?? 'uncategorized';
+      if (!groups.has(key)) groups.set(key, { chapterId: video.chapterId, chapterTitle: video.chapterTitle ?? 'Uncategorized', videos: [] });
       groups.get(key).videos.push(video);
     }
     return [...groups.values()];
@@ -268,7 +279,8 @@ export function courseRoutes(route, database) {
     const schema = video ? videoFields : scheduleFields;
     const dto = video ? videoDto : scheduleDto;
     route('GET', `/admin/${kind}`, { auth: 'admin', query: pageQuery.extend({ courseId: uuid.optional(), status: z.enum(['draft', 'published', 'ALL']).optional() }) }, async request => {
-      const rows = (await database.query(`SELECT entry.*,c.title AS course_name FROM ${table} entry JOIN courses c ON c.id=entry.course_id
+      const rows = (await database.query(`SELECT entry.*,c.title AS course_name${video ? ',ch.title AS chapter_title' : ''} FROM ${table} entry JOIN courses c ON c.id=entry.course_id
+        ${video ? 'LEFT JOIN chapters ch ON ch.id=entry.chapter_id' : ''}
         WHERE ($1::uuid IS NULL OR entry.course_id=$1) ${video ? "AND ($4::text IS NULL OR $4='ALL' OR entry.status=$4)" : ''}
         ORDER BY entry.scheduled_at,entry.id LIMIT $2 OFFSET $3`, [request.query.courseId || null, request.query.limit, request.query.offset, ...(video ? [request.query.status || null] : [])])).rows;
       return rows.map(dto);
@@ -277,19 +289,20 @@ export function courseRoutes(route, database) {
       return database.transaction(async transaction => {
         const existing = creating ? null : await one(transaction, `SELECT * FROM ${table} WHERE id=$1 FOR UPDATE`, [request.params.id]);
         if (!creating) ensure(existing, 404, 'NOT_FOUND', 'Record not found.');
-        const previous = existing ? video ? { courseId: existing.course_id, title: existing.title, src: existing.src, notesUrl: existing.notes_url, durationMinutes: existing.duration_minutes, scheduledAt: new Date(existing.scheduled_at).toISOString(), status: existing.status, position: existing.position }
+        const previous = existing ? video ? { courseId: existing.course_id, title: existing.title, src: existing.src, notesUrl: existing.notes_url, durationMinutes: existing.duration_minutes, scheduledAt: new Date(existing.scheduled_at).toISOString(), status: existing.status, position: existing.position, chapterId: existing.chapter_id }
           : { courseId: existing.course_id, scheduledAt: new Date(existing.scheduled_at).toISOString(), exam: existing.exam, solveClass: existing.solve_class, lecture: existing.lecture, examId: existing.exam_id, solveClassVideoId: existing.solve_lesson_id, lectureVideoId: existing.lecture_lesson_id } : {};
         const input = schema.parse({ ...previous, ...request.body });
         if (existing) ensure(input.courseId === existing.course_id, 409, 'COURSE_IMMUTABLE', 'Create a new record to move content to a different course.');
         if (video) ensure(input.status !== 'published' || input.src, 400, 'VIDEO_SOURCE_REQUIRED', 'Published lessons require a video URL.');
+        if (video && input.chapterId) ensure(await one(transaction, 'SELECT id FROM chapters WHERE id=$1 AND course_id=$2', [input.chapterId, input.courseId]), 400, 'INVALID_REFERENCE', 'A lesson\'s chapter must belong to the same course.');
         if (!video) {
           // Routine pointers must stay inside the same course so the public routine never names foreign content.
           for (const [table, id] of [['exams', input.examId], ['lessons', input.solveClassVideoId], ['lessons', input.lectureVideoId]]) {
             if (id) ensure(await one(transaction, `SELECT id FROM ${table} WHERE id=$1 AND course_id=$2`, [id, input.courseId]), 400, 'INVALID_REFERENCE', 'Routine rows may only point at this course\'s own exams and videos.');
           }
         }
-        const columns = video ? ['course_id', 'title', 'src', 'notes_url', 'duration_minutes', 'scheduled_at', 'status', 'position'] : ['course_id', 'scheduled_at', 'exam', 'solve_class', 'lecture', 'exam_id', 'solve_lesson_id', 'lecture_lesson_id'];
-        const values = video ? [input.courseId, input.title, input.src, input.notesUrl, input.durationMinutes, input.scheduledAt, input.status, input.position] : [input.courseId, input.scheduledAt, input.exam, input.solveClass, input.lecture, input.examId, input.solveClassVideoId, input.lectureVideoId];
+        const columns = video ? ['course_id', 'title', 'src', 'notes_url', 'duration_minutes', 'scheduled_at', 'status', 'position', 'chapter_id'] : ['course_id', 'scheduled_at', 'exam', 'solve_class', 'lecture', 'exam_id', 'solve_lesson_id', 'lecture_lesson_id'];
+        const values = video ? [input.courseId, input.title, input.src, input.notesUrl, input.durationMinutes, input.scheduledAt, input.status, input.position, input.chapterId] : [input.courseId, input.scheduledAt, input.exam, input.solveClass, input.lecture, input.examId, input.solveClassVideoId, input.lectureVideoId];
         const saved = creating
           ? await one(transaction, `INSERT INTO ${table}(${columns.join(',')}) VALUES (${values.map((value, index) => `$${index + 1}`).join(',')}) RETURNING *`, values)
           : await one(transaction, `UPDATE ${table} SET ${columns.map((column, index) => `${column}=$${index + 1}`).join(',')} WHERE id=$${values.length + 1} RETURNING *`, [...values, existing.id]);
@@ -311,4 +324,38 @@ export function courseRoutes(route, database) {
       return { ok: true };
     }));
   }
+
+  // Chapters group a course's lessons for browsing (e.g. "Airway Management").
+  // They carry no video content themselves — a lesson optionally points at one.
+  route('GET', '/admin/chapters', { auth: 'admin', query: pageQuery.extend({ courseId: uuid.optional() }) }, async request => {
+    const rows = (await database.query(`SELECT ch.*, (SELECT count(*) FROM lessons l WHERE l.chapter_id=ch.id) AS video_count
+      FROM chapters ch WHERE ($1::uuid IS NULL OR ch.course_id=$1) ORDER BY ch.position,ch.id LIMIT $2 OFFSET $3`,
+      [request.query.courseId || null, request.query.limit, request.query.offset])).rows;
+    return rows.map(chapterDto);
+  });
+  async function saveChapter(request, creating) {
+    return database.transaction(async transaction => {
+      const existing = creating ? null : await one(transaction, 'SELECT * FROM chapters WHERE id=$1 FOR UPDATE', [request.params.id]);
+      if (!creating) ensure(existing, 404, 'NOT_FOUND', 'Chapter not found.');
+      // New chapters default to the end of the course's list.
+      const nextPosition = creating ? (await one(transaction, 'SELECT count(*)::int AS count FROM chapters WHERE course_id=$1', [request.body.courseId]))?.count ?? 0 : 0;
+      const previous = existing ? { courseId: existing.course_id, title: existing.title, position: existing.position } : { position: nextPosition };
+      const input = chapterFields.parse({ ...previous, ...request.body });
+      if (existing) ensure(input.courseId === existing.course_id, 409, 'COURSE_IMMUTABLE', 'Create a new chapter to move content to a different course.');
+      const saved = creating
+        ? await one(transaction, 'INSERT INTO chapters(course_id,title,position) VALUES ($1,$2,$3) RETURNING *', [input.courseId, input.title, input.position])
+        : await one(transaction, 'UPDATE chapters SET title=$1,position=$2 WHERE id=$3 RETURNING *', [input.title, input.position, existing.id]);
+      await audit(transaction, request.auth.user_id, `chapters.${creating ? 'created' : 'updated'}`, saved.id);
+      return chapterDto(saved);
+    });
+  }
+  route('POST', '/admin/chapters', { auth: 'admin', body: chapterFields }, request => saveChapter(request, true));
+  route('PATCH', '/admin/chapters/:id', { auth: 'admin', body: chapterFields.partial() }, request => saveChapter(request, false));
+  route('DELETE', '/admin/chapters/:id', { auth: 'admin' }, async request => database.transaction(async transaction => {
+    // Lessons in the chapter are kept; they just fall back to "Uncategorized" (chapter_id is ON DELETE SET NULL).
+    const removed = await one(transaction, 'DELETE FROM chapters WHERE id=$1 RETURNING id', [request.params.id]);
+    ensure(removed, 404, 'NOT_FOUND', 'Chapter not found.');
+    await audit(transaction, request.auth.user_id, 'chapters.removed', removed.id);
+    return { ok: true };
+  }));
 }

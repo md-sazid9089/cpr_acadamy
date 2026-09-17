@@ -17,9 +17,9 @@ function formatDateLabel(dateStr) {
 }
 
 /**
- * At a Glance tab — shows video lessons grouped by release date with Play
- * buttons, matching the reference UI. Each date group shows a blue header
- * strip with date and time, followed by video cards with red Play buttons.
+ * At a Glance tab — shows video lessons grouped by chapter with Play
+ * buttons, matching the reference UI. Each chapter group shows a header
+ * strip with the chapter title, followed by video cards with Play buttons.
  */
 export default function AtAGlanceTab({ courseSlug }) {
   const navigate = useNavigate();
@@ -45,15 +45,17 @@ export default function AtAGlanceTab({ courseSlug }) {
     <div className="space-y-4">
       {videoGroups.map((group) => (
         <div
-          key={group.date}
+          key={group.chapterId ?? 'uncategorized'}
           className="overflow-hidden rounded-xl border border-stone-200 bg-white dark:border-stone-200 dark:bg-surface-dark"
         >
-          {/* ── Date header strip ── */}
+          {/* ── Chapter header strip ── */}
           <div className="flex items-center justify-between border-b border-stone-200 bg-stone-50/80 px-4 py-3 dark:border-stone-200 dark:bg-surface-dark">
             <span className="text-xs font-semibold text-stone-900 sm:text-sm dark:text-white">
-              {formatDateLabel(group.date)}
+              {group.chapterTitle}
             </span>
-            <span className="text-xs font-medium text-brand-600 sm:text-sm dark:text-brand-400">{group.time}</span>
+            <span className="text-xs font-medium text-brand-600 sm:text-sm dark:text-brand-400">
+              {group.videos.length} {group.videos.length === 1 ? 'lecture' : 'lectures'}
+            </span>
           </div>
 
           {/* ── Video entries ── */}
@@ -78,11 +80,10 @@ export default function AtAGlanceTab({ courseSlug }) {
                   <p className="text-xs font-semibold leading-relaxed text-stone-800 sm:text-sm dark:text-brand-200">
                     {video.title}
                   </p>
-                  {video.duration && (
-                    <p className="mt-0.5 text-[11px] text-stone-500 dark:text-brand-200">
-                      Duration: {video.duration}
-                    </p>
-                  )}
+                  <p className="mt-0.5 text-[11px] text-stone-500 dark:text-brand-200">
+                    {formatDateLabel(video.scheduledDate)} · {video.scheduledTime}
+                    {video.duration ? ` · ${video.duration}` : ''}
+                  </p>
                 </div>
               </div>
             ))}
