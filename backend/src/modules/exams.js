@@ -94,7 +94,7 @@ function examDto(row) {
 }
 
 function publicPaper(attempt, exam) {
-  return { ...examDto(exam), endsAt: attempt.ends_at, answers: attempt.answers,
+  return { ...examDto(exam), endsAt: attempt.ends_at, answers: attempt.answers, version: attempt.version,
     durationMinutes: attempt.paper.durationMinutes, negativeMarking: attempt.paper.negativeMarking, passMark: attempt.paper.passMark,
     totalMarks: totalMarks(attempt.paper.questions),
     questions: attempt.paper.questions.map(question => ({ id: question.id, type: question.type, stem: question.stem, imageUrl: question.imageUrl ?? '', options: question.options, marks: question.marks })) };
@@ -182,7 +182,7 @@ export function examRoutes(route, database) {
     ensure(attempt, 409, 'ATTEMPT_REQUIRED', 'Start the exam before requesting the paper.');
     return publicPaper(attempt, exam);
   }));
-  route('POST', '/exams/:id/answers', { auth: 'active', body: z.object({ questionId: identifier, answer }).strict() }, async request => {
+  route('POST', '/exams/:id/answers', { auth: 'active', body: z.object({ questionId: identifier, answer, version: z.number().int().min(0) }).strict() }, async request => {
     const result = await database.transaction(async transaction => {
       const exam = await loadExam(transaction, request);
       const attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE', [request.auth.user_id, exam.id]);
@@ -191,16 +191,18 @@ export function examRoutes(route, database) {
       if (new Date(attempt.ends_at).getTime() <= Date.now()) { await finalize(transaction, attempt); return false; }
       const update = { [request.body.questionId]: request.body.answer };
       validateAnswers(attempt.paper.questions, update);
-      await transaction.query('UPDATE exam_attempts SET answers=answers || $2::jsonb WHERE id=$1', [attempt.id, JSON.stringify(update)]);
-      return true;
+      const saved = await one(transaction, 'UPDATE exam_attempts SET answers=answers || $2::jsonb,version=version+1 WHERE id=$1 AND version=$3 RETURNING version', [attempt.id, JSON.stringify(update), request.body.version]);
+      ensure(saved, 409, 'ATTEMPT_VERSION_CONFLICT', 'This exam was updated in another tab. Reload the latest answers before saving.');
+      return saved.version;
     });
     ensure(result, 409, 'EXAM_DEADLINE_PASSED', 'The deadline has passed. Saved answers were submitted.');
-    return { ok: true };
+    return { ok: true, version: result };
   });
-  route('POST', '/exams/:id/submit', { auth: 'active', body: z.object({ answers: answerSheet.default({}) }).strict() }, async request => database.transaction(async transaction => {
+  route('POST', '/exams/:id/submit', { auth: 'active', body: z.object({ answers: answerSheet.default({}), version: z.number().int().min(0) }).strict() }, async request => database.transaction(async transaction => {
     const exam = await loadExam(transaction, request);
     let attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE', [request.auth.user_id, exam.id]);
     ensure(attempt, 409, 'ATTEMPT_REQUIRED', 'Start the exam before submitting.');
+    ensure(attempt.submitted_at || attempt.version === request.body.version, 409, 'ATTEMPT_VERSION_CONFLICT', 'This exam was updated in another tab. Reload the latest answers before submitting.');
     if (!attempt.submitted_at && new Date(attempt.ends_at).getTime() > Date.now()) {
       validateAnswers(attempt.paper.questions, request.body.answers);
       attempt = await one(transaction, 'UPDATE exam_attempts SET answers=answers || $2::jsonb WHERE id=$1 RETURNING *', [attempt.id, JSON.stringify(request.body.answers)]);

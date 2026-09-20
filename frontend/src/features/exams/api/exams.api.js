@@ -15,14 +15,14 @@ export async function fetchExamPaper(examId) {
 }
 
 /** Autosave a single answer. Fire-and-forget from the UI. */
-export async function saveAnswer({ examId, questionId, answer }) {
-  const { data } = await apiClient.post(`/exams/${examId}/answers`, { questionId, answer });
+export async function saveAnswer({ examId, questionId, answer, version }) {
+  const { data } = await apiClient.post(`/exams/${examId}/answers`, { questionId, answer, version });
   return data;
 }
 
-/** @param {{ examId: string, answers: import('@/types').AnswerSheet }} payload */
-export async function submitExam({ examId, answers }) {
-  const { data } = await apiClient.post(`/exams/${examId}/submit`, { answers });
+/** @param {{ examId: string, answers: import('@/types').AnswerSheet, version: number }} payload */
+export async function submitExam({ examId, answers, version }) {
+  const { data } = await apiClient.post(`/exams/${examId}/submit`, { answers, version });
   return data;
 }
 
