@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchCourseVideos,
   fetchCourseExams,
   fetchCourseSchedule,
   fetchLessonContentUrl,
+  fetchLessonNote,
+  saveLessonNote,
 } from './courseHub.api.js';
 
 export const courseHubKeys = {
@@ -11,6 +13,7 @@ export const courseHubKeys = {
   exams: (slug) => ['course-hub', 'exams', slug],
   schedule: (slug) => ['course-hub', 'schedule', slug],
   contentUrl: (lessonId, kind) => ['course-hub', 'content-url', lessonId, kind],
+  note: (lessonId) => ['course-hub', 'note', lessonId],
 };
 
 /** Videos for the At a Glance tab, grouped by chapter. */
@@ -54,5 +57,22 @@ export function useLessonContentUrl(lessonId, kind, enabled = true) {
     enabled: Boolean(lessonId) && enabled,
     staleTime: 0,
     retry: false,
+  });
+}
+
+/** The signed-in student's personal note for a lesson — the database is the source of truth. */
+export function useLessonNote(lessonId) {
+  return useQuery({
+    queryKey: courseHubKeys.note(lessonId),
+    queryFn: () => fetchLessonNote(lessonId),
+    enabled: Boolean(lessonId),
+  });
+}
+
+export function useSaveLessonNote(lessonId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (content) => saveLessonNote(lessonId, content),
+    onSuccess: (saved) => queryClient.setQueryData(courseHubKeys.note(lessonId), saved),
   });
 }
