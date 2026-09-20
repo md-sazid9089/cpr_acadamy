@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button.jsx';
  * Course Hub, reusing the same table structure as CourseSchedule.jsx.
  */
 export default function ScheduleTab({ courseSlug }) {
-  const { data: schedule = [], isLoading, isError, error, refetch } = useCourseSchedule(courseSlug);
+  const { data: schedule = [], isLoading, isError, error, isFetching, refetch } = useCourseSchedule(courseSlug);
 
   if (isLoading) {
     return (
@@ -17,11 +17,11 @@ export default function ScheduleTab({ courseSlug }) {
 
   if (isError) {
     return (
-      <div className="py-16 text-center">
+      <div role="alert" className="py-16 text-center">
         <p className="text-sm font-semibold text-stone-500 dark:text-brand-200">
           {error?.message || "Couldn't load the schedule. Please try again."}
         </p>
-        <Button size="sm" variant="outline" className="mt-4" onClick={() => refetch()}>
+        <Button size="sm" variant="outline" className="mt-4" onClick={() => refetch()} isLoading={isFetching}>
           Retry
         </Button>
       </div>

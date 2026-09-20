@@ -182,7 +182,7 @@ export default function CoursePlayer() {
   const { user } = useAuth();
   const [activeTool, setActiveTool] = useState('notes');
 
-  const { data: videoGroups = [], isLoading, isError, error, refetch } = useCourseVideos(courseSlug);
+  const { data: videoGroups = [], isLoading, isError, error, isFetching, refetch } = useCourseVideos(courseSlug);
   const { data: courses = [] } = useMyCourses();
   const course = courses.find((c) => c.slug === courseSlug);
   const queryClient = useQueryClient();
@@ -221,11 +221,11 @@ export default function CoursePlayer() {
 
   if (isError) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-stone-50 px-6 text-center">
+      <div role="alert" className="flex min-h-screen flex-col items-center justify-center gap-4 bg-stone-50 px-6 text-center">
         <p className="text-lg font-semibold text-stone-900">Couldn't load this lecture.</p>
         <p className="text-sm text-stone-500">{error?.message || 'Something went wrong. Please try again.'}</p>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => refetch()}>Retry</Button>
+          <Button variant="outline" onClick={() => refetch()} isLoading={isFetching}>Retry</Button>
           <Button to={`/dashboard/course/${courseSlug}`}>Back to course</Button>
         </div>
       </div>

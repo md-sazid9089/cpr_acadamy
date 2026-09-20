@@ -13,7 +13,7 @@ export default function LeaderboardTab({ courseSlug }) {
     queryFn: () => fetchCourseExams(courseSlug),
   });
 
-  const { data: leaderboard, isLoading, isError, error, refetch } = useQuery({
+  const { data: leaderboard, isLoading, isError, error, isFetching, refetch } = useQuery({
     queryKey: ['student', 'leaderboard', courseSlug, selectedExamId],
     queryFn: () => selectedExamId ? fetchExamPositions(selectedExamId) : fetchCourseLeaderboard(courseSlug),
   });
@@ -68,6 +68,7 @@ export default function LeaderboardTab({ courseSlug }) {
             getRowId={(row) => row.userId}
             isError={isError}
             error={error}
+            isFetching={isFetching}
             onRetry={refetch}
             emptyTitle="No submissions found."
           />

@@ -67,10 +67,12 @@ export default function AdminStudentDetail() {
   if (studentQuery.isError) {
     return (
       <EmptyState
+        variant="error"
         className="min-h-screen"
         title="Couldn't load this student"
         description={studentQuery.error?.message || 'Something went wrong. Please try again.'}
-        action={<Button variant="outline" onClick={() => studentQuery.refetch()}>Retry</Button>}
+        onRetry={studentQuery.refetch}
+        isFetching={studentQuery.isFetching}
       />
     );
   }
@@ -182,6 +184,7 @@ export default function AdminStudentDetail() {
           isLoading={paymentsQuery.isLoading}
           isError={paymentsQuery.isError}
           error={paymentsQuery.error}
+          isFetching={paymentsQuery.isFetching}
           onRetry={paymentsQuery.refetch}
           emptyTitle="No payments"
           emptyDescription="Nothing has been paid or invoiced for this account."

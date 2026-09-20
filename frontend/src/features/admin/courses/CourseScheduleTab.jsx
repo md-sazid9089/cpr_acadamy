@@ -57,6 +57,7 @@ export default function CourseScheduleTab() {
   const isLoading = scheduleQuery.isLoading || videosQuery.isLoading || examsQuery.isLoading;
   const isError = scheduleQuery.isError || videosQuery.isError || examsQuery.isError;
   const error = scheduleQuery.error ?? videosQuery.error ?? examsQuery.error;
+  const isFetching = scheduleQuery.isFetching || videosQuery.isFetching || examsQuery.isFetching;
   const retry = () => { scheduleQuery.refetch(); videosQuery.refetch(); examsQuery.refetch(); };
 
   const videoTitle = (id) => videos.find((video) => video.id === id)?.title ?? null;
@@ -173,6 +174,7 @@ export default function CourseScheduleTab() {
             isLoading={isLoading}
             isError={isError}
             error={error}
+            isFetching={isFetching}
             onRetry={retry}
             emptyTitle="No routine rows yet"
             emptyDescription="Add the first date. You can leave any cell as “No exam” or “No class”."

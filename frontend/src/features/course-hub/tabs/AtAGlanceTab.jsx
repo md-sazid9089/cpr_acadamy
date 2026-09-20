@@ -24,7 +24,7 @@ function formatDateLabel(dateStr) {
  */
 export default function AtAGlanceTab({ courseSlug }) {
   const navigate = useNavigate();
-  const { data: videoGroups = [], isLoading, isError, error, refetch } = useCourseVideos(courseSlug);
+  const { data: videoGroups = [], isLoading, isError, error, isFetching, refetch } = useCourseVideos(courseSlug);
 
   if (isLoading) {
     return (
@@ -34,11 +34,11 @@ export default function AtAGlanceTab({ courseSlug }) {
 
   if (isError) {
     return (
-      <div className="py-16 text-center">
+      <div role="alert" className="py-16 text-center">
         <p className="text-sm font-semibold text-stone-500 dark:text-brand-200">
           {error?.message || "Couldn't load videos. Please try again."}
         </p>
-        <Button size="sm" variant="outline" className="mt-4" onClick={() => refetch()}>
+        <Button size="sm" variant="outline" className="mt-4" onClick={() => refetch()} isLoading={isFetching}>
           Retry
         </Button>
       </div>

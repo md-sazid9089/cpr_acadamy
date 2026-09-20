@@ -173,7 +173,7 @@ export default function AdminRevenue() {
   const [filter, setFilter] = useState(PAYMENT_STATUS.PENDING);
   const [reconciling, setReconciling] = useState(null);
   const queryClient = useQueryClient();
-  const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ['admin', 'revenue'], queryFn: fetchAdminRevenue });
+  const { data, isLoading, isError, error, isFetching, refetch } = useQuery({ queryKey: ['admin', 'revenue'], queryFn: fetchAdminRevenue });
 
   const finishReconcile = () => {
     setReconciling(null);
@@ -189,9 +189,11 @@ export default function AdminRevenue() {
   if (isError || !data) {
     return (
       <EmptyState
+        variant="error"
         title="Couldn't load revenue"
         description={error?.message || 'Something went wrong. Please try again.'}
-        action={<Button variant="outline" onClick={() => refetch()}>Retry</Button>}
+        onRetry={refetch}
+        isFetching={isFetching}
       />
     );
   }

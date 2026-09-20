@@ -36,7 +36,7 @@ export default function CourseExamsTab() {
   const [deleting, setDeleting] = useState(null);
   const [form, setForm] = useState({ title: '', type: QUESTION_TYPES.SBA });
 
-  const { data: exams = [], isLoading, isError, error, refetch } = useQuery({
+  const { data: exams = [], isLoading, isError, error, isFetching, refetch } = useQuery({
     queryKey: adminExamsKey(course.id),
     queryFn: () => fetchAdminExams({ courseId: course.id }),
   });
@@ -188,6 +188,7 @@ export default function CourseExamsTab() {
             isLoading={isLoading}
             isError={isError}
             error={error}
+            isFetching={isFetching}
             onRetry={refetch}
             onRowClick={(row) => navigate(`/admin/courses/${course.id}/exams/${row.id}`)}
             emptyTitle="No exams yet"

@@ -12,7 +12,7 @@ const TYPE_LABELS = { live: 'Live exam', mock: 'Mock exam', practice: 'Practice 
 
 /** All exams for the student's enrolled courses. */
 export default function ExamList() {
-  const { data: exams = [], isLoading, isError, error, refetch } = useQuery({
+  const { data: exams = [], isLoading, isError, error, isFetching, refetch } = useQuery({
     queryKey: ['exams', 'list'],
     queryFn: fetchExamList,
   });
@@ -26,9 +26,11 @@ export default function ExamList() {
   if (isError) {
     return (
       <EmptyState
+        variant="error"
         title="Couldn't load exams"
         description={error?.message || 'Something went wrong. Please try again.'}
-        action={<Button variant="outline" onClick={() => refetch()}>Retry</Button>}
+        onRetry={refetch}
+        isFetching={isFetching}
       />
     );
   }

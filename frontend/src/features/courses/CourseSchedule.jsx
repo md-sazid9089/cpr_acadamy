@@ -11,7 +11,7 @@ import { CONTACT, CATEGORY_SLUGS } from '@/constants';
 export default function CourseSchedule() {
   const { slug } = useParams();
   const { data: course, isLoading, isError } = useCourse(slug);
-  const { data: routine = [], isLoading: routineLoading, isError: routineIsError, error: routineError, refetch: refetchRoutine } = useCourseSchedule(course?.slug);
+  const { data: routine = [], isLoading: routineLoading, isError: routineIsError, error: routineError, isFetching: routineIsFetching, refetch: refetchRoutine } = useCourseSchedule(course?.slug);
   const onEnroll = useEnrollAction();
 
   if (!slug || isError || (!isLoading && !course)) {
@@ -123,10 +123,16 @@ export default function CourseSchedule() {
               <tbody className="divide-y divide-stone-200 text-stone-800 dark:divide-stone-200 dark:text-brand-200">
                 {routineIsError && (
                   <tr>
-                    <td colSpan={4} className="py-10 text-center text-sm text-stone-500 dark:text-brand-200">
+                    <td role="alert" colSpan={4} className="py-10 text-center text-sm text-stone-500 dark:text-brand-200">
                       {routineError?.message || "Couldn't load the routine."}{' '}
-                      <button type="button" onClick={() => refetchRoutine()} className="font-semibold text-brand-600 hover:underline dark:text-brand-400">
-                        Retry
+                      <button
+                        type="button"
+                        onClick={() => refetchRoutine()}
+                        disabled={routineIsFetching}
+                        aria-busy={routineIsFetching}
+                        className="font-semibold text-brand-600 hover:underline disabled:opacity-50 disabled:no-underline dark:text-brand-400"
+                      >
+                        {routineIsFetching ? 'Retrying…' : 'Retry'}
                       </button>
                     </td>
                   </tr>

@@ -1,7 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Skeleton } from './Skeleton.jsx';
 import EmptyState from './EmptyState.jsx';
-import Button from './Button.jsx';
 
 /**
  * Column-driven table used by dashboard and admin lists.
@@ -16,6 +15,7 @@ export default function Table({
   isLoading = false,
   isError = false,
   error,
+  isFetching = false,
   onRetry,
   emptyTitle = 'Nothing here yet',
   emptyDescription,
@@ -28,9 +28,11 @@ export default function Table({
   if (!isLoading && isError) {
     return (
       <EmptyState
+        variant="error"
         title="Couldn't load this data"
         description={error?.message || 'Something went wrong. Please try again.'}
-        action={onRetry && <Button variant="outline" onClick={onRetry}>Retry</Button>}
+        onRetry={onRetry}
+        isFetching={isFetching}
       />
     );
   }
