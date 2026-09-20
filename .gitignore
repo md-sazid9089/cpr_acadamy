@@ -1,1 +1,8 @@
 .local/
+
+# Claude Code: settings.json is shared; settings.local.json is per-developer.
+.claude/settings.local.json
+
+# OS noise
+.DS_Store
+Thumbs.db

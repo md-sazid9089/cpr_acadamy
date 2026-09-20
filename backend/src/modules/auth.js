@@ -9,7 +9,7 @@ const otpInput = z.object({ mobile, otp: z.string().regex(/^\d{6}$/) });
 const registration = z.object({
   mobile, password, fullName: text.min(2).max(100), institution: text.max(120),
   bmdcNumber: z.string().trim().max(30).optional(), email: z.union([z.string().email().max(254), z.literal('')]).optional(),
-  interest: z.enum(['FCPS', 'BCS', 'MBBS']), acceptTerms: z.literal(true),
+  interest: z.enum(['FCPS', 'BCS', 'MBBS', 'OTHER']), acceptTerms: z.literal(true),
   confirmPassword: z.string().optional(),
 }).strict().refine(data => data.confirmPassword === undefined || data.password === data.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' });
 
@@ -51,9 +51,27 @@ export function authRoutes(route, database, config) {
   }
 
   route('POST', '/auth/register', { body: registration, rateLimit: { max: 5, timeWindow: '15 minutes' } }, async request => {
+    const data = request.body;
+
+    // Temporary: OTP verification is disabled, so new accounts skip straight to
+    // 'awaiting_approval' (as if the mobile were already verified) and are logged
+    // in immediately. Set SKIP_PHONE_VERIFICATION=false to restore the OTP step.
+    if (config.skipPhoneVerification) {
+      await throttle(database, config, 'register', request.ip, 5);
+      const deviceId = device(request);
+      const hash = await hashPassword(data.password);
+      const session = await database.transaction(async transaction => {
+        const user = await one(transaction, `INSERT INTO users(mobile,full_name,password_hash,institution,bmdc_number,email,interest,status,mobile_verified_at)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,'awaiting_approval',now()) ON CONFLICT(mobile) DO NOTHING RETURNING *`,
+        [data.mobile, data.fullName, hash, data.institution, data.bmdcNumber || '', data.email || null, data.interest]);
+        return user ? issueSession(transaction, user, deviceId) : null;
+      });
+      // No user created (duplicate mobile): stay non-committal rather than leak that it exists.
+      return session ? { ok: true, ...session } : { ok: true, mobile: data.mobile };
+    }
+
     requireSms(config);
     await throttle(database, config, 'register', request.ip, 5);
-    const data = request.body;
     const hash = await hashPassword(data.password);
     await database.transaction(async transaction => {
       const user = await one(transaction, `INSERT INTO users(mobile,full_name,password_hash,institution,bmdc_number,email,interest)

@@ -13,16 +13,18 @@ function question(type, index) {
 const questions = Array.from({ length: 50 }, (_, index) => question(index < 30 ? 'mtf' : 'sba', index));
 const policy = { isPublished: true, questionType: 'mixed', questions, targetQuestionCount: 50, negativeMarking: 0, passMark: 70 };
 
+const bounds = { negativeMarkingMin: 0, negativeMarkingMax: 10, passMarkMin: 65, passMarkMax: 100 };
+
 test('mixed policy enforces count, blocks, stem count, marks and pass threshold', () => {
-  assert.doesNotThrow(() => validatePublication(policy));
+  assert.doesNotThrow(() => validatePublication(policy, bounds));
   for (const invalid of [
     { questions: questions.slice(1) }, { targetQuestionCount: 49 },
     { questions: [...questions].reverse() },
     { questions: [{ ...questions[0], options: questions[0].options.slice(1) }, ...questions.slice(1)] },
     { questions: [{ ...questions[0], marks: 1 }, ...questions.slice(1)] },
     { negativeMarking: 25 }, { passMark: 60 },
-  ]) assert.throws(() => validatePublication({ ...policy, ...invalid }));
-  assert.doesNotThrow(() => validatePublication({ ...policy, questions: [], isPublished: false }));
+  ]) assert.throws(() => validatePublication({ ...policy, ...invalid }, bounds));
+  assert.doesNotThrow(() => validatePublication({ ...policy, questions: [], isPublished: false }, bounds));
 });
 
 test('server grading uses percentage points, partial credit and exact pass boundary', () => {
@@ -49,7 +51,7 @@ test('API persists and snapshots zero deduction and 70 percent pass policy', asy
     const started = (await admin.request('POST', `/exams/${exam.id}/start`)).json();
     assert.equal(started.passMark, 70);
     assert.equal(started.negativeMarking, 0);
-    const result = (await admin.request('POST', `/exams/${exam.id}/submit`, { answers: {} })).json();
+    const result = (await admin.request('POST', `/exams/${exam.id}/submit`, { answers: {}, version: 0 })).json();
     assert.equal(result.passed, false);
     assert.equal(result.passMark, 70);
   } finally { await context.close(); }

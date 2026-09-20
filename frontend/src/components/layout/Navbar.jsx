@@ -190,8 +190,8 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className={cn('sticky top-0 z-40 border-b border-transparent', isStudent && (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) ? 'bg-white dark:bg-stone-900' : 'bg-transparent')}>
-      {/* h-20 so the round logo (h-16) has breathing room. PublicLayout's
+    <header className="sticky top-0 z-40 border-b border-transparent bg-white dark:bg-stone-900">
+      {/* h-20 so the logo (h-[4.5rem]) has breathing room. PublicLayout's
           overlay offset and the Hero's top padding both track this height. */}
       <nav className="container-page flex h-20 items-center justify-between gap-4" aria-label="Main">
         <Logo />

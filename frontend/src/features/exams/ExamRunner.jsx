@@ -187,7 +187,7 @@ export default function ExamRunner() {
           />
         </Card>
 
-        {otherTabOpen && <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">This exam is also open in another tab. Use one tab only to avoid answer conflicts.</p>}
+        {otherTabOpen && <p role="alert" className="rounded-lg border border-brand-300 bg-brand-50 p-3 text-sm text-brand-900">This exam is also open in another tab. Use one tab only to avoid answer conflicts.</p>}
         {versionConflict && <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">Answers were changed from another tab, so this tab did not overwrite them. <Button size="sm" variant="outline" onClick={reloadLatestAttempt} className="ml-3">Reload latest answers</Button></div>}
 
         <div role="status" aria-live="polite" className={saveStatus === 'error' ? 'text-sm text-red-700' : 'text-sm text-stone-600 dark:text-brand-200'}>
@@ -294,7 +294,7 @@ export default function ExamRunner() {
                     questionIndex === index && 'ring-2 ring-brand-600 ring-offset-2',
                     flagged.has(question.id) && 'underline decoration-2 underline-offset-4',
                     state === 'partial'
-                      ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
+                      ? 'bg-accent-100 text-accent-900 dark:bg-accent-950 dark:text-accent-100'
                       : state === 'answered'
                           ? 'bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300'
                           : 'bg-stone-100 text-stone-500 dark:bg-surface-dark dark:text-brand-200',

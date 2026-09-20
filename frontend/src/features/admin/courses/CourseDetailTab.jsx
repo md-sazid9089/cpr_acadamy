@@ -47,6 +47,10 @@ function toForm(course) {
     classStart: course.classTime?.start ?? '',
     classEnd: course.classTime?.end ?? '',
     classDays: course.classDays ? [...course.classDays] : [],
+    mixedNegativeMarkingMin: course.mixedNegativeMarkingMin ?? 0,
+    mixedNegativeMarkingMax: course.mixedNegativeMarkingMax ?? 1000,
+    mixedPassMarkMin: course.mixedPassMarkMin ?? 0,
+    mixedPassMarkMax: course.mixedPassMarkMax ?? 100,
   };
 }
 
@@ -73,6 +77,10 @@ function toPayload(form) {
     lessonCount: Number(form.lessonCount) || 0,
     classTime: { start: form.classStart, end: form.classEnd },
     classDays: form.classDays,
+    mixedNegativeMarkingMin: Number(form.mixedNegativeMarkingMin) || 0,
+    mixedNegativeMarkingMax: Number(form.mixedNegativeMarkingMax) || 0,
+    mixedPassMarkMin: Number(form.mixedPassMarkMin) || 0,
+    mixedPassMarkMax: Number(form.mixedPassMarkMax) || 0,
   };
 }
 
@@ -295,6 +303,63 @@ export default function CourseDetailTab() {
               </>
             )}
             .
+          </p>
+        </CardBody>
+      </Card>
+
+      {/* ── Mixed exam policy ── */}
+      <Card>
+        <CardHeader
+          title="Mixed exam policy"
+          description="Allowed range for deduction and pass mark when publishing a mixed (MTF + SBA) exam under this course."
+        />
+        <CardBody className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Minimum deduction (%)"
+              type="number"
+              required
+              min={0}
+              max={1000}
+              step={0.001}
+              value={form.mixedNegativeMarkingMin}
+              onChange={set('mixedNegativeMarkingMin')}
+            />
+            <Input
+              label="Maximum deduction (%)"
+              type="number"
+              required
+              min={0}
+              max={1000}
+              step={0.001}
+              value={form.mixedNegativeMarkingMax}
+              onChange={set('mixedNegativeMarkingMax')}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Minimum pass mark (%)"
+              type="number"
+              required
+              min={0}
+              max={100}
+              step={0.001}
+              value={form.mixedPassMarkMin}
+              onChange={set('mixedPassMarkMin')}
+            />
+            <Input
+              label="Maximum pass mark (%)"
+              type="number"
+              required
+              min={0}
+              max={100}
+              step={0.001}
+              value={form.mixedPassMarkMax}
+              onChange={set('mixedPassMarkMax')}
+            />
+          </div>
+          <p className="text-xs text-stone-500 dark:text-brand-200">
+            A mixed exam under this course can only be published if its deduction and pass mark fall within these ranges.
           </p>
         </CardBody>
       </Card>
