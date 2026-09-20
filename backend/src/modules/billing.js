@@ -91,6 +91,8 @@ export function billingRoutes(route, database) {
     ensure(payment, 404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
     ensure(payment.method === 'manual', 409, 'GATEWAY_CONFIRMATION_REQUIRED', 'Gateway payments require provider verification.');
     ensure(payment.amount_minor === Math.round(request.body.amount * 100), 409, 'AMOUNT_MISMATCH', 'The verified amount must match the invoice.');
+    const matchingTransaction = await one(transaction, 'SELECT id FROM payments WHERE transaction_id=$1 AND id<>$2', [request.body.transactionId, payment.id]);
+    ensure(!matchingTransaction, 409, 'DUPLICATE_TRANSACTION_ID', 'This transaction ID is already linked to another payment.');
     if (payment.status === 'paid') {
       ensure(payment.transaction_id === request.body.transactionId, 409, 'PAYMENT_ALREADY_CONFIRMED', 'This payment has already been reconciled.');
       return paymentDto(payment);

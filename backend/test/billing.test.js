@@ -25,6 +25,11 @@ test('billing ignores client prices, isolates invoices, and activates access exa
     response = await admin.request('POST', `/admin/payments/${payment.id}/confirm`, confirmation);
     assert.equal(response.statusCode, 200, response.body);
     assert.equal(response.json().status, 'paid');
+    const duplicate = (await other.request('POST', '/payments/initiate', input, { 'idempotency-key': 'purchase-key-two' })).json();
+    const duplicateResult = await admin.request('POST', `/admin/payments/${duplicate.id}/confirm`, confirmation);
+    assert.equal(duplicateResult.statusCode, 409);
+    assert.equal(duplicateResult.json().code, 'DUPLICATE_TRANSACTION_ID');
+    assert.match(duplicateResult.json().message, /already linked/i);
     const before = await one(context.database, 'SELECT * FROM enrollments WHERE user_id=$1', [student.id]);
     response = await admin.request('POST', `/admin/payments/${payment.id}/confirm`, confirmation);
     assert.equal(response.statusCode, 200);
