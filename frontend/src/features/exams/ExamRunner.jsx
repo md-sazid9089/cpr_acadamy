@@ -98,9 +98,12 @@ export default function ExamRunner() {
       await queue.current?.flush();
       return submitExam({ ...payload, version: versionRef.current });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queue.current?.dispose();
-      navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+      navigate(`/dashboard/exams/${examId}/result`, {
+        replace: true,
+        state: data.lateSubmission ? { lateSubmission: true } : undefined,
+      });
     },
     onError: (failure) => {
       if (failure.code === 'ALREADY_SUBMITTED') navigate(`/dashboard/exams/${examId}/result`, { replace: true });

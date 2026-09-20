@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hashPassword, verifyPassword, newToken, digestToken, publicUser } from '../src/security.js';
+import { hashPassword, verifyPassword, newToken, digestToken, publicUser, signContentToken, verifyContentToken } from '../src/security.js';
 
 test('password hashes are salted and reject incorrect passwords', async () => {
   const password = 'correct horse battery staple';
@@ -23,4 +23,20 @@ test('public users never expose authentication fields', () => {
   const user = publicUser({ id: 'user', password_hash: 'secret', role: 'student' });
   assert.equal(user.id, 'user');
   assert.equal('password_hash' in user, false);
+});
+
+test('content tokens are self-verifying, tamper-evident, and expire', () => {
+  const token = signContentToken({ lessonId: 'lesson-1', kind: 'video' }, 'secret', 60);
+  const payload = verifyContentToken(token, 'secret');
+  assert.equal(payload.lessonId, 'lesson-1');
+  assert.equal(payload.kind, 'video');
+
+  assert.equal(verifyContentToken(token, 'wrong-secret'), null);
+  const [body, signature] = token.split('.');
+  assert.equal(verifyContentToken(`${body}.${signature.slice(0, -1)}x`, 'secret'), null);
+  assert.equal(verifyContentToken(`${body}x.${signature}`, 'secret'), null);
+  assert.equal(verifyContentToken('not-a-token', 'secret'), null);
+
+  const expired = signContentToken({ lessonId: 'lesson-1', kind: 'video' }, 'secret', -1);
+  assert.equal(verifyContentToken(expired, 'secret'), null);
 });
