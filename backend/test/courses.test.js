@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fixture } from '../test-support/fixture.js';
+import { signContentToken } from '../src/security.js';
 
 test('catalog publication, admin permissions, and enrollment-protected lessons', async () => {
   const context = await fixture();
@@ -77,5 +78,48 @@ test('chapters group a course\'s lessons for admins and students', async () => {
     const afterDelete = (await student.request('GET', `/courses/${course.slug}/videos`)).json();
     assert.equal(afterDelete.length, 1);
     assert.equal(afterDelete[0].chapterTitle, 'Uncategorized');
+  } finally { await context.close(); }
+});
+
+test('signed content links: notes require the URL to be minted first, and the token cannot be reused after tampering or expiry', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user();
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'notes-course', title: 'Notes Course', category: 'FCPS', price: 200 })).json();
+    await admin.request('PATCH', `/admin/courses/${course.id}`, { isPublished: true });
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [student.id, course.id]);
+
+    const youTube = (await admin.request('POST', '/admin/videos', {
+      courseId: course.id, title: 'Intro', src: 'https://youtu.be/dQw4w9WgXcQ', notesUrl: 'https://media.example.test/intro.pdf',
+      scheduledAt: '2025-01-01T00:00:00Z', status: 'published',
+    })).json();
+
+    const groups = (await student.request('GET', `/courses/${course.slug}/videos`)).json();
+    const video = groups[0].videos[0];
+    // YouTube links are inherently public and needed by the embed, so they pass through untouched.
+    assert.equal(video.src, 'https://youtu.be/dQw4w9WgXcQ');
+    // The lecture-notes PDF is never inlined, regardless of the video's own hosting.
+    assert.equal(video.notesUrl, '');
+    assert.equal(video.hasNotes, true);
+
+    // No signed link is issued for a YouTube-hosted video — the raw URL already serves that role.
+    assert.equal((await student.request('GET', `/lessons/${youTube.id}/content-url?kind=video`)).statusCode, 400);
+
+    const notesLink = await student.request('GET', `/lessons/${youTube.id}/content-url?kind=notes`);
+    assert.equal(notesLink.statusCode, 200, notesLink.body);
+    const token = notesLink.json().url.split('/content/')[1];
+
+    // A missing kind fails validation, and a lesson with no notes 404s rather than issuing a link.
+    assert.equal((await student.request('GET', `/lessons/${youTube.id}/content-url`)).statusCode, 400);
+    const noNotes = (await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'No notes', src: 'https://media.example.test/x.mp4', scheduledAt: '2025-01-01T00:00:00Z', status: 'published' })).json();
+    assert.equal((await student.request('GET', `/lessons/${noNotes.id}/content-url?kind=notes`)).statusCode, 404);
+
+    // A tampered or malformed token is rejected without ever reaching the database lookup for a real lesson.
+    assert.equal((await student.request('GET', `/content/${token}x`)).statusCode, 403);
+    assert.equal((await student.request('GET', '/content/garbage')).statusCode, 403);
+
+    const expired = signContentToken({ lessonId: youTube.id, kind: 'notes' }, context.config.tokenSecret, -1);
+    assert.equal((await student.request('GET', `/content/${expired}`)).statusCode, 403);
   } finally { await context.close(); }
 });
