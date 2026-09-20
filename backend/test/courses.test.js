@@ -26,10 +26,20 @@ test('catalog publication, admin permissions, and enrollment-protected lessons',
     await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [student.id, course.id]);
     response = await student.request('GET', `/courses/${course.slug}/videos`);
     assert.equal(response.statusCode, 200, response.body);
-    assert.equal(response.json()[0].videos[0].src, lesson.src);
+    const video = response.json()[0].videos[0];
+    // A directly-hosted file's permanent URL is never sent to the client — only a YouTube link would be.
+    assert.equal(video.src, '');
+    assert.equal(video.hasVideo, true);
+    assert.equal(video.videoIsFile, true);
+    const contentUrl = await student.request('GET', `/lessons/${lesson.id}/content-url?kind=video`);
+    assert.equal(contentUrl.statusCode, 200, contentUrl.body);
+    assert.match(contentUrl.json().url, /^\/api\/content\/[^/]+\.[^/]+$/);
     assert.equal((await student.request('POST', `/lessons/${lesson.id}/complete`)).statusCode, 200);
     await context.database.query("UPDATE enrollments SET starts_at=now()-interval '2 days',expires_at=now()-interval '1 day' WHERE user_id=$1", [student.id]);
     assert.equal((await student.request('GET', `/courses/${course.slug}/videos`)).statusCode, 403);
+    // Expired enrollment also stops new signed links from being minted, even though a link
+    // handed out before expiry keeps working until its own (short) TTL runs out.
+    assert.equal((await student.request('GET', `/lessons/${lesson.id}/content-url?kind=video`)).statusCode, 403);
   } finally { await context.close(); }
 });
 
