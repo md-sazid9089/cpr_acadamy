@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
 import { cn } from '@/lib/utils';
 import MolecularBackground from '@/components/ui/backgrounds/MolecularBackground.jsx';
+import ResponsiveImage, { localWebpSrcSet } from '@/components/ui/ResponsiveImage.jsx';
 
 /** Gallery photos shown in a featured slider, selectable from the thumbnail grid. */
 const GALLERY_PHOTOS = [
@@ -62,9 +63,11 @@ export default function Gallery() {
             </button>
 
             <div className="overflow-hidden rounded-3xl border border-stone-200 ">
-              <img
+              <ResponsiveImage
                 key={active.id}
                 src={active.src}
+                webpSrcSet={localWebpSrcSet(active.src)}
+                sizes="(min-width: 1024px) 896px, 90vw"
                 alt={active.alt}
                 className="aspect-[16/10] w-full object-cover"
               />
@@ -106,8 +109,10 @@ export default function Gallery() {
                 )}
               >
                 <div className="aspect-[16/11] w-full overflow-hidden bg-stone-900/30">
-                  <img
+                  <ResponsiveImage
                     src={photo.src}
+                    webpSrcSet={localWebpSrcSet(photo.src)}
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                     alt={photo.alt}
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"

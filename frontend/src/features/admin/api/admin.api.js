@@ -1,4 +1,20 @@
 import apiClient from '@/lib/api-client';
+
+/** Upload an admin-selected image and return the API-delivered URL. */
+export async function uploadImage(file) {
+  if (!file?.type || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('Choose a JPEG, PNG, or WebP image.');
+  }
+  if (file.size > 5 * 1024 * 1024) throw new Error('Images must be 5 MB or smaller.');
+  const data = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('The image could not be read.'));
+    reader.readAsDataURL(file);
+  });
+  const response = await apiClient.post('/admin/uploads/images', { data });
+  return response.data.url;
+}
 import { QUESTION_TYPES } from '@/constants';
 
 /**

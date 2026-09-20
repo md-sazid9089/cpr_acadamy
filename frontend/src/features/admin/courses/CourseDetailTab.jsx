@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaCheck, FaPlus, FaXmark } from 'react-icons/fa6';
-import { updateCourse } from '../api/admin.api.js';
+import { updateCourse, uploadImage } from '../api/admin.api.js';
 import { adminCourseKey } from './keys.js';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -84,6 +84,8 @@ function toPayload(form) {
 export default function CourseDetailTab() {
   const { course } = useOutletContext();
   const [form, setForm] = useState(() => toForm(course));
+  const [uploadError, setUploadError] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -119,6 +121,22 @@ export default function CourseDetailTab() {
   const handleSubmit = (event) => {
     event.preventDefault();
     mutation.mutate({ id: course.id, ...toPayload(form) });
+  };
+
+  const uploadPoster = async (event) => {
+    const [file] = event.target.files ?? [];
+    if (!file) return;
+    setUploadError('');
+    setIsUploading(true);
+    try {
+      const thumbnailUrl = await uploadImage(file);
+      setForm((previous) => ({ ...previous, thumbnailUrl }));
+    } catch (error) {
+      setUploadError(error.message || 'The image could not be uploaded.');
+    } finally {
+      setIsUploading(false);
+      event.target.value = '';
+    }
   };
 
   const groups = BATCH_GROUPS.filter((group) => group.category === course.category);
@@ -176,16 +194,14 @@ export default function CourseDetailTab() {
             </Select>
           </div>
 
-          {/* TODO: replace with a file input once a storage target is chosen
-              (Vimeo/Bunny/Cloudinary/S3). The stored value stays a URL string. */}
-          <Input
-            label="Poster image URL"
-            type="url"
-            value={form.thumbnailUrl}
-            onChange={set('thumbnailUrl')}
-            placeholder="https://…/poster.jpg"
-            hint="Paste a hosted image URL for now. Keep it under 1200 px on the long edge."
-          />
+          <div>
+            <label className="block text-sm font-medium text-stone-700 dark:text-brand-200" htmlFor="course-poster-upload">Poster image</label>
+            <input id="course-poster-upload" type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadPoster} disabled={isUploading} className="mt-1 block w-full text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-700 disabled:opacity-60 dark:text-brand-200" />
+            <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">JPEG, PNG, or WebP up to 5 MB. The uploaded image replaces the current poster when you save.</p>
+            {isUploading && <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">Uploading image…</p>}
+            {uploadError && <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{uploadError}</p>}
+            {form.thumbnailUrl && <img src={form.thumbnailUrl} alt="Current course poster" className="mt-3 h-28 w-20 rounded-lg border border-stone-200 object-cover" />}
+          </div>
 
           <Textarea
             label="Description"

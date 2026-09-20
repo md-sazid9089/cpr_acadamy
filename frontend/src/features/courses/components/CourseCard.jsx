@@ -2,6 +2,7 @@ import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import { CATEGORY_SLUGS } from '@/constants';
 import { formatBDT, formatDate } from '@/lib/utils';
+import ResponsiveImage, { localWebpSrcSet } from '@/components/ui/ResponsiveImage.jsx';
 
 /** Fallback poster collection */
 const POSTERS = [
@@ -43,8 +44,10 @@ export default function CourseCard({ course, onEnroll }) {
       >
         {/* Poster image with spacious square aspect ratio */}
         <div className="aspect-square w-full overflow-hidden bg-stone-800">
-          <img
+          <ResponsiveImage
             src={posterSrc}
+            webpSrcSet={localWebpSrcSet(posterSrc)}
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             alt={course.title}
             className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
             loading="lazy"

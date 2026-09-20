@@ -4,7 +4,7 @@ import { ApiError, throttle } from './http.js';
 
 const bodyLimit = 1048576;
 
-async function readBody(request) {
+async function readBody(request, limit = bodyLimit) {
   if (!request.body) return undefined;
   const reader = request.body.getReader();
   const chunks = [];
@@ -14,7 +14,7 @@ async function readBody(request) {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > bodyLimit) {
+      if (size > limit) {
         await reader.cancel();
         throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request body is too large.');
       }
@@ -73,7 +73,14 @@ export function createWebApp({ database, config, logger }) {
         header(name, value) { headers.set(name, String(value)); return this; },
         send(value) { sent = true; payload = value; return this; },
       };
-      const respond = value => new Response(webRequest.method === 'HEAD' || status === 204 ? null : JSON.stringify(value ?? null), { status, headers });
+      const respond = value => {
+        if (value instanceof Response) {
+          const responseHeaders = new Headers(headers);
+          value.headers.forEach((headerValue, name) => responseHeaders.set(name, headerValue));
+          return new Response(webRequest.method === 'HEAD' || status === 204 ? null : value.body, { status, headers: responseHeaders });
+        }
+        return new Response(webRequest.method === 'HEAD' || status === 204 ? null : JSON.stringify(value ?? null), { status, headers });
+      };
       try {
         if (origin && !config.corsOrigins.includes(origin)) throw new ApiError(403, 'ORIGIN_NOT_ALLOWED', 'Origin is not allowed.');
         if (webRequest.method === 'OPTIONS') {
@@ -106,7 +113,7 @@ export function createWebApp({ database, config, logger }) {
         if (!['/api/health', '/api/ready'].includes(route.url)) {
           await throttle(database, config, `http:${route.method}:${route.url}`, ip, limit.max, duration);
         }
-        request.body = await readBody(webRequest);
+        request.body = await readBody(webRequest, route.config?.bodyLimit);
         await route.preHandler?.(request, reply);
         const result = await route.handler(request, reply);
         return respond(sent ? payload : result);

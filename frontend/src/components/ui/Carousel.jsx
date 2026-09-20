@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
+import ResponsiveImage, { localWebpSrcSet } from './ResponsiveImage.jsx';
 
 /**
  * Reusable image carousel built on embla-carousel-react.
@@ -180,8 +181,10 @@ function CarouselSlide({ slide, aspectClassName, fit }) {
           className="absolute inset-0 scale-110 bg-cover bg-center opacity-40 blur-xl"
           style={{ backgroundImage: `url("${slide.src}")` }}
         />
-        <img
+        <ResponsiveImage
           src={slide.src}
+          webpSrcSet={slide.webpSrcSet ?? localWebpSrcSet(slide.src)}
+          sizes="(min-width: 1024px) 480px, (min-width: 640px) 42vw, 92vw"
           alt={slide.alt}
           loading="lazy"
           onError={() => setFailed(true)}
@@ -192,8 +195,10 @@ function CarouselSlide({ slide, aspectClassName, fit }) {
   }
 
   return (
-    <img
+    <ResponsiveImage
       src={slide.src}
+      webpSrcSet={slide.webpSrcSet ?? localWebpSrcSet(slide.src)}
+      sizes="(min-width: 1024px) 480px, (min-width: 640px) 42vw, 92vw"
       alt={slide.alt}
       loading="lazy"
       onError={() => setFailed(true)}

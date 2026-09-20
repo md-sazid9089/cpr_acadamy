@@ -53,7 +53,7 @@ export function installRoutes(app, database, config, contract) {
     app.route({
       method,
       url: `/api${url}`,
-      config: { rateLimit: options.rateLimit ?? { max: 300, timeWindow: '1 minute' } },
+      config: { rateLimit: options.rateLimit ?? { max: 300, timeWindow: '1 minute' }, bodyLimit: options.bodyLimit },
       preHandler: async request => {
         if (options.auth) await authenticate(request, options.auth);
         for (const [name, value] of Object.entries(request.params ?? {})) {

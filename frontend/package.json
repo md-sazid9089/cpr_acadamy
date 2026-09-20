@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm run images:optimize",
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test test/*.test.js",

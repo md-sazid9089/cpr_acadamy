@@ -46,10 +46,10 @@ export default function TrackPromos() {
         src="/assets/bg/1103999_7626-1920.webp"
         srcSet="/assets/bg/1103999_7626-768.webp 768w, /assets/bg/1103999_7626-1920.webp 1920w"
         sizes="100vw"
-        alt=""
-        aria-hidden="true"
         loading="lazy"
         decoding="async"
+        alt=""
+        aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-40 dark:opacity-20"
       />
       <div className="container-page">

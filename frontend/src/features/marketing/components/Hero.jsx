@@ -57,9 +57,10 @@ export default function Hero() {
         src="/assets/bg/Kerfin7-NEA-2128-1920.webp"
         srcSet="/assets/bg/Kerfin7-NEA-2128-768.webp 768w, /assets/bg/Kerfin7-NEA-2128-1920.webp 1920w"
         sizes="100vw"
+        fetchPriority="high"
+        decoding="async"
         alt=""
         aria-hidden="true"
-        decoding="async"
         className="pointer-events-none absolute inset-0 -z-20 h-full w-full object-cover object-[70%_30%] opacity-20 dark:opacity-40"
       />
       <div className="container-page w-full pb-6 pt-20 lg:pb-10 lg:pt-24">

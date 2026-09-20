@@ -1,5 +1,6 @@
 import { FaArrowRight } from 'react-icons/fa6';
 import Button from '@/components/ui/Button.jsx';
+import ResponsiveImage, { localWebpSrcSet } from '@/components/ui/ResponsiveImage.jsx';
 
 /** Staggered collage tiles: offsets/rotations are tuned for the desktop layout. */
 const TILES = [
@@ -26,8 +27,10 @@ export default function SuccessCollage() {
               key={tile.id}
               className={`shrink-0 overflow-hidden rounded-2xl bg-white border border-stone-200 transition-transform duration-300 hover:z-10 hover:rotate-0 hover:scale-105 ${tile.className}`}
             >
-              <img
+              <ResponsiveImage
                 src={tile.src}
+                webpSrcSet={localWebpSrcSet(tile.src)}
+                sizes="(min-width: 1024px) 128px, (min-width: 640px) 144px, 112px"
                 alt={tile.alt}
                 loading="lazy"
                 decoding="async"

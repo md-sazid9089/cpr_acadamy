@@ -8,3 +8,4 @@ export { default as Table } from './Table.jsx';
 export { default as Spinner, PageSpinner } from './Spinner.jsx';
 export { default as ContentSkeleton, Skeleton, PageSkeleton } from './Skeleton.jsx';
 export { default as EmptyState } from './EmptyState.jsx';
+export { default as ResponsiveImage } from './ResponsiveImage.jsx';
