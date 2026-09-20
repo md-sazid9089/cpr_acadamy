@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FaRegStar, FaStar } from 'react-icons/fa6';
 import ExamTimer from './components/ExamTimer.jsx';
 import SbaQuestion from './components/SbaQuestion.jsx';
@@ -27,10 +27,35 @@ export default function ExamRunner() {
   const [flagged, setFlagged] = useState(() => new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState('saved');
+  const [otherTabOpen, setOtherTabOpen] = useState(false);
+  const [versionConflict, setVersionConflict] = useState(false);
   const queue = useRef(null);
+  const versionRef = useRef(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const autosave = createAnswerQueue(payload => saveAnswer({ examId, ...payload }), setSaveStatus);
+    if (!examId || !('BroadcastChannel' in window)) return undefined;
+    const tabId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
+    const channel = new BroadcastChannel(`cpr-exam-attempt:${examId}`);
+    const announce = () => channel.postMessage({ type: 'active', tabId });
+    channel.onmessage = (event) => {
+      if (event.data?.tabId === tabId) return;
+      if (event.data?.type === 'active') { setOtherTabOpen(true); announce(); }
+    };
+    announce();
+    return () => { channel.close(); };
+  }, [examId]);
+
+  useEffect(() => {
+    const autosave = createAnswerQueue(async payload => {
+      try {
+        const saved = await saveAnswer({ examId, ...payload, version: versionRef.current });
+        versionRef.current = saved.version;
+      } catch (error) {
+        if (error.code === 'ATTEMPT_VERSION_CONFLICT') setVersionConflict(true);
+        throw error;
+      }
+    }, setSaveStatus);
     queue.current = autosave;
     const retry = () => { if (autosave.hasPending) void autosave.flush(); };
     const warn = (event) => {
@@ -60,6 +85,7 @@ export default function ExamRunner() {
   // Resuming an attempt restores the answers already autosaved server-side.
   useEffect(() => {
     if (paper?.answers) setAnswers(paper.answers);
+    if (paper?.version !== undefined) versionRef.current = paper.version;
   }, [paper]);
 
   // A paper that was already handed in has nothing left to answer.
@@ -70,14 +96,18 @@ export default function ExamRunner() {
   const submitMutation = useMutation({
     mutationFn: async (payload) => {
       await queue.current?.flush();
-      return submitExam(payload);
+      return submitExam({ ...payload, version: versionRef.current });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queue.current?.dispose();
-      navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+      navigate(`/dashboard/exams/${examId}/result`, {
+        replace: true,
+        state: data.lateSubmission ? { lateSubmission: true } : undefined,
+      });
     },
     onError: (failure) => {
       if (failure.code === 'ALREADY_SUBMITTED') navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+      if (failure.code === 'ATTEMPT_VERSION_CONFLICT') setVersionConflict(true);
     },
   });
 
@@ -101,6 +131,16 @@ export default function ExamRunner() {
   const handleSubmit = useCallback(() => {
     submitMutation.mutate({ examId, answers });
   }, [examId, answers, submitMutation]);
+
+  const reloadLatestAttempt = useCallback(async () => {
+    const latest = await fetchExamPaper(examId);
+    queue.current?.clear();
+    setAnswers(latest.answers ?? {});
+    versionRef.current = latest.version;
+    setVersionConflict(false);
+    setSaveStatus('saved');
+    queryClient.setQueryData(['exams', 'paper', examId], latest);
+  }, [examId, queryClient]);
 
   const toggleFlag = (questionId) => {
     setFlagged((previous) => {
@@ -146,6 +186,9 @@ export default function ExamRunner() {
             onExpire={handleSubmit}
           />
         </Card>
+
+        {otherTabOpen && <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">This exam is also open in another tab. Use one tab only to avoid answer conflicts.</p>}
+        {versionConflict && <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">Answers were changed from another tab, so this tab did not overwrite them. <Button size="sm" variant="outline" onClick={reloadLatestAttempt} className="ml-3">Reload latest answers</Button></div>}
 
         <div role="status" aria-live="polite" className={saveStatus === 'error' ? 'text-sm text-red-700' : 'text-sm text-stone-600 dark:text-brand-200'}>
           {saveStatus === 'error' ? 'Answers not saved. Retrying...' : saveStatus === 'saving' ? 'Saving answers...' : 'All answers saved'}

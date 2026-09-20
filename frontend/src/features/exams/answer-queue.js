@@ -31,6 +31,7 @@ export function createAnswerQueue(save, onStatus) {
     },
     flush,
     get hasPending() { return pending.size > 0; },
+    clear() { pending.clear(); },
     dispose() { disposed = true; pending.clear(); },
   };
 }

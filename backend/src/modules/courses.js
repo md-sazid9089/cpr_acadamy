@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { one } from '../db.js';
-import { ensure, uuid, text, pageQuery, audit } from '../http.js';
+import { ensure, uuid, text, pageQuery, audit, ApiError } from '../http.js';
+import { signContentToken, verifyContentToken } from '../security.js';
 
 export const money = z.number().min(0).max(1000000).refine(value => Math.abs(value * 100 - Math.round(value * 100)) < 0.000001, 'Use at most two decimal places');
 const timestamp = z.string().datetime({ offset: true });
@@ -88,6 +89,26 @@ export function videoDto(row) {
     durationMinutes: row.duration_minutes, status: row.status, position: row.position };
 }
 
+const YOUTUBE_HOSTS = new Set(['youtube.com', 'youtu.be', 'youtube-nocookie.com']);
+export function isYouTubeUrl(url) {
+  if (!url) return false;
+  try { return YOUTUBE_HOSTS.has(new URL(url).hostname.replace(/^(www|m)\./, '')); }
+  catch { return false; }
+}
+
+// The student-facing shape of a lesson. A YouTube link is inherently public (the
+// iframe embed needs the real URL and the video ID is the actual access boundary
+// already), but a directly-hosted file's permanent URL must never reach the
+// client — it would keep working forever, bypassing enrollment expiry and
+// letting anyone who copies it stream or download the paid file. Those are
+// fetched just-in-time through a short-lived signed link (see /content/:token).
+export function publicVideoDto(row) {
+  const dto = videoDto(row);
+  const youTube = isYouTubeUrl(row.src);
+  return { ...dto, src: youTube ? dto.src : '', videoUrl: youTube ? dto.videoUrl : '', notesUrl: '',
+    hasVideo: Boolean(row.src), hasNotes: Boolean(row.notes_url), videoIsFile: Boolean(row.src) && !youTube };
+}
+
 export function chapterDto(row) {
   return { id: row.id, courseId: row.course_id, title: row.title, position: row.position, videoCount: Number(row.video_count || 0) };
 }
@@ -104,7 +125,7 @@ const courseSelect = `SELECT c.*,
   (SELECT count(*) FROM lessons l WHERE l.course_id=c.id AND l.status='published') AS lesson_count,
   (SELECT count(*) FROM enrollments e WHERE e.course_id=c.id AND e.status='active' AND e.expires_at>now()) AS enrolled_count FROM courses c`;
 
-export function courseRoutes(route, database) {
+export function courseRoutes(route, database, config) {
   route('GET', '/courses', { query: catalogQuery }, async request => {
     const query = request.query;
     const values = [];
@@ -177,13 +198,60 @@ export function courseRoutes(route, database) {
       ORDER BY COALESCE(ch.position,999999), l.chapter_id IS NULL, l.position, l.scheduled_at, l.id`, [course.id])).rows;
     const groups = new Map();
     for (const row of rows) {
-      const video = videoDto(row);
+      const video = publicVideoDto(row);
       const key = video.chapterId ?? 'uncategorized';
       if (!groups.has(key)) groups.set(key, { chapterId: video.chapterId, chapterTitle: video.chapterTitle ?? 'Uncategorized', videos: [] });
       groups.get(key).videos.push(video);
     }
     return [...groups.values()];
   });
+
+  async function lessonContent(auth, id, kind) {
+    const lesson = await one(database, 'SELECT * FROM lessons WHERE id=$1', [id]);
+    ensure(lesson, 404, 'NOT_FOUND', 'Lesson not found.');
+    if (auth.role !== 'admin') ensure(lesson.status === 'published' && new Date(lesson.scheduled_at) <= new Date(), 404, 'NOT_FOUND', 'Lesson not found.');
+    await requireCourseAccess(database, auth, lesson.course_id);
+    const url = kind === 'notes' ? lesson.notes_url : lesson.src;
+    ensure(url, 404, 'NOT_FOUND', kind === 'notes' ? 'No lecture notes for this lesson.' : 'No video for this lesson.');
+    return { lesson, url };
+  }
+
+  // Issues a short-lived signed link rather than the permanent source URL. Enrollment
+  // is re-checked on every call, so unenrolling or expiring access stops new links
+  // from being minted even though a link already handed out keeps working until it expires.
+  route('GET', '/lessons/:id/content-url', { auth: 'active', query: z.object({ kind: z.enum(['video', 'notes']) }) }, async request => {
+    const { lesson, url } = await lessonContent(request.auth, request.params.id, request.query.kind);
+    ensure(!isYouTubeUrl(url), 400, 'DIRECT_LINK_ONLY', 'This lesson plays directly; no signed link is issued for it.');
+    // Notes are a single download, so a few minutes is plenty. A video's playback session can
+    // run far longer than that, so its link outlives the lecture (with headroom for pausing).
+    const ttlSeconds = request.query.kind === 'notes' ? 300 : Math.min(6 * 3600, Math.max(1800, (lesson.duration_minutes || 60) * 120));
+    const token = signContentToken({ lessonId: lesson.id, kind: request.query.kind }, config.tokenSecret, ttlSeconds);
+    return { url: `/api/content/${token}`, expiresIn: ttlSeconds };
+  });
+
+  // No `auth` here by design: this URL is embedded directly in a <video src> / <a href>,
+  // which cannot carry an Authorization header. The signed, expiring token IS the credential.
+  route('GET', '/content/:token', { rateLimit: { max: 600, timeWindow: '1 minute' } }, async (request, reply) => {
+    const payload = verifyContentToken(request.params.token, config.tokenSecret);
+    ensure(payload, 403, 'LINK_EXPIRED', 'This link has expired. Reload the page and try again.');
+    const lesson = await one(database, 'SELECT src,notes_url FROM lessons WHERE id=$1', [payload.lessonId]);
+    const url = payload.kind === 'notes' ? lesson?.notes_url : lesson?.src;
+    ensure(url, 404, 'NOT_FOUND', 'This content is no longer available.');
+    let upstream;
+    try {
+      upstream = await fetch(url, request.headers.range ? { headers: { range: request.headers.range } } : {});
+    } catch {
+      throw new ApiError(502, 'UPSTREAM_UNAVAILABLE', 'The content host could not be reached.');
+    }
+    reply.code(upstream.status);
+    const headers = { 'cache-control': 'private, no-store' };
+    for (const name of ['content-type', 'content-length', 'accept-ranges', 'content-range']) {
+      const value = upstream.headers.get(name);
+      if (value) headers[name] = value;
+    }
+    return new Response(upstream.body, { headers });
+  });
+
   route('POST', '/lessons/:id/complete', { auth: 'active' }, async request => {
     const lesson = await one(database, "SELECT * FROM lessons WHERE id=$1 AND status='published' AND scheduled_at<=now()", [request.params.id]);
     ensure(lesson, 404, 'NOT_FOUND', 'Lesson not found.');

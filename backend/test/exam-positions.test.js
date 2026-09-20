@@ -42,10 +42,10 @@ test('exam positions share ties, paginate globally, protect results, and exclude
     ];
     for (const [index, student] of students.entries()) {
       assert.equal((await student.request('POST', `/exams/${exam.id}/start`)).statusCode, 200);
-      if (index < answers.length) assert.equal((await student.request('POST', `/exams/${exam.id}/submit`, { answers: answers[index] })).statusCode, 200);
+      if (index < answers.length) assert.equal((await student.request('POST', `/exams/${exam.id}/submit`, { answers: answers[index], version: 0 })).statusCode, 200);
     }
     await admin.request('POST', `/exams/${exam.id}/start`);
-    await admin.request('POST', `/exams/${exam.id}/submit`, { answers: answers[0] });
+    await admin.request('POST', `/exams/${exam.id}/submit`, { answers: answers[0], version: 0 });
     const standingsResponse = await students[3].request('GET', `${path}?limit=2`);
     assert.equal(standingsResponse.statusCode, 200, standingsResponse.body);
     const standings = standingsResponse.json();

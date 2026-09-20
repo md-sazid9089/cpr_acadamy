@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { one } from '../db.js';
 import { audit, ensure, uuid, text, pageQuery } from '../http.js';
 import { requireCourseAccess, webUrl } from './courses.js';
+import { reviseAttemptScore } from './result-revisions.js';
 
 const identifier = z.string().min(1).max(80).regex(/^[a-zA-Z0-9_-]+$/).refine(value => !['__proto__', 'constructor', 'prototype'].includes(value));
 const answer = z.union([identifier, z.record(identifier, z.boolean()), z.null()]);
@@ -94,15 +95,20 @@ function examDto(row) {
 }
 
 function publicPaper(attempt, exam) {
-  return { ...examDto(exam), endsAt: attempt.ends_at, answers: attempt.answers,
+  return { ...examDto(exam), endsAt: attempt.ends_at, answers: attempt.answers, version: attempt.version,
     durationMinutes: attempt.paper.durationMinutes, negativeMarking: attempt.paper.negativeMarking, passMark: attempt.paper.passMark,
     totalMarks: totalMarks(attempt.paper.questions),
     questions: attempt.paper.questions.map(question => ({ id: question.id, type: question.type, stem: question.stem, imageUrl: question.imageUrl ?? '', options: question.options, marks: question.marks })) };
 }
 
-async function finalize(transaction, attempt) {
+// `auto` marks a finalization that did not incorporate a confirmed final
+// snapshot from the student (the expiry sweep, a passive result-view finalize,
+// or a /submit call that itself arrived after the deadline) so callers can
+// tell the student their last change may not be included, instead of treating
+// it identically to a normal on-time submission.
+async function finalize(transaction, attempt, auto = false) {
   if (attempt.submitted_at) return attempt;
-  return one(transaction, 'UPDATE exam_attempts SET submitted_at=now(),result=$2 WHERE id=$1 RETURNING *', [attempt.id, JSON.stringify(gradePaper(attempt.paper, attempt.answers))]);
+  return one(transaction, 'UPDATE exam_attempts SET submitted_at=now(),auto_finalized=$3,result=$2 WHERE id=$1 RETURNING *', [attempt.id, JSON.stringify(gradePaper(attempt.paper, attempt.answers)), auto]);
 }
 
 async function examPositions(transaction, exam, userId, limit = 10, offset = 0) {
@@ -182,38 +188,51 @@ export function examRoutes(route, database) {
     ensure(attempt, 409, 'ATTEMPT_REQUIRED', 'Start the exam before requesting the paper.');
     return publicPaper(attempt, exam);
   }));
-  route('POST', '/exams/:id/answers', { auth: 'active', body: z.object({ questionId: identifier, answer }).strict() }, async request => {
+  route('POST', '/exams/:id/answers', { auth: 'active', body: z.object({ questionId: identifier, answer, version: z.number().int().min(0) }).strict() }, async request => {
     const result = await database.transaction(async transaction => {
       const exam = await loadExam(transaction, request);
       const attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE', [request.auth.user_id, exam.id]);
       ensure(attempt, 409, 'ATTEMPT_REQUIRED', 'Start the exam before saving answers.');
       ensure(!attempt.submitted_at, 409, 'ALREADY_SUBMITTED', 'This exam has already been submitted.');
-      if (new Date(attempt.ends_at).getTime() <= Date.now()) { await finalize(transaction, attempt); return false; }
+      // Autosave never finalizes on its own: only /submit (or the expiry
+      // sweep, for attempts nobody submits) decides the final snapshot. If
+      // this raced /submit and lost, /submit's own answers still land intact.
+      if (new Date(attempt.ends_at).getTime() <= Date.now()) return false;
       const update = { [request.body.questionId]: request.body.answer };
       validateAnswers(attempt.paper.questions, update);
-      await transaction.query('UPDATE exam_attempts SET answers=answers || $2::jsonb WHERE id=$1', [attempt.id, JSON.stringify(update)]);
-      return true;
+      const saved = await one(transaction, 'UPDATE exam_attempts SET answers=answers || $2::jsonb,version=version+1 WHERE id=$1 AND version=$3 RETURNING version', [attempt.id, JSON.stringify(update), request.body.version]);
+      ensure(saved, 409, 'ATTEMPT_VERSION_CONFLICT', 'This exam was updated in another tab. Reload the latest answers before saving.');
+      return saved.version;
     });
     ensure(result, 409, 'EXAM_DEADLINE_PASSED', 'The deadline has passed. Saved answers were submitted.');
-    return { ok: true };
+    return { ok: true, version: result };
   });
-  route('POST', '/exams/:id/submit', { auth: 'active', body: z.object({ answers: answerSheet.default({}) }).strict() }, async request => database.transaction(async transaction => {
+  route('POST', '/exams/:id/submit', { auth: 'active', body: z.object({ answers: answerSheet.default({}), version: z.number().int().min(0) }).strict() }, async request => database.transaction(async transaction => {
     const exam = await loadExam(transaction, request);
     let attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE', [request.auth.user_id, exam.id]);
     ensure(attempt, 409, 'ATTEMPT_REQUIRED', 'Start the exam before submitting.');
-    if (!attempt.submitted_at && new Date(attempt.ends_at).getTime() > Date.now()) {
+    ensure(attempt.submitted_at || attempt.version === request.body.version, 409, 'ATTEMPT_VERSION_CONFLICT', 'This exam was updated in another tab. Reload the latest answers before submitting.');
+    // Whether THIS request's complete snapshot is what gets graded. False
+    // means the deadline had already passed when the server received it (this
+    // call, a prior late one, or the expiry sweep) -- graded from whatever was
+    // last autosaved instead. auto_finalized on the returned row carries that
+    // fact through so the response never claims a normal, on-time submission
+    // when the student's final answers were actually discarded.
+    const answersApplied = !attempt.submitted_at && new Date(attempt.ends_at).getTime() > Date.now();
+    if (answersApplied) {
       validateAnswers(attempt.paper.questions, request.body.answers);
       attempt = await one(transaction, 'UPDATE exam_attempts SET answers=answers || $2::jsonb WHERE id=$1 RETURNING *', [attempt.id, JSON.stringify(request.body.answers)]);
     }
-    attempt = await finalize(transaction, attempt);
+    attempt = await finalize(transaction, attempt, !answersApplied);
     const released = !exam.results_at || new Date(exam.results_at).getTime() <= Date.now();
-    return { examId: exam.id, submittedAt: attempt.submitted_at, resultsAvailable: released, ...(released ? attempt.result : {}) };
+    return { examId: exam.id, submittedAt: attempt.submitted_at, resultsAvailable: released,
+      lateSubmission: Boolean(attempt.auto_finalized), ...(released ? attempt.result : {}) };
   }));
   route('GET', '/exams/:id/result', { auth: 'active' }, async request => database.transaction(async transaction => {
     const exam = await loadExam(transaction, request);
     let attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE', [request.auth.user_id, exam.id]);
     ensure(attempt, 404, 'RESULT_NOT_FOUND', 'No attempt was found.');
-    if (!attempt.submitted_at && new Date(attempt.ends_at).getTime() <= Date.now()) attempt = await finalize(transaction, attempt);
+    if (!attempt.submitted_at && new Date(attempt.ends_at).getTime() <= Date.now()) attempt = await finalize(transaction, attempt, true);
     ensure(attempt.submitted_at, 409, 'NOT_SUBMITTED', 'Submit this exam before viewing the result.');
     ensure(!exam.results_at || new Date(exam.results_at).getTime() <= Date.now(), 403, 'RESULTS_NOT_RELEASED', 'Results have not been released yet.');
     const positions = await examPositions(transaction, exam, request.auth.user_id, 1);
@@ -242,12 +261,10 @@ export function examRoutes(route, database) {
     return examPositions(transaction, exam, request.auth.user_id, request.query.limit, request.query.offset);
   }));
 
-  route('PATCH', '/admin/exams/:id/attempts/:userId', { auth: 'admin', body: z.object({ score: z.number().min(0) }).strict() }, async request => database.transaction(async transaction => {
+  route('PATCH', '/admin/exams/:id/attempts/:userId', { auth: 'admin', body: z.object({ score: z.number().finite().min(0), revisionReason: z.string().trim().min(1).max(2000) }).strict() }, async request => database.transaction(async transaction => {
     const attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE exam_id=$1 AND user_id=$2 FOR UPDATE', [request.params.id, request.params.userId]);
-    ensure(attempt && attempt.submitted_at, 404, 'NOT_FOUND', 'Completed attempt not found.');
-    const newResult = { ...attempt.result, score: request.body.score, isEdited: true };
-    await transaction.query('UPDATE exam_attempts SET result=$1::jsonb WHERE id=$2', [JSON.stringify(newResult), attempt.id]);
-    return { ok: true };
+    const result = await reviseAttemptScore(transaction, { attempt, examId: request.params.id, adminId: request.auth.user_id, ...request.body });
+    return { ok: true, result };
   }));
   async function saveExam(request, creating) {
     return database.transaction(async transaction => {
@@ -293,7 +310,7 @@ export function examRoutes(route, database) {
 export async function finalizeExpiredAttempts(database) {
   return database.transaction(async transaction => {
     const attempts = (await transaction.query('SELECT * FROM exam_attempts WHERE submitted_at IS NULL AND ends_at<=now() ORDER BY ends_at LIMIT 100 FOR UPDATE SKIP LOCKED')).rows;
-    for (const attempt of attempts) await finalize(transaction, attempt);
+    for (const attempt of attempts) await finalize(transaction, attempt, true);
     return attempts.length;
   });
 }

@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { FaTrophy } from 'react-icons/fa6';
 import { useQuery } from '@tanstack/react-query';
 import SbaQuestion from './components/SbaQuestion.jsx';
@@ -16,6 +16,8 @@ import { formatDateTime } from '@/lib/utils';
 /** Score summary plus per-question review at /dashboard/exams/:examId/result. */
 export default function ExamResult() {
   const { examId } = useParams();
+  const location = useLocation();
+  const lateSubmission = Boolean(location.state?.lateSubmission);
 
   const { data: result, isLoading, error } = useQuery({
     queryKey: ['exams', 'result', examId],
@@ -45,6 +47,12 @@ export default function ExamResult() {
   return (
     <div className="space-y-6">
       <DashboardPageHeader title="Exam Result" backTo="/dashboard/exams" />
+      {lateSubmission && (
+        <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          The deadline passed before your final submission reached the server, so this result was graded from your
+          most recently saved answers. Any change made in the last moments may not be included.
+        </p>
+      )}
       <Card className="p-6 text-center">
         <p className="text-sm text-stone-500 dark:text-brand-200">Your score</p>
         <p className="mt-1 text-4xl font-extrabold text-brand-700 dark:text-brand-400">
@@ -55,6 +63,7 @@ export default function ExamResult() {
           {percentage}% · submitted {formatDateTime(result.submittedAt)}
         </p>
         <p className="mt-3"><Badge tone={result.passed ? 'success' : 'danger'}>{result.passed ? 'Passed' : 'Not passed'}</Badge> <span className="text-sm text-stone-600 dark:text-brand-200">Pass mark: {result.passMark}%</span></p>
+        {result.isEdited && <p className="mt-3"><Badge tone="warning">Result revised</Badge>{result.resultRevision?.revisedAt && <span className="ml-2 text-xs text-stone-500 dark:text-brand-200">Updated {formatDateTime(result.resultRevision.revisedAt)}</span>}</p>}
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
