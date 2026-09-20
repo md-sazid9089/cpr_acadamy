@@ -55,6 +55,7 @@ export default function ExamResult() {
           {percentage}% · submitted {formatDateTime(result.submittedAt)}
         </p>
         <p className="mt-3"><Badge tone={result.passed ? 'success' : 'danger'}>{result.passed ? 'Passed' : 'Not passed'}</Badge> <span className="text-sm text-stone-600 dark:text-brand-200">Pass mark: {result.passMark}%</span></p>
+        {result.isEdited && <p className="mt-3"><Badge tone="warning">Result revised</Badge>{result.resultRevision?.revisedAt && <span className="ml-2 text-xs text-stone-500 dark:text-brand-200">Updated {formatDateTime(result.resultRevision.revisedAt)}</span>}</p>}
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

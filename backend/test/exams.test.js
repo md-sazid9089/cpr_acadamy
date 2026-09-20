@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fixture } from '../test-support/fixture.js';
 import { gradePaper } from '../src/modules/exams.js';
+import { one } from '../src/db.js';
 import { mixedPaperQuestions } from '../test-support/exam-paper.js';
 
 const questions = [
@@ -49,7 +50,19 @@ test('exam attempts hide keys, preserve deadlines, freeze papers, and reject lat
     assert.equal(response.statusCode, 200, response.body);
     assert.equal(response.json().review.find(question => question.id === 'question-two').yourAnswer, null);
     assert.equal(response.json().rank, 1);
-    assert.equal((await student.request('POST', `/exams/${exam.id}/submit`, { answers: {}, version: 1 })).json().score, 2);
+    const originalResult = response.json();
+    response = await admin.request('PATCH', `/admin/exams/${exam.id}/attempts/${student.id}`, { score: 101, revisionReason: 'Clerical review.' });
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().code, 'SCORE_OUT_OF_RANGE');
+    response = await admin.request('PATCH', `/admin/exams/${exam.id}/attempts/${student.id}`, { score: 100 });
+    assert.equal(response.statusCode, 400);
+    response = await admin.request('PATCH', `/admin/exams/${exam.id}/attempts/${student.id}`, { score: 100, revisionReason: 'Verified marking-sheet correction.' });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal(response.json().result.passed, true);
+    assert.equal(response.json().result.percentage, 100);
+    assert.equal(response.json().result.correctCount, originalResult.correctCount);
+    assert.equal((await one(context.database, "SELECT count(*)::int AS count FROM audit_log WHERE action='exam.result_revised' AND actor_id=$1", [admin.id])).count, 1);
+    assert.equal((await student.request('POST', `/exams/${exam.id}/submit`, { answers: {}, version: 2 })).json().score, 100);
     assert.equal((await outsider.request('GET', `/exams/${exam.id}/result`)).statusCode, 403);
   } finally { await context.close(); }
 });

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdminExams, fetchAdminCourseLeaderboard, fetchAdminExamPositions, updateAdminExamScore } from '../api/admin.api.js';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
-import Input, { Select } from '@/components/ui/Input.jsx';
+import Input, { Select, Textarea } from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
@@ -17,6 +17,7 @@ export default function CourseLeaderboardTab() {
   const [selectedExamId, setSelectedExamId] = useState('');
   const [editingMark, setEditingMark] = useState(null);
   const [newScore, setNewScore] = useState('');
+  const [revisionReason, setRevisionReason] = useState('');
 
   const { data: exams = [] } = useQuery({
     queryKey: adminExamsKey(course.id),
@@ -29,18 +30,19 @@ export default function CourseLeaderboardTab() {
   });
 
   const updateScoreMutation = useMutation({
-    mutationFn: ({ userId, score }) => updateAdminExamScore(selectedExamId, userId, score),
+    mutationFn: ({ userId, score, revisionReason }) => updateAdminExamScore(selectedExamId, userId, score, revisionReason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'leaderboard', course.id, selectedExamId] });
       setEditingMark(null);
       setNewScore('');
+      setRevisionReason('');
     }
   });
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
     if (editingMark) {
-      updateScoreMutation.mutate({ userId: editingMark.userId, score: Number(newScore) });
+      updateScoreMutation.mutate({ userId: editingMark.userId, score: Number(newScore), revisionReason });
     }
   };
 
@@ -61,6 +63,7 @@ export default function CourseLeaderboardTab() {
         <Button size="sm" variant="ghost" onClick={() => {
           setEditingMark(row);
           setNewScore(String(row.score));
+          setRevisionReason('');
         }}>
           <FaPenToSquare aria-hidden="true" className="h-3.5 w-3.5" />
           Edit
@@ -120,6 +123,8 @@ export default function CourseLeaderboardTab() {
             value={newScore}
             onChange={(e) => setNewScore(e.target.value)}
           />
+          <Textarea label="Revision reason" rows={3} required value={revisionReason} onChange={(e) => setRevisionReason(e.target.value)} placeholder="Explain why this result is being revised." />
+          {updateScoreMutation.isError && <p role="alert" className="text-sm text-red-600">{updateScoreMutation.error.message}</p>}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="ghost" type="button" onClick={() => setEditingMark(null)}>Cancel</Button>
             <Button type="submit" disabled={updateScoreMutation.isPending}>

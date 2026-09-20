@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { one } from '../db.js';
 import { audit, ensure, uuid, text, pageQuery } from '../http.js';
 import { requireCourseAccess, webUrl } from './courses.js';
+import { reviseAttemptScore } from './result-revisions.js';
 
 const identifier = z.string().min(1).max(80).regex(/^[a-zA-Z0-9_-]+$/).refine(value => !['__proto__', 'constructor', 'prototype'].includes(value));
 const answer = z.union([identifier, z.record(identifier, z.boolean()), z.null()]);
@@ -244,12 +245,10 @@ export function examRoutes(route, database) {
     return examPositions(transaction, exam, request.auth.user_id, request.query.limit, request.query.offset);
   }));
 
-  route('PATCH', '/admin/exams/:id/attempts/:userId', { auth: 'admin', body: z.object({ score: z.number().min(0) }).strict() }, async request => database.transaction(async transaction => {
+  route('PATCH', '/admin/exams/:id/attempts/:userId', { auth: 'admin', body: z.object({ score: z.number().finite().min(0), revisionReason: z.string().trim().min(1).max(2000) }).strict() }, async request => database.transaction(async transaction => {
     const attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE exam_id=$1 AND user_id=$2 FOR UPDATE', [request.params.id, request.params.userId]);
-    ensure(attempt && attempt.submitted_at, 404, 'NOT_FOUND', 'Completed attempt not found.');
-    const newResult = { ...attempt.result, score: request.body.score, isEdited: true };
-    await transaction.query('UPDATE exam_attempts SET result=$1::jsonb WHERE id=$2', [JSON.stringify(newResult), attempt.id]);
-    return { ok: true };
+    const result = await reviseAttemptScore(transaction, { attempt, examId: request.params.id, adminId: request.auth.user_id, ...request.body });
+    return { ok: true, result };
   }));
   async function saveExam(request, creating) {
     return database.transaction(async transaction => {

@@ -388,8 +388,8 @@ export async function fetchAdminExamPositions(id) {
   return data;
 }
 
-export async function updateAdminExamScore(examId, userId, score) {
-  const { data } = await apiClient.patch(`/admin/exams/${examId}/attempts/${userId}`, { score });
+export async function updateAdminExamScore(examId, userId, score, revisionReason) {
+  const { data } = await apiClient.patch(`/admin/exams/${examId}/attempts/${userId}`, { score, revisionReason });
   return data;
 }
 
