@@ -44,9 +44,29 @@ function totalMarks(questions) {
   return Math.round(questions.reduce((total, question) => total + question.marks * (question.type === 'mtf' ? question.options.length : 1), 0) * 1000) / 1000;
 }
 
-export function validatePublication(input) {
+export function validatePublication(input, bounds) {
   if (!input.isPublished) return;
   ensure(input.questions.length === input.targetQuestionCount, 400, 'QUESTION_COUNT_MISMATCH', 'The paper must contain exactly the target number of questions.');
+  if (input.questionType !== 'mixed') return;
+
+  let seenSba = false;
+  const optionCountByType = new Map();
+  const marksByType = new Map();
+  for (const question of input.questions) {
+    if (question.type === 'sba') seenSba = true;
+    else ensure(!seenSba, 400, 'MIXED_BLOCK_ORDER', 'All multiple true/false questions must come before the single-best-answer questions.');
+
+    const expectedOptionCount = optionCountByType.get(question.type);
+    if (expectedOptionCount === undefined) optionCountByType.set(question.type, question.options.length);
+    else ensure(question.options.length === expectedOptionCount, 400, 'MIXED_OPTION_COUNT_MISMATCH', 'Every question of the same type must offer the same number of options.');
+
+    const expectedMarks = marksByType.get(question.type);
+    if (expectedMarks === undefined) marksByType.set(question.type, question.marks);
+    else ensure(question.marks === expectedMarks, 400, 'MIXED_MARKS_MISMATCH', 'Every question of the same type must carry the same marks.');
+  }
+
+  ensure(input.negativeMarking >= bounds.negativeMarkingMin && input.negativeMarking <= bounds.negativeMarkingMax, 400, 'NEGATIVE_MARKING_OUT_OF_RANGE', `Deduction for this course must be between ${bounds.negativeMarkingMin}% and ${bounds.negativeMarkingMax}%.`);
+  ensure(input.passMark >= bounds.passMarkMin && input.passMark <= bounds.passMarkMax, 400, 'PASS_MARK_OUT_OF_RANGE', `Pass mark for this course must be between ${bounds.passMarkMin}% and ${bounds.passMarkMax}%.`);
 }
 
 export function validateAnswers(questions, answers) {
@@ -283,7 +303,17 @@ export function examRoutes(route, database) {
       ensure(!input.isPublished || input.questions.length > 0, 400, 'EMPTY_EXAM', 'A published exam requires questions.');
       ensure(!input.isPublished || input.questions.every(isQuestionComplete), 400, 'INCOMPLETE_QUESTIONS', 'Every question needs a stem, all option texts and an answer key before the exam is published.');
       ensure(input.questionType === 'mixed' || input.questions.every(question => question.type === input.questionType), 400, 'QUESTION_TYPE_MISMATCH', 'Questions must match the exam question type.');
-      validatePublication(input);
+      let bounds;
+      if (input.questionType === 'mixed') {
+        const course = await one(transaction, 'SELECT mixed_negative_marking_min,mixed_negative_marking_max,mixed_pass_mark_min,mixed_pass_mark_max FROM courses WHERE id=$1', [input.courseId]);
+        // A missing course fails the same way the exams.course_id foreign key would have:
+        // the generic 23503 -> 409 CONFLICT handler in web-app.js. Matched here explicitly
+        // so this now-earlier lookup doesn't change the response before that insert runs.
+        ensure(course, 409, 'CONFLICT', 'This change conflicts with an existing record or constraint.');
+        bounds = { negativeMarkingMin: Number(course.mixed_negative_marking_min), negativeMarkingMax: Number(course.mixed_negative_marking_max),
+          passMarkMin: Number(course.mixed_pass_mark_min), passMarkMax: Number(course.mixed_pass_mark_max) };
+      }
+      validatePublication(input, bounds);
       ensure(!input.closesAt || new Date(input.closesAt) > new Date(input.scheduledAt), 400, 'INVALID_SCHEDULE', 'Closing time must follow the start.');
       ensure(input.type === 'practice' || (input.closesAt && input.resultsAt && new Date(input.resultsAt) >= new Date(input.closesAt)), 400, 'INVALID_RESULTS_RELEASE', 'Timed exams require a closing time and results released no earlier than closing.');
       const values = [input.courseId, input.title, input.type, input.questionType, input.durationMinutes, input.negativeMarking, input.scheduledAt, input.closesAt, input.resultsAt, input.isPublished, JSON.stringify(input.questions), input.targetQuestionCount, input.marksPerQuestion, input.passMark];

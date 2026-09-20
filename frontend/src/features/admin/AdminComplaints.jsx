@@ -26,7 +26,7 @@ export default function AdminComplaints() {
   const [replyError, setReplyError] = useState('');
   const queryClient = useQueryClient();
 
-  const { data: complaints = [], isLoading } = useQuery({
+  const { data: complaints = [], isLoading, isError, error, isFetching, refetch } = useQuery({
     queryKey: ['admin', 'complaints'],
     queryFn: fetchAdminComplaints,
     refetchInterval: 60_000,
@@ -80,6 +80,14 @@ export default function AdminComplaints() {
 
         {isLoading ? (
           <ContentSkeleton label="Loading threads" />
+        ) : isError ? (
+          <EmptyState
+            variant="error"
+            title="Couldn't load threads"
+            description={error?.message || 'Something went wrong. Please try again.'}
+            onRetry={refetch}
+            isFetching={isFetching}
+          />
         ) : rows.length === 0 ? (
           <EmptyState title="Nothing here" description="No threads match this filter." />
         ) : (

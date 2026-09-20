@@ -24,7 +24,7 @@ export default function AdminCourses() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
 
-  const { data: courses = [], isLoading } = useQuery({
+  const { data: courses = [], isLoading, isError, error, isFetching, refetch } = useQuery({
     queryKey: ['admin', 'courses'],
     queryFn: fetchAdminCourses,
   });
@@ -105,6 +105,10 @@ export default function AdminCourses() {
             columns={columns}
             rows={rows}
             isLoading={isLoading}
+            isError={isError}
+            error={error}
+            isFetching={isFetching}
+            onRetry={refetch}
             onRowClick={(row) => navigate(`/admin/courses/${row.id}`)}
             emptyTitle="No courses yet"
             emptyDescription="Create the first course to get started."

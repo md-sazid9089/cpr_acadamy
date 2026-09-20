@@ -1,4 +1,5 @@
-import { forwardRef, useId } from 'react';
+import { forwardRef, useId, useState } from 'react';
+import { FaEye, FaEyeSlash } from 'react-icons/fa6';
 import { cn } from '@/lib/utils';
 
 const fieldStyles =
@@ -6,14 +7,17 @@ const fieldStyles =
   'transition-colors focus:border-stone-200 disabled:cursor-not-allowed disabled:bg-stone-50 ' +
   'dark:bg-surface-dark-subtle dark:text-brand-200 dark:placeholder:text-brand-200 dark:disabled:bg-surface-dark';
 
-/** Text input with label, hint, prefix and error slot. Forwards refs for RHF. */
+/** Text input with label, hint, prefix and error slot. Forwards refs for RHF.
+ * A `type="password"` field always gets a show/hide toggle — permanent, not opt-in. */
 const Input = forwardRef(function Input(
-  { label, hint, error, prefix, className, containerClassName, id, required, ...props },
+  { label, hint, error, prefix, type, className, containerClassName, id, required, ...props },
   ref,
 ) {
   const autoId = useId();
   const inputId = id ?? autoId;
   const describedBy = error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined;
+  const isPassword = type === 'password';
+  const [visible, setVisible] = useState(false);
 
   return (
     <div className={cn('space-y-1.5', containerClassName)}>
@@ -33,11 +37,13 @@ const Input = forwardRef(function Input(
         <input
           ref={ref}
           id={inputId}
+          type={isPassword ? (visible ? 'text' : 'password') : type}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}
           className={cn(
             fieldStyles,
             prefix && 'pl-14',
+            isPassword && 'pr-11',
             error
               ? 'border-stone-200 focus:border-stone-200 dark:border-stone-200'
               : 'border-stone-200 dark:border-stone-200',
@@ -45,6 +51,16 @@ const Input = forwardRef(function Input(
           )}
           {...props}
         />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setVisible((value) => !value)}
+            aria-label={visible ? 'Hide password' : 'Show password'}
+            className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 transition-colors hover:text-stone-600 dark:text-brand-200 dark:hover:text-white"
+          >
+            {visible ? <FaEyeSlash aria-hidden="true" className="h-4 w-4" /> : <FaEye aria-hidden="true" className="h-4 w-4" />}
+          </button>
+        )}
       </div>
 
       {error ? (

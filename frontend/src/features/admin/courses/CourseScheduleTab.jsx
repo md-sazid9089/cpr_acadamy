@@ -55,6 +55,10 @@ export default function CourseScheduleTab() {
   const videos = videosQuery.data ?? [];
   const exams = examsQuery.data ?? [];
   const isLoading = scheduleQuery.isLoading || videosQuery.isLoading || examsQuery.isLoading;
+  const isError = scheduleQuery.isError || videosQuery.isError || examsQuery.isError;
+  const error = scheduleQuery.error ?? videosQuery.error ?? examsQuery.error;
+  const isFetching = scheduleQuery.isFetching || videosQuery.isFetching || examsQuery.isFetching;
+  const retry = () => { scheduleQuery.refetch(); videosQuery.refetch(); examsQuery.refetch(); };
 
   const videoTitle = (id) => videos.find((video) => video.id === id)?.title ?? null;
   const examTitle = (id) => exams.find((exam) => exam.id === id)?.title ?? null;
@@ -168,13 +172,17 @@ export default function CourseScheduleTab() {
             columns={columns}
             rows={schedule}
             isLoading={isLoading}
+            isError={isError}
+            error={error}
+            isFetching={isFetching}
+            onRetry={retry}
             emptyTitle="No routine rows yet"
             emptyDescription="Add the first date. You can leave any cell as “No exam” or “No class”."
           />
         </div>
       </Card>
 
-      {!isLoading && <PublishGate course={course} videos={videos} exams={exams} schedule={schedule} />}
+      {!isLoading && !isError && <PublishGate course={course} videos={videos} exams={exams} schedule={schedule} />}
 
       <Modal
         open={editing !== null}

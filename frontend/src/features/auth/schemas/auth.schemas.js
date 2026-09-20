@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  bdMobileAfterCountryCodeSchema,
   bdMobileSchema,
   bmdcSchema,
   fullNameSchema,
@@ -20,11 +21,12 @@ export const loginSchema = z.object({
 export const registerSchema = z
   .object({
     fullName: fullNameSchema,
-    mobile: bdMobileSchema,
+    mobile: bdMobileAfterCountryCodeSchema,
     email: optionalEmailSchema,
     bmdcNumber: bmdcSchema,
-    institution: z.string().trim().min(2, 'Enter your institution').max(120),
-    interest: z.enum(COURSE_CATEGORIES),
+    institution: z.string().min(1, 'Select your institution').max(120),
+    institutionOther: z.string().trim().max(120).optional(),
+    interest: z.enum([...COURSE_CATEGORIES, 'OTHER']),
     password: passwordSchema,
     confirmPassword: z.string(),
     acceptTerms: z.literal(true, {
@@ -34,6 +36,10 @@ export const registerSchema = z
   .refine((values) => values.password === values.confirmPassword, {
     path: ['confirmPassword'],
     message: 'Passwords do not match',
+  })
+  .refine((values) => values.institution !== 'OTHER' || Boolean(values.institutionOther?.trim()), {
+    path: ['institutionOther'],
+    message: 'Enter your institution',
   });
 
 export const otpVerifySchema = z.object({

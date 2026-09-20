@@ -148,6 +148,10 @@ function toCoursePayload(course) {
   }
   copy('accessDays', course.accessDays);
   copy('isPublished', course.isPublished);
+  copy('mixedNegativeMarkingMin', course.mixedNegativeMarkingMin);
+  copy('mixedNegativeMarkingMax', course.mixedNegativeMarkingMax);
+  copy('mixedPassMarkMin', course.mixedPassMarkMin);
+  copy('mixedPassMarkMax', course.mixedPassMarkMax);
   copy('subtitle', course.subtitle);
   copy('description', course.description);
   copy('duration', course.duration);

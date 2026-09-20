@@ -24,7 +24,7 @@ export default function CourseLeaderboardTab() {
     queryFn: () => fetchAdminExams({ courseId: course.id }),
   });
 
-  const { data: leaderboard, isLoading } = useQuery({
+  const { data: leaderboard, isLoading, isError, error, isFetching, refetch } = useQuery({
     queryKey: ['admin', 'leaderboard', course.id, selectedExamId],
     queryFn: () => selectedExamId ? fetchAdminExamPositions(selectedExamId) : fetchAdminCourseLeaderboard(course.id),
   });
@@ -98,9 +98,13 @@ export default function CourseLeaderboardTab() {
         ) : (
           <Table
             columns={columns}
-            data={rows}
-            rowKey={(row) => row.userId}
-            emptyMessage="No submissions found."
+            rows={rows}
+            getRowId={(row) => row.userId}
+            isError={isError}
+            error={error}
+            isFetching={isFetching}
+            onRetry={refetch}
+            emptyTitle="No submissions found."
           />
         )}
       </Card>

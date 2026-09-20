@@ -23,6 +23,12 @@ const courseFields = z.object({
   slug: z.string().min(3).max(160).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), title: text,
   category: z.enum(['FCPS', 'BCS', 'MBBS']), price: money, discountPrice: money.nullable().optional(),
   accessDays: z.number().int().min(1).max(3650).default(180), isPublished: z.boolean().default(false),
+  // Allowed negativeMarking/passMark range for this course's "mixed" exams. Permissive
+  // defaults mean this is opt-in: existing exams are unaffected until an admin narrows it.
+  mixedNegativeMarkingMin: z.number().min(0).max(1000).multipleOf(0.001).default(0),
+  mixedNegativeMarkingMax: z.number().min(0).max(1000).multipleOf(0.001).default(1000),
+  mixedPassMarkMin: z.number().min(0).max(100).multipleOf(0.001).default(0),
+  mixedPassMarkMax: z.number().min(0).max(100).multipleOf(0.001).default(100),
   ...metadata.shape,
 }).strict();
 const instructorReviewFields = z.object({
@@ -54,6 +60,8 @@ export function courseDto(row) {
   return { ...metadata.parse(row.metadata ?? {}), id: row.id, slug: row.slug, title: row.title, category: row.category,
     price: row.price_minor / 100, discountPrice: row.discount_minor === null ? null : row.discount_minor / 100,
     accessDays: row.access_days, isPublished: row.is_published, status: row.is_published ? 'published' : 'draft',
+    mixedNegativeMarkingMin: Number(row.mixed_negative_marking_min), mixedNegativeMarkingMax: Number(row.mixed_negative_marking_max),
+    mixedPassMarkMin: Number(row.mixed_pass_mark_min), mixedPassMarkMax: Number(row.mixed_pass_mark_max),
     lessonCount: Number(row.lesson_count || 0), enrolledCount: Number(row.enrolled_count || 0), enrolled: Number(row.enrolled_count || 0), createdAt: row.created_at };
 }
 
@@ -323,11 +331,16 @@ export function courseRoutes(route, database, config) {
       const previous = existing ? Object.fromEntries(Object.entries(courseDto(existing)).filter(([key]) => key in courseFields.shape)) : {};
       const input = courseFields.parse({ ...previous, ...request.body });
       ensure(input.discountPrice == null || input.discountPrice <= input.price, 400, 'INVALID_PRICE', 'Discount price cannot exceed the course price.');
+      ensure(input.mixedNegativeMarkingMin <= input.mixedNegativeMarkingMax, 400, 'INVALID_NEGATIVE_MARKING_RANGE', 'The minimum deduction cannot exceed the maximum.');
+      ensure(input.mixedPassMarkMin <= input.mixedPassMarkMax, 400, 'INVALID_PASS_MARK_RANGE', 'The minimum pass mark cannot exceed the maximum.');
       const presentation = metadata.parse(Object.fromEntries(Object.keys(metadata.shape).map(key => [key, input[key]])));
-      const values = [input.slug, input.title, input.category, Math.round(input.price * 100), input.discountPrice == null ? null : Math.round(input.discountPrice * 100), input.accessDays, input.isPublished, JSON.stringify(presentation)];
+      const values = [input.slug, input.title, input.category, Math.round(input.price * 100), input.discountPrice == null ? null : Math.round(input.discountPrice * 100), input.accessDays, input.isPublished,
+        input.mixedNegativeMarkingMin, input.mixedNegativeMarkingMax, input.mixedPassMarkMin, input.mixedPassMarkMax, JSON.stringify(presentation)];
+      const columns = ['slug', 'title', 'category', 'price_minor', 'discount_minor', 'access_days', 'is_published',
+        'mixed_negative_marking_min', 'mixed_negative_marking_max', 'mixed_pass_mark_min', 'mixed_pass_mark_max', 'metadata'];
       const saved = creating
-        ? await one(transaction, 'INSERT INTO courses(slug,title,category,price_minor,discount_minor,access_days,is_published,metadata) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *', values)
-        : await one(transaction, 'UPDATE courses SET slug=$1,title=$2,category=$3,price_minor=$4,discount_minor=$5,access_days=$6,is_published=$7,metadata=$8 WHERE id=$9 RETURNING *', [...values, existing.id]);
+        ? await one(transaction, `INSERT INTO courses(${columns.join(',')}) VALUES (${values.map((value, index) => `$${index + 1}`).join(',')}) RETURNING *`, values)
+        : await one(transaction, `UPDATE courses SET ${columns.map((column, index) => `${column}=$${index + 1}`).join(',')} WHERE id=$${values.length + 1} RETURNING *`, [...values, existing.id]);
       await audit(transaction, request.auth.user_id, creating ? 'course.created' : 'course.updated', saved.id);
       return courseDto(saved);
     });

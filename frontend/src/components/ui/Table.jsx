@@ -13,12 +13,30 @@ export default function Table({
   columns,
   rows = [],
   isLoading = false,
+  isError = false,
+  error,
+  isFetching = false,
+  onRetry,
   emptyTitle = 'Nothing here yet',
   emptyDescription,
   getRowId = (row, index) => row?.id ?? index,
   onRowClick,
   className,
 }) {
+  // A failed request is not the same as a genuinely empty result — collapsing the two would
+  // read as "there's nothing here" when the real story is "this couldn't be loaded".
+  if (!isLoading && isError) {
+    return (
+      <EmptyState
+        variant="error"
+        title="Couldn't load this data"
+        description={error?.message || 'Something went wrong. Please try again.'}
+        onRetry={onRetry}
+        isFetching={isFetching}
+      />
+    );
+  }
+
   if (!isLoading && !rows.length) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }

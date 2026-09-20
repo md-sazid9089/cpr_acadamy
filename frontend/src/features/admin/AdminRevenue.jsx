@@ -6,6 +6,7 @@ import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import Input, { Textarea } from '@/components/ui/Input.jsx';
@@ -172,16 +173,28 @@ export default function AdminRevenue() {
   const [filter, setFilter] = useState(PAYMENT_STATUS.PENDING);
   const [reconciling, setReconciling] = useState(null);
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ['admin', 'revenue'], queryFn: fetchAdminRevenue });
+  const { data, isLoading, isError, error, isFetching, refetch } = useQuery({ queryKey: ['admin', 'revenue'], queryFn: fetchAdminRevenue });
 
   const finishReconcile = () => {
     setReconciling(null);
     queryClient.invalidateQueries({ queryKey: ['admin'] });
   };
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <ContentSkeleton variant="dashboard" label="Loading revenue" />
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <EmptyState
+        variant="error"
+        title="Couldn't load revenue"
+        description={error?.message || 'Something went wrong. Please try again.'}
+        onRetry={refetch}
+        isFetching={isFetching}
+      />
     );
   }
 

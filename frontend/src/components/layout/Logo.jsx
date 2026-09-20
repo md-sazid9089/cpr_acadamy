@@ -29,8 +29,11 @@ export default function Logo({ className, compact = false }) {
         width="240"
         height="191"
         className={cn(
-          'aspect-square rounded-none object-cover border border-stone-200',
-          compact ? 'h-11 w-11' : 'h-[4.5rem] w-[4.5rem]',
+          // The box is intentionally wider than the artwork's own 240x191
+          // ratio (a 2:1 box) — object-contain keeps the mark itself
+          // undistorted and centered, with the extra width as side padding.
+          'rounded-none object-contain border border-stone-200',
+          compact ? 'h-11 w-[5.5rem]' : 'h-[4.5rem] w-[9rem]',
         )}
       />
     </Link>

@@ -48,7 +48,7 @@ export default function ExamResult() {
     <div className="space-y-6">
       <DashboardPageHeader title="Exam Result" backTo="/dashboard/exams" />
       {lateSubmission && (
-        <p role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+        <p role="alert" className="rounded-lg border border-brand-300 bg-brand-50 p-3 text-sm text-brand-900">
           The deadline passed before your final submission reached the server, so this result was graded from your
           most recently saved answers. Any change made in the last moments may not be included.
         </p>

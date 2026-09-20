@@ -33,6 +33,9 @@ export function loadConfig(env = process.env) {
     smsMode,
     smsWebhookUrl: env.SMS_WEBHOOK_URL,
     smsWebhookToken: env.SMS_WEBHOOK_TOKEN,
+    // Temporary switch to let new signups skip OTP entry and go straight to the
+    // approval queue, logged in. Flip back to 'false' to re-require SMS verification.
+    skipPhoneVerification: env.SKIP_PHONE_VERIFICATION === 'true',
     accessSeconds: 3600,
     refreshSeconds: 30 * 86400,
     // Admin sessions carry more blast radius (payments, scores, approvals), so they expire sooner and must reauthenticate more often.

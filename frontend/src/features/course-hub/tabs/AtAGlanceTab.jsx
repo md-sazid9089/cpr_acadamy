@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaPlay } from 'react-icons/fa6';
 import { useCourseVideos } from '../api/courseHub.queries.js';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
+import Button from '@/components/ui/Button.jsx';
 
 /**
  * Format an ISO date string as "DD Mon YYYY".
@@ -23,11 +24,24 @@ function formatDateLabel(dateStr) {
  */
 export default function AtAGlanceTab({ courseSlug }) {
   const navigate = useNavigate();
-  const { data: videoGroups = [], isLoading } = useCourseVideos(courseSlug);
+  const { data: videoGroups = [], isLoading, isError, error, isFetching, refetch } = useCourseVideos(courseSlug);
 
   if (isLoading) {
     return (
       <ContentSkeleton label="Loading videos" />
+    );
+  }
+
+  if (isError) {
+    return (
+      <div role="alert" className="py-16 text-center">
+        <p className="text-sm font-semibold text-stone-500 dark:text-brand-200">
+          {error?.message || "Couldn't load videos. Please try again."}
+        </p>
+        <Button size="sm" variant="outline" className="mt-4" onClick={() => refetch()} isLoading={isFetching}>
+          Retry
+        </Button>
+      </div>
     );
   }
 

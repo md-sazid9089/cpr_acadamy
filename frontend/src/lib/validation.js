@@ -12,6 +12,17 @@ export const bdMobileSchema = z
   .trim()
   .regex(/^01[3-9]\d{8}$/, 'Enter a valid Bangladeshi mobile number, e.g. 01712345678');
 
+/**
+ * Bangladeshi mobile typed after a visible "+880" prefix, so the leading 0
+ * (already implied by the country code) is left off: 1XXXXXXXXX, not
+ * 01XXXXXXXXX. Normalizes to the standard 01XXXXXXXXX form the API expects.
+ */
+export const bdMobileAfterCountryCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^1[3-9]\d{8}$/, 'Enter a valid Bangladeshi mobile number, e.g. 1712345678')
+  .transform((value) => `0${value}`);
+
 export const fullNameSchema = z
   .string()
   .trim()
