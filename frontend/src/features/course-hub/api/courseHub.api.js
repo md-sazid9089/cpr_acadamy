@@ -28,3 +28,13 @@ export async function markLessonComplete(lessonId) {
   const { data } = await apiClient.post(`/lessons/${lessonId}/complete`);
   return data;
 }
+
+/**
+ * A short-lived signed link for a lesson's video or notes file. The backend never hands
+ * out the permanent source URL for directly-hosted content — enrollment is re-checked on
+ * every call, and the link itself expires, so it can't outlive access to the course.
+ */
+export async function fetchLessonContentUrl(lessonId, kind) {
+  const { data } = await apiClient.get(`/lessons/${lessonId}/content-url`, { params: { kind } });
+  return data;
+}

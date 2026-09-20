@@ -16,8 +16,8 @@ import VideoPlayer from '@/features/learning/components/VideoPlayer.jsx';
 import SecurePdfViewer from '@/features/learning/components/SecurePdfViewer.jsx';
 import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import Button from '@/components/ui/Button.jsx';
-import { useCourseVideos } from '@/features/course-hub/api/courseHub.queries.js';
-import { markLessonComplete } from '@/features/course-hub/api/courseHub.api.js';
+import { useCourseVideos, useLessonContentUrl } from '@/features/course-hub/api/courseHub.queries.js';
+import { markLessonComplete, fetchLessonContentUrl } from '@/features/course-hub/api/courseHub.api.js';
 import { useMyCourses, dashboardKeys, useCreateComplaint } from '@/features/student-dashboard/api/dashboard.queries.js';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -87,6 +87,15 @@ function NotesPanel({ courseSlug, lessonId }) {
 
 /** Downloadable / viewable lecture sheet for the lesson. */
 function LectureSheetPanel({ lesson }) {
+  // The permanent PDF URL is never sent to the client — a fresh signed link is
+  // fetched (and re-checks enrollment) only when the student actually asks for it.
+  const fetchLink = useMutation({ mutationFn: () => fetchLessonContentUrl(lesson.id, 'notes') });
+
+  const handleDownload = async () => {
+    const { url } = await fetchLink.mutateAsync();
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4">
@@ -99,8 +108,8 @@ function LectureSheetPanel({ lesson }) {
             <p className="text-xs text-stone-500">{lesson.title}</p>
           </div>
         </div>
-        {lesson.notesUrl ? (
-          <Button size="sm" variant="outline" href={lesson.notesUrl} target="_blank" rel="noreferrer">
+        {lesson.hasNotes ? (
+          <Button type="button" size="sm" variant="outline" onClick={handleDownload} isLoading={fetchLink.isPending}>
             <FaDownload aria-hidden="true" className="h-3 w-3" />
             Download
           </Button>
@@ -198,6 +207,12 @@ export default function CoursePlayer() {
 
   const watermark = user?.fullName || user?.mobile || undefined;
 
+  // A YouTube lesson's `src` is already the (inherently public) embed URL. A directly-hosted
+  // file never sends its permanent URL to the client, so a signed, short-lived link is
+  // fetched just-in-time instead — see the /content/:token proxy on the backend.
+  const { data: videoLink } = useLessonContentUrl(current?.id, 'video', Boolean(current?.videoIsFile));
+  const videoSrc = current?.src || (current?.videoIsFile ? videoLink?.url : undefined);
+
   if (isLoading) {
     return (
       <PageSkeleton variant="detail" />
@@ -237,7 +252,7 @@ export default function CoursePlayer() {
       <div className="mx-auto grid max-w-7xl gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {/* Player column */}
         <div className="min-w-0 space-y-5">
-          <VideoPlayer src={current.src} title={current.title} watermark={watermark} onEnded={() => complete.mutate(current.id)} />
+          <VideoPlayer src={videoSrc} title={current.title} watermark={watermark} onEnded={() => complete.mutate(current.id)} />
 
           <div className="rounded-2xl border border-stone-200 bg-white p-5">
             <h1 className="text-base font-bold leading-snug text-stone-900 sm:text-lg">
