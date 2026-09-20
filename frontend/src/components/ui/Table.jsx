@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Skeleton } from './Skeleton.jsx';
 import EmptyState from './EmptyState.jsx';
+import Button from './Button.jsx';
 
 /**
  * Column-driven table used by dashboard and admin lists.
@@ -13,12 +14,27 @@ export default function Table({
   columns,
   rows = [],
   isLoading = false,
+  isError = false,
+  error,
+  onRetry,
   emptyTitle = 'Nothing here yet',
   emptyDescription,
   getRowId = (row, index) => row?.id ?? index,
   onRowClick,
   className,
 }) {
+  // A failed request is not the same as a genuinely empty result — collapsing the two would
+  // read as "there's nothing here" when the real story is "this couldn't be loaded".
+  if (!isLoading && isError) {
+    return (
+      <EmptyState
+        title="Couldn't load this data"
+        description={error?.message || 'Something went wrong. Please try again.'}
+        action={onRetry && <Button variant="outline" onClick={onRetry}>Retry</Button>}
+      />
+    );
+  }
+
   if (!isLoading && !rows.length) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }

@@ -1,16 +1,30 @@
 import { useCourseSchedule } from '../api/courseHub.queries.js';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
+import Button from '@/components/ui/Button.jsx';
 
 /**
  * Schedule tab — displays the batch routine table directly inside the
  * Course Hub, reusing the same table structure as CourseSchedule.jsx.
  */
 export default function ScheduleTab({ courseSlug }) {
-  const { data: schedule = [], isLoading } = useCourseSchedule(courseSlug);
+  const { data: schedule = [], isLoading, isError, error, refetch } = useCourseSchedule(courseSlug);
 
   if (isLoading) {
     return (
       <ContentSkeleton label="Loading schedule" />
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="py-16 text-center">
+        <p className="text-sm font-semibold text-stone-500 dark:text-brand-200">
+          {error?.message || "Couldn't load the schedule. Please try again."}
+        </p>
+        <Button size="sm" variant="outline" className="mt-4" onClick={() => refetch()}>
+          Retry
+        </Button>
+      </div>
     );
   }
 

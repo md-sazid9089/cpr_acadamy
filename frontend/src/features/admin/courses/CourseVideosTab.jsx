@@ -53,7 +53,7 @@ export default function CourseVideosTab() {
   const [deletingChapter, setDeletingChapter] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: videos = [], isLoading } = useQuery({
+  const { data: videos = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: adminVideosKey(course.id),
     queryFn: () => fetchAdminVideos({ courseId: course.id }),
   });
@@ -224,6 +224,12 @@ export default function CourseVideosTab() {
 
         {isLoading ? (
           <ContentSkeleton label="Loading videos" />
+        ) : isError ? (
+          <EmptyState
+            title="Couldn't load videos"
+            description={error?.message || 'Something went wrong. Please try again.'}
+            action={<Button size="sm" variant="outline" onClick={() => refetch()}>Retry</Button>}
+          />
         ) : groups.length === 0 ? (
           <EmptyState
             title="No videos yet"

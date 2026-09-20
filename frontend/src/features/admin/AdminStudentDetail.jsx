@@ -64,7 +64,17 @@ export default function AdminStudentDetail() {
   }
 
   const student = studentQuery.data;
-  if (studentQuery.isError || !student) {
+  if (studentQuery.isError) {
+    return (
+      <EmptyState
+        className="min-h-screen"
+        title="Couldn't load this student"
+        description={studentQuery.error?.message || 'Something went wrong. Please try again.'}
+        action={<Button variant="outline" onClick={() => studentQuery.refetch()}>Retry</Button>}
+      />
+    );
+  }
+  if (!student) {
     return (
       <EmptyState
         className="min-h-screen"
@@ -170,6 +180,9 @@ export default function AdminStudentDetail() {
           columns={PAYMENT_COLUMNS}
           rows={payments}
           isLoading={paymentsQuery.isLoading}
+          isError={paymentsQuery.isError}
+          error={paymentsQuery.error}
+          onRetry={paymentsQuery.refetch}
           emptyTitle="No payments"
           emptyDescription="Nothing has been paid or invoiced for this account."
         />

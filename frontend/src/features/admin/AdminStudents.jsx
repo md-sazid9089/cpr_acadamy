@@ -24,7 +24,7 @@ export default function AdminStudents() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: students = [], isLoading } = useQuery({
+  const { data: students = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: ['admin', 'students', filter],
     queryFn: () => fetchStudents({ status: filter }),
   });
@@ -148,6 +148,9 @@ export default function AdminStudents() {
             columns={columns}
             rows={students}
             isLoading={isLoading}
+            isError={isError}
+            error={error}
+            onRetry={refetch}
             onRowClick={(row) => navigate(`/admin/students/${row.id}`)}
             emptyTitle="No students in this view"
             emptyDescription="Try a different filter."

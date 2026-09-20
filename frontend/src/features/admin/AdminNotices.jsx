@@ -21,7 +21,7 @@ export default function AdminNotices() {
   const [form, setForm] = useState(EMPTY);
   const queryClient = useQueryClient();
 
-  const { data: notices = [], isLoading } = useQuery({ queryKey: ['admin', 'announcements'], queryFn: fetchAdminAnnouncements });
+  const { data: notices = [], isLoading, isError, error, refetch } = useQuery({ queryKey: ['admin', 'announcements'], queryFn: fetchAdminAnnouncements });
 
   const done = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'announcements'] });
@@ -66,6 +66,12 @@ export default function AdminNotices() {
         />
         {isLoading ? (
           <ContentSkeleton label="Loading notices" />
+        ) : isError ? (
+          <EmptyState
+            title="Couldn't load notices"
+            description={error?.message || 'Something went wrong. Please try again.'}
+            action={<Button variant="outline" onClick={() => refetch()}>Retry</Button>}
+          />
         ) : notices.length === 0 ? (
           <EmptyState
             title="No notices yet"

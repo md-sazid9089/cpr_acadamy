@@ -81,11 +81,24 @@ function ExamCard({ exam }) {
  */
 export default function ExamTab({ courseSlug }) {
   const [activeType, setActiveType] = useState('sba');
-  const { data: exams, isLoading } = useCourseExams(courseSlug);
+  const { data: exams, isLoading, isError, error, refetch } = useCourseExams(courseSlug);
 
   if (isLoading) {
     return (
       <ContentSkeleton label="Loading exams" />
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="rounded-xl border border-stone-200 bg-white px-6 py-12 text-center dark:border-stone-200 dark:bg-surface-dark">
+        <p className="text-sm font-semibold text-stone-500 dark:text-brand-200">
+          {error?.message || "Couldn't load exams. Please try again."}
+        </p>
+        <Button size="sm" variant="outline" className="mt-4" onClick={() => refetch()}>
+          Retry
+        </Button>
+      </div>
     );
   }
 
