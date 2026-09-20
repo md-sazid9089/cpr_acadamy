@@ -112,7 +112,7 @@ export default function Hero() {
               fit="contain"
               // Landscape frame with side arrows, matching the reference card.
               showArrows
-              frameClassName="rounded-2xl border border-stone-200 dark:border-stone-200"
+              frameClassName="rounded-[6px] rounded-tl-[44px] rounded-br-[44px] border border-stone-200 dark:border-stone-200"
               // Wide landscape card on every viewport.
               aspectClassName="aspect-[16/10]"
               label="Course promotions"
