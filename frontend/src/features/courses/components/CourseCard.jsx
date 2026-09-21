@@ -67,17 +67,11 @@ export default function CourseCard({ course, onEnroll }) {
         </div>
       </div>
 
-      {/* ── Compact floating info badge — overlaps minimally at the very bottom ── */}
-      <div className="relative mx-2.5 -mt-4 rounded-card border border-stone-200 bg-white/95 p-2.5 backdrop-blur-sm sm:mx-3 sm:p-3.5 dark:border-stone-200 dark:bg-surface-dark/95">
+      {/* ── Floating info card — pulled up to overlap roughly the bottom third of the poster ── */}
+      <div className="relative mx-2.5 -mt-[33%] rounded-card border border-stone-200 bg-white/95 p-2.5 backdrop-blur-sm sm:mx-3 sm:p-3.5 dark:border-stone-200 dark:bg-surface-dark/95">
         <h3 className="line-clamp-1 text-xs font-bold leading-tight text-stone-900 sm:text-sm dark:text-white">
           {course.title}
         </h3>
-
-        {course.subtitle && (
-          <p className="mt-0.5 line-clamp-1 text-[11px] text-stone-500 dark:text-brand-200">
-            {course.subtitle}
-          </p>
-        )}
 
         {/* Price + start date */}
         <div className="mt-1.5 flex items-baseline gap-1.5">
@@ -102,7 +96,7 @@ export default function CourseCard({ course, onEnroll }) {
             Details
           </Button>
           <Button size="sm" className="order-1 sm:order-2" fullWidth onClick={() => onEnroll?.(course)}>
-            Enrol Now
+            Enrol
           </Button>
         </div>
       </div>

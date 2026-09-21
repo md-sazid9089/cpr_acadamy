@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { basename, extname, resolve } from 'node:path';
 import { z } from 'zod';
+import { v2 as cloudinary } from 'cloudinary';
 import { ensure } from '../http.js';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -17,13 +18,33 @@ function uploadsPath() {
   return resolve(process.cwd(), 'public', 'uploads');
 }
 
-export function mediaRoutes(route) {
+// `cloudinary://<api_key>:<api_secret>@<cloud_name>` — parsed by hand rather than
+// relying on the SDK's implicit process.env.CLOUDINARY_URL pickup, so the
+// credential flows through this app's usual explicit config object like everything else.
+function configureCloudinary(cloudinaryUrl) {
+  const parsed = new URL(cloudinaryUrl);
+  cloudinary.config({ cloud_name: parsed.hostname, api_key: parsed.username, api_secret: parsed.password, secure: true });
+}
+
+export function mediaRoutes(route, config) {
   route('POST', '/admin/uploads/images', { auth: 'admin', bodyLimit: uploadBodyLimit, body: z.object({ data: dataUrl }).strict() }, async request => {
     const [, type, encoded] = request.body.data.match(/^data:image\/(jpeg|png|webp);base64,(.+)$/) || [];
     const definition = imageTypes[type];
     const bytes = Buffer.from(encoded, 'base64');
     ensure(bytes.length > 0 && bytes.length <= MAX_IMAGE_BYTES, 413, 'IMAGE_TOO_LARGE', 'Images must be 5 MB or smaller.');
     ensure(definition?.signature(bytes), 400, 'INVALID_IMAGE', 'The selected file is not a valid image.');
+
+    if (config?.cloudinaryUrl) {
+      configureCloudinary(config.cloudinaryUrl);
+      const result = await cloudinary.uploader.upload(request.body.data, {
+        folder: 'cpr-academy/uploads',
+        public_id: randomUUID(),
+        resource_type: 'image',
+      });
+      return { url: result.secure_url };
+    }
+
+    // No Cloudinary account configured (local dev/test) — same validated bytes, kept on disk instead.
     await mkdir(uploadsPath(), { recursive: true });
     const filename = `${randomUUID()}.${definition.extension}`;
     await writeFile(resolve(uploadsPath(), filename), bytes, { flag: 'wx' });

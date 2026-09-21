@@ -29,7 +29,7 @@ export async function fetchCourseExams(slug) {
 }
 
 export async function fetchExamPositions(examId) {
-  const { data } = await apiClient.get(`/exams/${examId}/positions`, { params: { limit: 500 } });
+  const { data } = await apiClient.get(`/exams/${examId}/positions`, { params: { limit: 100 } });
   return data;
 }
 

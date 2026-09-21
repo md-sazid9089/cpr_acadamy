@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import Button from '@/components/ui/Button.jsx';
 import YouTubePlayer from './YouTubePlayer.jsx';
+import PlaybackRateControl from './PlaybackRateControl.jsx';
 
 /** 'https://youtu.be/ID', '…/watch?v=ID', '…/embed/ID', '…/shorts/ID' -> 'ID', else null. */
 function extractYouTubeId(url) {
@@ -34,6 +34,12 @@ function extractYouTubeId(url) {
 export default function VideoPlayer({ src, poster, title, watermark, onEnded }) {
   const videoRef = useRef(null);
   const [error, setError] = useState(false);
+  const [rate, setRate] = useState(1);
+
+  const applyRate = (value) => {
+    setRate(value);
+    if (videoRef.current) videoRef.current.playbackRate = value;
+  };
 
   if (!src || error) {
     return (
@@ -74,37 +80,16 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
         Your browser does not support embedded video.
       </video>
 
+      {/* Not every browser's native controls expose a speed setting (Firefox/Safari don't). */}
+      <div className="absolute left-3 top-3 rounded-lg bg-black/40 p-1">
+        <PlaybackRateControl rate={rate} onChange={applyRate} />
+      </div>
+
       {watermark && (
         <span className="pointer-events-none absolute right-3 top-3 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70">
           {watermark}
         </span>
       )}
-    </div>
-  );
-}
-
-/** Playback speed control kept separate so it can be reused by the audio view. */
-export function PlaybackRateControl({ videoRef }) {
-  const rates = [0.75, 1, 1.25, 1.5, 2];
-  const [rate, setRate] = useState(1);
-
-  const apply = (next) => {
-    setRate(next);
-    if (videoRef?.current) videoRef.current.playbackRate = next;
-  };
-
-  return (
-    <div className="flex gap-1">
-      {rates.map((value) => (
-        <Button
-          key={value}
-          size="sm"
-          variant={value === rate ? 'primary' : 'ghost'}
-          onClick={() => apply(value)}
-        >
-          {value}×
-        </Button>
-      ))}
     </div>
   );
 }

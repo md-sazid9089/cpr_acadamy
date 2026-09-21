@@ -29,7 +29,7 @@ export async function buildApp({ database, config, logger = false }) {
   examRoutes(route, database);
   studentRoutes(route, database, config);
   reportRoutes(route, database);
-  mediaRoutes(route);
+  mediaRoutes(route, config);
   galleryRoutes(route, database);
   route('GET', '/openapi.json', config.production ? { auth: 'admin' } : {}, async () => contract);
   return app;

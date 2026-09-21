@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FaArrowRightLong } from 'react-icons/fa6';
 import CategoryPills from '@/features/courses/components/CategoryPills.jsx';
 import CourseCard from '@/features/courses/components/CourseCard.jsx';
 import { useFeaturedCourses } from '@/features/courses/api/courses.queries.js';
@@ -77,9 +79,13 @@ export default function FeaturedCourses() {
         </div>
 
         <div className="mt-10 text-center">
-          <Button to="/batches" variant="outline" className="w-full sm:w-auto">
+          <Link
+            to="/batches"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:underline dark:text-brand-400"
+          >
             View all batches
-          </Button>
+            <FaArrowRightLong aria-hidden="true" className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </div>
     </section>
