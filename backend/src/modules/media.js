@@ -30,8 +30,10 @@ export function mediaRoutes(route) {
     return { url: `/api/media/${filename}` };
   });
 
-  route('GET', '/media/:id', {}, async request => {
-    const filename = basename(request.params.id);
+  // Named ':filename', not ':id' — a bare param called "id" is auto-validated as a
+  // UUID by the route framework, but this value is "<uuid>.<ext>", which isn't one.
+  route('GET', '/media/:filename', {}, async request => {
+    const filename = basename(request.params.filename);
     ensure(/^[0-9a-f-]{36}\.(jpg|png|webp)$/.test(filename), 404, 'NOT_FOUND', 'Image not found.');
     const path = resolve(uploadsPath(), filename);
     try {

@@ -6,7 +6,6 @@ const TRACK_CARDS = [
     id: 'fcps',
     badge: 'FCPS',
     headline: 'FCPS Part-1 ও Residency-র প্রস্তুতি নিতে চান?',
-    subtitle: 'Phase A & B, Combined Batch — Online & Offline',
     cta: 'See Batches',
     ctaTo: '/batches?group=fcps-p1-medicine',
   },
@@ -15,7 +14,6 @@ const TRACK_CARDS = [
     badge: 'BCS Health',
     illustration: '/assets/bg/Doctors-amico.svg',
     headline: 'আপনি কি বিসিএস নিয়ে ভাবছেন?',
-    subtitle: 'BCS (Health) written & viva preparation',
     cta: 'See Batches',
     ctaTo: '/batches',
   },
@@ -24,7 +22,6 @@ const TRACK_CARDS = [
     badge: 'MBBS',
     illustration: '/assets/bg/Medical%20prescription-amico.svg',
     headline: 'MBBS Professional পরীক্ষার প্রস্তুতি নিন',
-    subtitle: '1st–4th professional exam coaching',
     cta: 'See Batches',
     ctaTo: '/batches?group=bmdc-licensing',
   },
@@ -33,7 +30,6 @@ const TRACK_CARDS = [
     badge: 'Career',
     illustration: '/assets/bg/Online%20Doctor-rafiki.svg',
     headline: 'ক্যারিয়ার গাইডলাইন নিয়ে চিন্তিত?',
-    subtitle: 'Free consultation with our expert mentors',
     cta: 'পরামর্শ নিন',
     ctaTo: '/contact',
   },
@@ -53,12 +49,12 @@ export default function TrackPromos() {
         className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-40 dark:opacity-20"
       />
       <div className="container-page">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 sm:gap-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-6">
           {TRACK_CARDS.map((card) => (
             <Link
               key={card.id}
               to={card.ctaTo}
-              className="group relative grid min-h-[260px] grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-center gap-3 overflow-hidden rounded-[6px] rounded-tl-[44px] rounded-br-[44px] border border-blue-100 bg-[linear-gradient(115deg,var(--blue-50)_0%,var(--n-50)_55%,var(--blue-100)_100%)] p-5 transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700 sm:min-h-[300px] sm:gap-5 sm:p-8 xl:p-10"
+              className="group relative grid grid-cols-1 items-center gap-3 overflow-hidden rounded-[6px] rounded-tl-[44px] rounded-br-[44px] border border-blue-100 bg-[linear-gradient(115deg,var(--blue-50)_0%,var(--n-50)_55%,var(--blue-100)_100%)] p-4 transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700 sm:min-h-[300px] sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] sm:gap-5 sm:p-8 xl:p-10"
             >
               <div className="relative z-10 flex min-w-0 flex-col items-start">
                 <span className="rounded-full bg-brand-600 px-3 py-1 text-xs font-bold leading-none text-white">
@@ -66,17 +62,11 @@ export default function TrackPromos() {
                 </span>
 
                 <h3
-                  className="mt-4 text-lg font-extrabold leading-snug tracking-normal text-blue-800 sm:text-xl xl:text-2xl"
+                  className="mt-3 text-sm font-extrabold leading-snug tracking-normal text-blue-800 sm:mt-4 sm:text-xl xl:text-2xl"
                   lang="bn"
                 >
                   {card.headline}
                 </h3>
-
-                {card.subtitle && (
-                  <p className="mt-2 text-xs leading-relaxed text-stone-600 sm:text-sm">
-                    {card.subtitle}
-                  </p>
-                )}
 
                 <span className="mt-5 inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-md border border-blue-700 bg-[linear-gradient(135deg,var(--blue-700),var(--blue-400))] px-3 py-2 text-xs font-semibold text-white transition-transform group-hover:translate-x-0.5 sm:mt-6 sm:px-4 sm:text-sm">
                   <span>{card.cta}</span>
@@ -91,7 +81,7 @@ export default function TrackPromos() {
                 height={500}
                 loading="lazy"
                 decoding="async"
-                className="pointer-events-none aspect-square w-full object-contain"
+                className="pointer-events-none mx-auto aspect-square w-24 object-contain sm:mx-0 sm:w-full"
               />
             </Link>
           ))}

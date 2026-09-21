@@ -495,7 +495,7 @@ export async function deleteAnnouncement(id) {
 // ─── Gallery ────────────────────────────────────────────────────────────────
 
 export async function fetchAdminGallery() {
-  const { data } = await apiClient.get('/admin/gallery', { params: { limit: 200 } });
+  const { data } = await apiClient.get('/admin/gallery', { params: { limit: 100 } });
   return data;
 }
 
