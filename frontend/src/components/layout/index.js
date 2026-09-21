@@ -1,4 +1,4 @@
-export { default as AnnouncementStrip } from './AnnouncementStrip.jsx';
+export { default as UtilityBar } from './UtilityBar.jsx';
 export { default as Navbar } from './Navbar.jsx';
 export { default as Footer } from './Footer.jsx';
 export { default as ChatBubble } from './ChatBubble.jsx';

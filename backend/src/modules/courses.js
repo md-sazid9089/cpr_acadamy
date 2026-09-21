@@ -267,6 +267,26 @@ export function courseRoutes(route, database, config) {
     await database.query('INSERT INTO lesson_progress(user_id,lesson_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [request.auth.user_id, lesson.id]);
     return { ok: true };
   });
+  async function requireLesson(auth, id) {
+    const lesson = await one(database, "SELECT * FROM lessons WHERE id=$1 AND status='published' AND scheduled_at<=now()", [id]);
+    ensure(lesson, 404, 'NOT_FOUND', 'Lesson not found.');
+    await requireCourseAccess(database, auth, lesson.course_id);
+    return lesson;
+  }
+  // Personal notes: the database is the source of truth. `user_id` always comes from the
+  // authenticated session, never the request body, so one student can never read or
+  // overwrite another's notes.
+  route('GET', '/lessons/:id/notes', { auth: 'active' }, async request => {
+    const lesson = await requireLesson(request.auth, request.params.id);
+    const note = await one(database, 'SELECT content,updated_at FROM lesson_notes WHERE user_id=$1 AND lesson_id=$2', [request.auth.user_id, lesson.id]);
+    return { content: note?.content ?? '', updatedAt: note?.updated_at ?? null };
+  });
+  route('PUT', '/lessons/:id/notes', { auth: 'active', body: z.object({ content: z.string().max(20000) }).strict() }, async request => {
+    const lesson = await requireLesson(request.auth, request.params.id);
+    const note = await one(database, `INSERT INTO lesson_notes(user_id,lesson_id,content) VALUES ($1,$2,$3)
+      ON CONFLICT(user_id,lesson_id) DO UPDATE SET content=$3,updated_at=now() RETURNING content,updated_at`, [request.auth.user_id, lesson.id, request.body.content]);
+    return { content: note.content, updatedAt: note.updated_at };
+  });
   route('GET', '/courses/:slug/schedule', {}, async request => {
     const course = await one(database, 'SELECT id FROM courses WHERE slug=$1 AND is_published', [request.params.slug]);
     ensure(course, 404, 'COURSE_NOT_FOUND', 'This course could not be found.');

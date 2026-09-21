@@ -85,12 +85,18 @@ export default function Hero() {
               প্রয়োজন অনুযায়ী প্রস্তুতি শুরু করুন
             </p>
 
-            <div className="button-group mt-10 items-stretch justify-center sm:items-center lg:justify-start">
+            {/* .button-group stacks full-width below sm: everywhere else it's
+                used (e.g. Modal footers), but the hero's two CTAs read better
+                side by side even on a phone — flex-row overrides that, and
+                flex-1 splits the row evenly instead of each button trying to
+                be 100% width. */}
+            <div className="button-group mt-10 flex-row items-stretch justify-center sm:items-center lg:justify-start">
               <Button
                 to="/register"
                 variant="accent"
                 size="lg"
                 shape="pill"
+                className="flex-1 sm:flex-none"
               >
                 প্রস্তুতি শুরু করুন
               </Button>
@@ -98,6 +104,7 @@ export default function Hero() {
                 to="/courses"
                 variant="outline"
                 size="lg"
+                className="flex-1 sm:flex-none"
               >
                 কোর্সগুলো দেখুন
               </Button>

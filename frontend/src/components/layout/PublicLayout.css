@@ -1,8 +1,12 @@
-.homepage-hero {
-  min-height: calc(100svh / var(--homepage-scale-factor, 1));
-}
-
+/* Full-viewport hero is a desktop "landing" treatment — on a phone it just
+   forces a huge empty gap before the heading, since there's no room for
+   content to need centering within 100svh. Scoped to lg: and up, alongside
+   the scale factor it already depends on. */
 @media (min-width: 1024px) {
+  .homepage-hero {
+    min-height: calc(100svh / var(--homepage-scale-factor, 1));
+  }
+
   .homepage-scale {
     --homepage-scale-factor: 0.9;
     zoom: var(--homepage-scale-factor);

@@ -38,3 +38,15 @@ export async function fetchLessonContentUrl(lessonId, kind) {
   const { data } = await apiClient.get(`/lessons/${lessonId}/content-url`, { params: { kind } });
   return data;
 }
+
+/** The signed-in student's personal note for a lesson. `{ content, updatedAt }`. */
+export async function fetchLessonNote(lessonId) {
+  const { data } = await apiClient.get(`/lessons/${lessonId}/notes`);
+  return data;
+}
+
+/** Saves (creates or overwrites) the signed-in student's note for a lesson. */
+export async function saveLessonNote(lessonId, content) {
+  const { data } = await apiClient.put(`/lessons/${lessonId}/notes`, { content });
+  return data;
+}

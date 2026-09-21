@@ -1,5 +1,5 @@
 import { Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
-import AnnouncementStrip from './AnnouncementStrip.jsx';
+import UtilityBar from './UtilityBar.jsx';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
 import ChatBubble from './ChatBubble.jsx';
@@ -23,7 +23,7 @@ export default function PublicLayout() {
 
   return (
     <div className={cn('flex min-h-screen flex-col bg-surface-light dark:bg-surface-dark', pathname === '/' && 'homepage-scale')}>
-      <AnnouncementStrip />
+      <UtilityBar />
       <Navbar />
       {/* -mt-20 cancels the navbar's own height (h-20) so the next section
           starts underneath it. Applied only where a hero can absorb it —

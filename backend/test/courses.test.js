@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fixture } from '../test-support/fixture.js';
 import { signContentToken } from '../src/security.js';
+import { one } from '../src/db.js';
 
 test('catalog publication, admin permissions, and enrollment-protected lessons', async () => {
   const context = await fixture();
@@ -121,5 +122,43 @@ test('signed content links: notes require the URL to be minted first, and the to
 
     const expired = signContentToken({ lessonId: youTube.id, kind: 'notes' }, context.config.tokenSecret, -1);
     assert.equal((await student.request('GET', `/content/${expired}`)).statusCode, 403);
+  } finally { await context.close(); }
+});
+
+test('personal lesson notes are private to the authenticated student and never trust a client-supplied user id', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user();
+    const rival = await context.user('student', '01812345678');
+    const outsider = await context.user('student', '01898765432');
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'notes-course', title: 'Notes Course', category: 'FCPS', price: 500, isPublished: true })).json();
+    for (const user of [student, rival]) await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [user.id, course.id]);
+    const lesson = (await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Lesson', src: 'https://media.example.test/v.mp4', scheduledAt: '2025-01-01T00:00:00Z', status: 'published' })).json();
+
+    assert.deepEqual((await student.request('GET', `/lessons/${lesson.id}/notes`)).json(), { content: '', updatedAt: null });
+    assert.equal((await outsider.request('GET', `/lessons/${lesson.id}/notes`)).statusCode, 403);
+
+    // The body schema has no user-id field at all, so a caller cannot even attempt to write someone else's note.
+    const spoofed = await student.request('PUT', `/lessons/${lesson.id}/notes`, { content: 'Mine', userId: rival.id });
+    assert.equal(spoofed.statusCode, 400);
+    assert.equal(spoofed.json().code, 'VALIDATION_ERROR');
+
+    let response = await student.request('PUT', `/lessons/${lesson.id}/notes`, { content: 'Remember the ABCDE approach.' });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal(response.json().content, 'Remember the ABCDE approach.');
+    assert.ok(response.json().updatedAt);
+
+    assert.equal((await student.request('GET', `/lessons/${lesson.id}/notes`)).json().content, 'Remember the ABCDE approach.');
+    // A different enrolled student sees their own (empty) note, not the first student's.
+    assert.equal((await rival.request('GET', `/lessons/${lesson.id}/notes`)).json().content, '');
+
+    // Writing again overwrites the same row rather than accumulating rows.
+    response = await student.request('PUT', `/lessons/${lesson.id}/notes`, { content: 'Updated.' });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal(response.json().content, 'Updated.');
+    assert.equal((await one(context.database, 'SELECT count(*)::int AS count FROM lesson_notes WHERE user_id=$1 AND lesson_id=$2', [student.id, lesson.id])).count, 1);
+
+    assert.equal((await outsider.request('PUT', `/lessons/${lesson.id}/notes`, { content: 'x' })).statusCode, 403);
   } finally { await context.close(); }
 });

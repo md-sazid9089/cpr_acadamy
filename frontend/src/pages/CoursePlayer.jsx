@@ -16,7 +16,7 @@ import VideoPlayer from '@/features/learning/components/VideoPlayer.jsx';
 import SecurePdfViewer from '@/features/learning/components/SecurePdfViewer.jsx';
 import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import Button from '@/components/ui/Button.jsx';
-import { useCourseVideos, useLessonContentUrl } from '@/features/course-hub/api/courseHub.queries.js';
+import { useCourseVideos, useLessonContentUrl, useLessonNote, useSaveLessonNote } from '@/features/course-hub/api/courseHub.queries.js';
 import { markLessonComplete, fetchLessonContentUrl } from '@/features/course-hub/api/courseHub.api.js';
 import { useMyCourses, dashboardKeys, useCreateComplaint } from '@/features/student-dashboard/api/dashboard.queries.js';
 import { useAuth } from '@/hooks/useAuth';
@@ -38,27 +38,65 @@ const TOOL_TABS = [
   { id: 'doubt', label: 'Ask a Doubt', icon: FaCircleQuestion },
 ];
 
-/** Personal notes for a lesson, kept in the browser keyed by course + lesson. */
+/**
+ * Personal notes for a lesson. The database is the source of truth; a per-account
+ * localStorage copy is kept only as an offline fallback and a one-time upgrade path
+ * for notes written before this was synced to the account.
+ */
 function NotesPanel({ courseSlug, lessonId }) {
-  const storageKey = `cpr:notes:${courseSlug}:${lessonId}`;
+  const { user } = useAuth();
+  const cacheKey = user ? `cpr:note:${user.id}:${lessonId}` : null;
+  const legacyKey = `cpr:notes:${courseSlug}:${lessonId}`;
+  const { data, isLoading, isError } = useLessonNote(lessonId);
+  const saveNote = useSaveLessonNote(lessonId);
   const [text, setText] = useState('');
   const [saved, setSaved] = useState(false);
 
+  const cacheLocally = (content) => {
+    if (!cacheKey) return;
+    try { localStorage.setItem(cacheKey, content); } catch { /* best-effort offline cache only */ }
+  };
+
+  // Seed from the server once it answers. If the account has no note yet, but this
+  // browser still holds one from before notes were synced, upload it once.
   useEffect(() => {
-    setText(localStorage.getItem(storageKey) ?? '');
-    setSaved(false);
-  }, [storageKey]);
+    if (!data) return;
+    setText(data.content);
+    cacheLocally(data.content);
+    if (!data.content) {
+      let legacy = null;
+      try { legacy = localStorage.getItem(legacyKey); } catch { /* ignore */ }
+      if (legacy) saveNote.mutate(legacy, { onSuccess: (saved) => setText(saved.content) });
+    }
+    try { localStorage.removeItem(legacyKey); } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  // Offline fallback: the server request failed, so show whatever was last cached
+  // on this device for this account rather than a blank box.
+  useEffect(() => {
+    if (isError && cacheKey) {
+      let cached = null;
+      try { cached = localStorage.getItem(cacheKey); } catch { /* ignore */ }
+      if (cached !== null) setText(cached);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isError]);
 
   const save = () => {
-    localStorage.setItem(storageKey, text);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    saveNote.mutate(text, {
+      onSuccess: (saved) => {
+        cacheLocally(saved.content);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      },
+    });
   };
 
   return (
     <div>
       <p className="text-sm text-stone-500">
-        Jot down key points while you watch. Your notes are saved to this device for each lesson.
+        Jot down key points while you watch. Your notes are saved to your account and follow you across devices.
       </p>
       <textarea
         value={text}
@@ -67,11 +105,12 @@ function NotesPanel({ courseSlug, lessonId }) {
           setSaved(false);
         }}
         rows={8}
+        disabled={isLoading}
         placeholder="Type your notes here…"
-        className="mt-3 w-full resize-y rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-800 placeholder:text-stone-400 focus:border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+        className="mt-3 w-full resize-y rounded-xl border border-stone-200 bg-white p-4 text-sm text-stone-800 placeholder:text-stone-400 focus:border-stone-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-60"
       />
       <div className="mt-3 flex items-center gap-3">
-        <Button size="sm" onClick={save} disabled={!text.trim()}>
+        <Button size="sm" onClick={save} disabled={!text.trim()} isLoading={saveNote.isPending}>
           Save Note
         </Button>
         {saved && (
@@ -79,6 +118,9 @@ function NotesPanel({ courseSlug, lessonId }) {
             <FaCheck aria-hidden="true" className="h-3 w-3" />
             Saved
           </span>
+        )}
+        {saveNote.isError && (
+          <span className="text-xs font-medium text-red-600">Couldn't save — check your connection.</span>
         )}
       </div>
     </div>

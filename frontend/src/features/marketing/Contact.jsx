@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { FaFacebookF, FaYoutube, FaTelegram, FaPhone, FaEnvelope, FaRegClock, FaLocationDot } from 'react-icons/fa6';
 import Card from '@/components/ui/Card.jsx';
 import Input, { Textarea, Select } from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -17,12 +18,23 @@ const contactSchema = z.object({
   message: z.string().trim().min(10, 'Please write at least a sentence or two').max(1000),
 });
 
-const CONTACT_CARDS = [
-  { label: 'Call us', value: CONTACT.phone, href: `tel:${CONTACT.phone.replace(/\s/g, '')}` },
-  { label: 'Email', value: CONTACT.email, href: `mailto:${CONTACT.email}` },
-  { label: 'WhatsApp', value: CONTACT.phone, href: `https://wa.me/${CONTACT.whatsapp}` },
-  { label: 'Office hours', value: CONTACT.hours },
+// Same helpline number the footer already publishes, alongside the general contact line.
+const HELPLINE = '+88 01329 672052';
+
+const SOCIAL_LINKS = [
+  { icon: FaFacebookF, href: 'https://facebook.com', label: 'Facebook' },
+  { icon: FaYoutube, href: 'https://youtube.com', label: 'YouTube' },
+  { icon: FaTelegram, href: 'https://telegram.org', label: 'Telegram' },
 ];
+
+const CONTACT_CARDS = [
+  { icon: FaPhone, label: 'Contact No.', value: CONTACT.phone, href: `tel:${CONTACT.phone.replace(/\s/g, '')}` },
+  { icon: FaEnvelope, label: 'Email', value: CONTACT.email, href: `mailto:${CONTACT.email}` },
+  { icon: FaRegClock, label: 'Opening Hours', value: CONTACT.hours },
+  { icon: FaLocationDot, label: 'Address', value: CONTACT.address },
+];
+
+const MAP_SRC = `https://www.google.com/maps?q=${encodeURIComponent(CONTACT.address)}&output=embed`;
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
@@ -47,18 +59,43 @@ export default function Contact() {
 
   return (
     <div className="bg-surface-light dark:bg-surface-dark">
-      <section className="bg-surface-light py-12 text-center dark:bg-surface-dark">
-        <div className="container-page">
-          <h1 className="section-heading">Contact Us</h1>
-          <p className="section-subheading mx-auto text-center">
-            Questions about a batch, payment or your account? Send a message and we'll get back to
-            you the same working day.
+      <section className="container-page grid gap-10 py-12 lg:grid-cols-2 lg:items-start">
+        <div>
+          <h1 className="text-2xl font-extrabold text-stone-900 sm:text-3xl dark:text-white">Contact Us</h1>
+          <div className="mt-4 space-y-1.5">
+            <a
+              href={`tel:${CONTACT.phone.replace(/\s/g, '')}`}
+              className="block text-xl font-bold text-brand-700 hover:underline dark:text-brand-400"
+            >
+              {CONTACT.phone}
+            </a>
+            <a
+              href={`tel:${HELPLINE.replace(/\s/g, '')}`}
+              className="block text-xl font-bold text-brand-700 hover:underline dark:text-brand-400"
+            >
+              {HELPLINE}
+            </a>
+          </div>
+          <p className="mt-4 max-w-sm text-sm leading-relaxed text-stone-600 dark:text-brand-200">
+            We would love to speak with you. Feel free to reach out using the below details.
           </p>
+          <div className="mt-5 flex items-center gap-2">
+            {SOCIAL_LINKS.map(({ icon: Icon, href, label }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-brand-700 transition-colors hover:bg-brand-600 hover:text-white dark:bg-brand-950 dark:text-brand-300"
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </a>
+            ))}
+          </div>
         </div>
-      </section>
 
-      <section className="container-page grid gap-8 py-12 lg:grid-cols-3">
-        <Card className="p-6 lg:col-span-2">
+        <Card className="p-6">
           {submitted ? (
             <div className="py-10 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-950 dark:text-brand-400">
@@ -124,44 +161,47 @@ export default function Contact() {
               />
 
               <Button type="submit" fullWidth isLoading={isSubmitting}>
-                Send message
+                Submit
               </Button>
             </form>
           )}
         </Card>
+      </section>
 
-        <aside className="space-y-4">
-          {CONTACT_CARDS.map((item) => (
-            <Card key={item.label} className="p-5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">
-                {item.label}
-              </p>
-              {item.href ? (
+      <section className="container-page pb-16 text-center">
+        <h2 className="text-xl font-extrabold text-stone-900 sm:text-2xl dark:text-white">Or Get In Touch</h2>
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {CONTACT_CARDS.map(({ icon: Icon, label, value, href }) => (
+            <Card key={label} className="p-5 text-center">
+              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300">
+                <Icon className="h-4 w-4" />
+              </div>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-stone-400">{label}</p>
+              {href ? (
                 <a
-                  href={item.href}
-                  target={item.href.startsWith('http') ? '_blank' : undefined}
-                  rel="noopener noreferrer"
-                  className="mt-1 block text-sm font-medium text-brand-700 hover:underline dark:text-brand-400"
+                  href={href}
+                  className="mt-1 block text-sm font-medium text-stone-800 hover:text-brand-700 hover:underline dark:text-brand-200"
                 >
-                  {item.value}
+                  {value}
                 </a>
               ) : (
-                <p className="mt-1 text-sm font-medium text-stone-800 dark:text-brand-200">
-                  {item.value}
-                </p>
+                <p className="mt-1 text-sm font-medium text-stone-800 dark:text-brand-200">{value}</p>
               )}
             </Card>
           ))}
+        </div>
+      </section>
 
-          <Card className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-stone-400">Address</p>
-            <p className="mt-1 text-sm text-stone-700 dark:text-brand-200">{CONTACT.address}</p>
-            {/* TODO: embed a map once the office location is confirmed. */}
-            <div className="mt-3 flex h-32 items-center justify-center rounded-lg bg-surface-subtle text-xs text-stone-400 dark:bg-surface-dark">
-              Map placeholder
-            </div>
-          </Card>
-        </aside>
+      <section className="container-page pb-16">
+        <Card className="h-[280px] overflow-hidden sm:h-[380px]">
+          <iframe
+            title="CPR Academy location"
+            src={MAP_SRC}
+            className="h-full w-full border-0"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </Card>
       </section>
     </div>
   );
