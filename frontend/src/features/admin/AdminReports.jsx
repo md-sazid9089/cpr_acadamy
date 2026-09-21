@@ -1,15 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchAdminReports } from './api/admin.api.js';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatBDT, formatNumber } from '@/lib/utils';
 
 export default function AdminReports() {
-  const { data, isLoading } = useQuery({ queryKey: ['admin', 'reports'], queryFn: fetchAdminReports });
+  const { data, isLoading, isError, error, isFetching, refetch } = useQuery({ queryKey: ['admin', 'reports'], queryFn: fetchAdminReports });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <ContentSkeleton variant="dashboard" label="Loading reports" />
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <EmptyState
+        variant="error"
+        title="Couldn't load reports"
+        description={error?.message || 'Something went wrong. Please try again.'}
+        onRetry={refetch}
+        isFetching={isFetching}
+      />
     );
   }
 

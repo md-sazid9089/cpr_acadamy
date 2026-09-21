@@ -9,6 +9,7 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import Input from '@/components/ui/Input.jsx';
+import { SUCCESS_COLLAGE_SECTION } from '@/constants';
 
 const EMPTY = { section: '', caption: '', imageUrl: '', position: 0, isPublished: true };
 
@@ -28,6 +29,8 @@ export default function AdminGallery() {
   });
 
   const sections = useMemo(() => [...new Set(photos.map((photo) => photo.section))].sort(), [photos]);
+  // Suggested in the datalist even with zero photos, so admins can discover it.
+  const sectionSuggestions = useMemo(() => [...new Set([SUCCESS_COLLAGE_SECTION, ...sections])], [sections]);
   const rows = filter === 'ALL' ? photos : photos.filter((photo) => photo.section === filter);
 
   const done = () => {
@@ -169,12 +172,12 @@ export default function AdminGallery() {
             required
             list="gallery-sections"
             placeholder="e.g. Convocation, Campus Life"
-            hint="Type an existing section to add to it, or a new name to start one."
+            hint={`Type an existing section to add to it, or a new name to start one. Use "${SUCCESS_COLLAGE_SECTION}" to also feature it on the homepage.`}
             value={form.section}
             onChange={set('section')}
           />
           <datalist id="gallery-sections">
-            {sections.map((section) => <option key={section} value={section} />)}
+            {sectionSuggestions.map((section) => <option key={section} value={section} />)}
           </datalist>
 
           <div>

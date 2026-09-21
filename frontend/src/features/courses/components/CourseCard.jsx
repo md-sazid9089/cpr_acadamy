@@ -68,11 +68,11 @@ export default function CourseCard({ course, onEnroll }) {
       </div>
 
       {/* ── Compact floating info badge — overlaps minimally at the very bottom ── */}
-      <div className="relative mx-2.5 -mt-4 rounded-card border border-stone-200 bg-white/95 p-3 backdrop-blur-sm sm:mx-3 sm:p-3.5 dark:border-stone-200 dark:bg-surface-dark/95">
+      <div className="relative mx-2.5 -mt-4 rounded-card border border-stone-200 bg-white/95 p-2.5 backdrop-blur-sm sm:mx-3 sm:p-3.5 dark:border-stone-200 dark:bg-surface-dark/95">
         <h3 className="line-clamp-1 text-xs font-bold leading-tight text-stone-900 sm:text-sm dark:text-white">
           {course.title}
         </h3>
-        
+
         {course.subtitle && (
           <p className="mt-0.5 line-clamp-1 text-[11px] text-stone-500 dark:text-brand-200">
             {course.subtitle}
@@ -97,7 +97,7 @@ export default function CourseCard({ course, onEnroll }) {
         </div>
 
         {/* Compact action buttons */}
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-3 sm:gap-3">
           <Button to={detailPath} variant="outline" size="sm" className="order-2 sm:order-1" fullWidth>
             Details
           </Button>
