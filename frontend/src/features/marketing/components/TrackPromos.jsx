@@ -54,7 +54,7 @@ export default function TrackPromos() {
             <Link
               key={card.id}
               to={card.ctaTo}
-              className="group relative grid grid-cols-1 items-center gap-3 overflow-hidden rounded-[6px] rounded-tl-[44px] rounded-br-[44px] border border-blue-100 bg-[linear-gradient(115deg,var(--blue-50)_0%,var(--n-50)_55%,var(--blue-100)_100%)] p-4 transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700 sm:min-h-[300px] sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] sm:gap-5 sm:p-8 xl:p-10"
+              className="group relative grid grid-cols-1 items-center gap-1.5 overflow-hidden rounded-[6px] rounded-tl-[44px] rounded-br-[44px] border border-blue-100 bg-[linear-gradient(115deg,var(--blue-50)_0%,var(--n-50)_55%,var(--blue-100)_100%)] p-3 transition-transform duration-300 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700 sm:min-h-[300px] sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] sm:gap-5 sm:p-8 xl:p-10"
             >
               <div className="relative z-10 flex min-w-0 flex-col items-start">
                 <span className="rounded-full bg-brand-600 px-3 py-1 text-xs font-bold leading-none text-white">
@@ -62,13 +62,13 @@ export default function TrackPromos() {
                 </span>
 
                 <h3
-                  className="mt-3 text-sm font-extrabold leading-snug tracking-normal text-blue-800 sm:mt-4 sm:text-xl xl:text-2xl"
+                  className="mt-2 text-sm font-extrabold leading-snug tracking-normal text-blue-800 sm:mt-4 sm:text-xl xl:text-2xl"
                   lang="bn"
                 >
                   {card.headline}
                 </h3>
 
-                <span className="mt-5 inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-md border border-blue-700 bg-[linear-gradient(135deg,var(--blue-700),var(--blue-400))] px-3 py-2 text-xs font-semibold text-white transition-transform group-hover:translate-x-0.5 sm:mt-6 sm:px-4 sm:text-sm">
+                <span className="mt-2 inline-flex min-h-8 max-w-full items-center justify-center gap-2 rounded-md border border-blue-700 bg-[linear-gradient(135deg,var(--blue-700),var(--blue-400))] px-2.5 py-1 text-xs font-semibold text-white transition-transform group-hover:translate-x-0.5 sm:mt-6 sm:min-h-11 sm:px-4 sm:py-2 sm:text-sm">
                   <span>{card.cta}</span>
                   <FaArrowRightLong aria-hidden="true" className="h-3 w-3 shrink-0" />
                 </span>
@@ -81,7 +81,7 @@ export default function TrackPromos() {
                 height={500}
                 loading="lazy"
                 decoding="async"
-                className="pointer-events-none mx-auto aspect-square w-24 object-contain sm:mx-0 sm:w-full"
+                className="pointer-events-none mx-auto aspect-square w-14 object-contain sm:mx-0 sm:w-full"
               />
             </Link>
           ))}

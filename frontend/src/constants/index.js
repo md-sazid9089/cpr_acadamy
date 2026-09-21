@@ -11,6 +11,13 @@ export const ROLES = Object.freeze({
 
 export const COURSE_CATEGORIES = Object.freeze(['FCPS', 'BCS', 'MBBS']);
 
+/**
+ * Reserved gallery section name: photos uploaded under it (Admin > Gallery)
+ * also populate the homepage's success collage, instead of needing a second
+ * upload feature. Falls back to a static default set until any exist.
+ */
+export const SUCCESS_COLLAGE_SECTION = 'Success Collage';
+
 export const CATEGORY_LABELS = Object.freeze({
   FCPS: 'FCPS Part-1 & Part-2',
   BCS: 'BCS (Health) Preparation',

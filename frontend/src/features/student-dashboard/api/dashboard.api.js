@@ -19,7 +19,7 @@ export async function fetchUpcomingExams() {
 }
 
 export async function fetchCourseLeaderboard(slug) {
-  const { data } = await apiClient.get(`/courses/${slug}/leaderboard`, { params: { limit: 500 } });
+  const { data } = await apiClient.get(`/courses/${slug}/leaderboard`, { params: { limit: 100 } });
   return data;
 }
 

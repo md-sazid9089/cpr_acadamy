@@ -72,13 +72,13 @@ export default function ValueProps() {
   return (
     <section lang="bn" className="w-full py-8">
       <div className="container-page">
-        <div className="grid grid-cols-2 gap-6 lg:grid-cols-4 lg:gap-10">
+        <div className="grid grid-cols-4 gap-2 sm:gap-6 lg:gap-10">
           {PROPS.map(({ label, icon }) => (
-            <div key={label} className="flex flex-col items-center text-center">
-              <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-stone-200/80 text-brand-700 dark:bg-surface-dark dark:text-brand-300">
+            <div key={label} className="flex flex-col items-center text-center [&_svg]:h-5 [&_svg]:w-5 sm:[&_svg]:h-8 sm:[&_svg]:w-8">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-stone-200/80 text-brand-700 sm:h-16 sm:w-16 dark:bg-surface-dark dark:text-brand-300">
                 {icon}
               </span>
-              <p className="mt-3 text-sm font-semibold leading-snug text-stone-700 dark:text-brand-200">
+              <p className="mt-2 text-[10px] font-semibold leading-snug text-stone-700 sm:mt-3 sm:text-sm dark:text-brand-200">
                 {label}
               </p>
             </div>

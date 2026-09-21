@@ -2,18 +2,31 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchAdminStats } from './api/admin.api.js';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatBDT } from '@/lib/utils';
 
 export default function AdminOverview() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, isError, error, isFetching, refetch } = useQuery({
     queryKey: ['admin', 'stats'],
     queryFn: fetchAdminStats,
   });
 
-  if (isLoading || !stats) {
+  if (isLoading) {
     return (
       <ContentSkeleton variant="dashboard" label="Loading dashboard" />
+    );
+  }
+
+  if (isError || !stats) {
+    return (
+      <EmptyState
+        variant="error"
+        title="Couldn't load the dashboard"
+        description={error?.message || 'Something went wrong. Please try again.'}
+        onRetry={refetch}
+        isFetching={isFetching}
+      />
     );
   }
 

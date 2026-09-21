@@ -183,7 +183,7 @@ export async function fetchAdminCourse(id) {
 }
 
 export async function fetchAdminCourseLeaderboard(id) {
-  const { data } = await apiClient.get(`/admin/courses/${id}/leaderboard`, { params: { limit: 500 } });
+  const { data } = await apiClient.get(`/admin/courses/${id}/leaderboard`, { params: { limit: 100 } });
   return data;
 }
 
@@ -388,7 +388,7 @@ export async function fetchAdminExam(id) {
 }
 
 export async function fetchAdminExamPositions(id) {
-  const { data } = await apiClient.get(`/admin/exams/${id}/positions`, { params: { limit: 500 } });
+  const { data } = await apiClient.get(`/admin/exams/${id}/positions`, { params: { limit: 100 } });
   return data;
 }
 
