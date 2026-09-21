@@ -260,4 +260,7 @@ export const CONTACT = Object.freeze({
   email: 'support@cprmedicalacademy.com',
   address: 'House 12, Road 5, Dhanmondi, Dhaka 1205, Bangladesh',
   hours: 'Saturday – Thursday, 10:00 AM – 8:00 PM',
+  // TODO: placeholder — swap in the real Facebook Page/Group URLs.
+  facebookPage: 'https://facebook.com/cprmedicalacademy',
+  facebookGroup: 'https://facebook.com/groups/cprmedicalacademy',
 });

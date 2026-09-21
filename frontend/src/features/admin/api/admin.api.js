@@ -491,3 +491,25 @@ export async function deleteAnnouncement(id) {
   const { data } = await apiClient.delete(`/admin/announcements/${id}`);
   return data;
 }
+
+// ─── Gallery ────────────────────────────────────────────────────────────────
+
+export async function fetchAdminGallery() {
+  const { data } = await apiClient.get('/admin/gallery', { params: { limit: 200 } });
+  return data;
+}
+
+export async function createGalleryPhoto(input) {
+  const { data } = await apiClient.post('/admin/gallery', input);
+  return data;
+}
+
+export async function updateGalleryPhoto({ id, ...updates }) {
+  const { data } = await apiClient.patch(`/admin/gallery/${id}`, updates);
+  return data;
+}
+
+export async function deleteGalleryPhoto(id) {
+  const { data } = await apiClient.delete(`/admin/gallery/${id}`);
+  return data;
+}

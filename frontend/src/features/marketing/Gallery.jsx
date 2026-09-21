@@ -1,37 +1,41 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
+import { fetchGallery } from './api/gallery.api.js';
 import { cn } from '@/lib/utils';
 import MolecularBackground from '@/components/ui/backgrounds/MolecularBackground.jsx';
 import ResponsiveImage, { localWebpSrcSet } from '@/components/ui/ResponsiveImage.jsx';
-
-/** Gallery photos shown in a featured slider, selectable from the thumbnail grid. */
-const GALLERY_PHOTOS = [
-  { id: 'gp-1', src: '/assets/carousel/postera.jpeg', alt: 'FCPS P-I brilliant success in FCPS & Residency' },
-  { id: 'gp-2', src: '/assets/carousel/posterb.jpeg', alt: 'Crest awarding & mentor felicitation program' },
-  { id: 'gp-3', src: '/assets/carousel/posterc.jpeg', alt: 'Warm felicitation for successful doctors' },
-  { id: 'gp-4', src: '/assets/carousel/posterd.jpeg', alt: 'Brilliant success in July & January examination' },
-  { id: 'gp-5', src: '/assets/carousel/postere.jpeg', alt: 'Celebration of success — mentors and candidates' },
-  { id: 'gp-6', src: '/assets/carousel/posterf.jpeg', alt: 'BCS Health special session & keynote address' },
-  { id: 'gp-7', src: '/assets/carousel/postera.jpeg', alt: 'Warm felicitation FCPS Part-1 doctors' },
-  { id: 'gp-8', src: '/assets/carousel/posterb.jpeg', alt: 'Interactive seminar & orientation classroom hall' },
-  { id: 'gp-9', src: '/assets/carousel/posterc.jpeg', alt: 'Surgery batch achievers group photo' },
-  { id: 'gp-10', src: '/assets/carousel/posterd.jpeg', alt: 'Paediatrics achievers batch & faculty' },
-  { id: 'gp-11', src: '/assets/carousel/postere.jpeg', alt: 'Obs & Gynae candidates felicitation' },
-  { id: 'gp-12', src: '/assets/carousel/posterf.jpeg', alt: 'Celebration of success — special honors ceremony' },
-];
+import ContentSkeleton from '@/components/ui/Skeleton.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 
 const AUTOPLAY_MS = 5000;
 
+/** Photo gallery, grouped into admin-managed sections; falls back gracefully before any are uploaded. */
 export default function Gallery() {
+  const { data: sections = [], isLoading, isError, error, isFetching, refetch } = useQuery({
+    queryKey: ['marketing', 'gallery'],
+    queryFn: fetchGallery,
+  });
+
+  const [activeSection, setActiveSection] = useState(0);
   const [current, setCurrent] = useState(0);
-  const total = GALLERY_PHOTOS.length;
-  const active = GALLERY_PHOTOS[current];
   const thumbRefs = useRef([]);
 
+  const photos = useMemo(() => (sections[activeSection]?.photos ?? []).map((photo) => (
+    { id: photo.id, src: photo.imageUrl, alt: photo.caption || sections[activeSection]?.section || 'Gallery photo' }
+  )), [sections, activeSection]);
+  const total = photos.length;
+  const active = photos[current];
+
   const go = (delta) => setCurrent((c) => (c + delta + total) % total);
+  const selectSection = (index) => {
+    setActiveSection(index);
+    setCurrent(0);
+  };
 
   // Autoplay; the effect re-runs on every change so a manual click resets the timer.
   useEffect(() => {
+    if (total < 2) return undefined;
     const timer = setInterval(() => setCurrent((c) => (c + 1) % total), AUTOPLAY_MS);
     return () => clearInterval(timer);
   }, [current, total]);
@@ -40,6 +44,36 @@ export default function Gallery() {
   useEffect(() => {
     thumbRefs.current[current]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [current]);
+
+  if (isLoading) {
+    return (
+      <div className="container-page py-16">
+        <ContentSkeleton label="Loading gallery" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="container-page py-16">
+        <EmptyState
+          variant="error"
+          title="Couldn't load the gallery"
+          description={error?.message || 'Something went wrong. Please try again.'}
+          onRetry={refetch}
+          isFetching={isFetching}
+        />
+      </div>
+    );
+  }
+
+  if (!total) {
+    return (
+      <div className="container-page py-16">
+        <EmptyState title="Photos coming soon" description="Check back soon to see photos from our classes and events." />
+      </div>
+    );
+  }
 
   return (
     <div className="relative isolate min-h-screen overflow-hidden bg-surface-light dark:bg-surface-dark">
@@ -50,6 +84,26 @@ export default function Gallery() {
           <h1 className="text-center text-4xl font-extrabold tracking-normal text-brand-900 sm:text-5xl lg:text-6xl dark:text-white">
             Photo Gallery
           </h1>
+
+          {sections.length > 1 && (
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              {sections.map((section, index) => (
+                <button
+                  key={section.section}
+                  type="button"
+                  onClick={() => selectSection(index)}
+                  className={cn(
+                    'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+                    index === activeSection
+                      ? 'bg-brand-600 text-white'
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
+                  )}
+                >
+                  {section.section}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Featured slider: arrows sit in the side padding, beside the image. */}
           <div className="relative mx-auto mt-8 max-w-4xl px-10 sm:mt-10 sm:px-16">
@@ -93,7 +147,7 @@ export default function Gallery() {
 
         <div className="container-page relative z-10">
           <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
-            {GALLERY_PHOTOS.map((photo, i) => (
+            {photos.map((photo, i) => (
               <button
                 key={photo.id}
                 ref={(el) => (thumbRefs.current[i] = el)}

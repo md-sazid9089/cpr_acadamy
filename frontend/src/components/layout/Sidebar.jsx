@@ -14,6 +14,7 @@ const ICONS = {
   taka: 'M12 3v18M7 8h10M7 14h6',
   chat: 'M4 5h16v11H8l-4 4z',
   bell: 'M6 16V11a6 6 0 0112 0v5l2 2H4zM10 21h4',
+  image: 'M4 4h16v16H4z M4 16l5-5 3 3 4-5 4 5 M8.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3z',
 };
 
 function Icon({ name }) {
@@ -45,6 +46,7 @@ export const ADMIN_NAV = [
   { to: '/admin/revenue', label: 'Revenue', icon: 'taka' },
   { to: '/admin/complaints', label: 'Complain Box', icon: 'chat' },
   { to: '/admin/notices', label: 'Notices', icon: 'bell' },
+  { to: '/admin/gallery', label: 'Gallery', icon: 'image' },
   { to: '/admin/reports', label: 'Reports', icon: 'report' },
 ];
 
