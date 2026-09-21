@@ -5,15 +5,25 @@ import { FaTrophy, FaUsers, FaChartSimple, FaArrowTrendUp, FaChevronLeft, FaChev
 import { fetchPositionExams, fetchExamPositions } from './api/exams.api.js';
 import { demoExams, demoPositions } from './demo-positions.js';
 import DashboardPageHeader from '@/features/student-dashboard/components/DashboardPageHeader.jsx';
+import { StatCard } from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
-import { formatDateTime } from '@/lib/utils';
+import { Select } from '@/components/ui/Input.jsx';
+import { cn, formatDateTime } from '@/lib/utils';
 
-const SELECT = 'mt-1 h-11 w-full min-w-0 rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-surface-dark dark:text-brand-200';
 const number = new Intl.NumberFormat('en', { maximumFractionDigits: 3 });
 const displayMark = value => value == null ? '--' : number.format(value);
+
+/** 3px proportional bar — how a score compares to the exam's top score. */
+function ScoreBar({ share, className }) {
+  return (
+    <div className={cn('h-[3px] overflow-hidden rounded-full bg-stone-200 dark:bg-white/10', className)}>
+      <div className="h-full rounded-full bg-brand-400 dark:bg-brand-500" style={{ width: `${share}%` }} />
+    </div>
+  );
+}
 
 function Standings({ examId, demo = false }) {
   const [page, setPage] = useState(0);
@@ -34,42 +44,61 @@ function Standings({ examId, demo = false }) {
 
   const me = data.me;
   const pages = Math.max(1, Math.ceil(data.participants / limit));
-  const statistics = [
-    { label: 'Students ranked', value: number.format(data.participants), icon: FaUsers },
-    { label: 'Highest mark', value: displayMark(data.highestScore), icon: FaArrowTrendUp },
-    { label: 'Average mark', value: displayMark(data.averageScore), icon: FaChartSimple },
-  ];
+  // Numbers alone don't say much — the average tile earns its keep by comparing it to your own score.
+  const aboveAvg = me && data.averageScore != null ? Math.round((me.score - data.averageScore) * 1000) / 1000 : null;
+  const scoreShare = value => data.highestScore ? Math.min(100, Math.max(4, (value / data.highestScore) * 100)) : 0;
 
   return (
     <div className="space-y-6" aria-busy={isFetching}>
-      <section aria-labelledby="your-position" className="border-y border-brand-300 bg-brand-50/80 px-4 py-5 sm:px-6 dark:bg-brand-950/50">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="your-position" className="text-sm font-bold text-brand-700 dark:text-brand-300">Your exam position</h2>
-          <Badge tone={data.provisional ? 'neutral' : 'success'}>{data.provisional ? 'Provisional' : 'Final'}</Badge>
-        </div>
-        <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="flex h-20 w-24 shrink-0 flex-col items-center justify-center rounded-lg border border-brand-300 bg-white text-brand-700 dark:bg-surface-dark dark:text-brand-300">
-              <FaTrophy aria-hidden="true" className="h-4 w-4" />
-              <span className="mt-1 text-xl font-extrabold tabular-nums">{me ? `#${number.format(me.rank)}` : '--'}</span>
-            </div>
-            <div className="min-w-0">
-              <p className="break-words text-base font-bold text-stone-900 dark:text-white">{me?.name ?? 'No submitted result'}</p>
-              {me ? <>
-                <p className="mt-1 text-sm text-stone-600 dark:text-brand-200">{me.tied ? 'Joint position' : 'Position'} {number.format(me.rank)} of {number.format(data.participants)}</p>
-                <p className="mt-1 text-sm font-semibold text-brand-700 dark:text-brand-300">{displayMark(me.score)} / {displayMark(me.totalMarks)} marks</p>
-              </> : <p className="mt-1 text-sm text-stone-600 dark:text-brand-200">Not ranked in this exam</p>}
-            </div>
+      {/* 1. Self-comparison: one clear read — rank, score, and where it sits versus the top score. */}
+      <section aria-labelledby="your-position" className="rounded-2xl border border-brand-200 bg-brand-50/80 p-5 sm:p-6 dark:border-brand-900 dark:bg-brand-950/40">
+        <div className="flex items-start gap-4">
+          <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-full border-2 border-brand-300 bg-white text-brand-700 dark:bg-surface-dark dark:text-brand-300">
+            {me?.rank === 1 && <FaTrophy aria-hidden="true" className="h-3.5 w-3.5" />}
+            <span className="text-lg font-extrabold tabular-nums">{me ? `#${number.format(me.rank)}` : '--'}</span>
           </div>
-          <dl className="grid grid-cols-3 gap-3 border-t border-brand-200 pt-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-            {statistics.map(({ label, value, icon: Icon }) => <div key={label} className="min-w-0 self-center">
-              <dt className="flex flex-col gap-2 text-xs text-stone-600 dark:text-brand-200"><Icon aria-hidden="true" className="h-4 w-4 text-brand-600 dark:text-brand-300" />{label}</dt>
-              <dd className="mt-1 break-words text-lg font-bold tabular-nums text-stone-900 dark:text-white">{value}</dd>
-            </div>)}
-          </dl>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 id="your-position" className="text-sm font-bold text-stone-900 dark:text-white">Your position</h2>
+              <Badge tone={data.provisional ? 'neutral' : 'success'}>{data.provisional ? 'Provisional' : 'Final'}</Badge>
+            </div>
+            {me ? (
+              <>
+                <p className="mt-1 truncate text-sm font-semibold text-stone-900 dark:text-white">{me.name}</p>
+                <p className="mt-0.5 text-sm text-stone-600 dark:text-brand-200">{me.tied ? 'Joint position' : 'Position'} {number.format(me.rank)} of {number.format(data.participants)}</p>
+                <p className="mt-1 text-base font-bold text-brand-700 dark:text-brand-300">
+                  {displayMark(me.score)} <span className="font-normal text-stone-500 dark:text-brand-200">/ {displayMark(me.totalMarks)} marks</span>
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-1 text-sm font-semibold text-stone-900 dark:text-white">No submitted result</p>
+                <p className="mt-0.5 text-sm text-stone-600 dark:text-brand-200">Not ranked in this exam</p>
+              </>
+            )}
+          </div>
         </div>
+        {me && data.highestScore ? (
+          <div className="mt-4">
+            <ScoreBar share={scoreShare(me.score)} className="h-1.5 bg-white dark:bg-surface-dark" />
+            <p className="mt-1.5 text-[11px] text-stone-500 dark:text-brand-200">Your score vs. the top score of {displayMark(data.highestScore)}</p>
+          </div>
+        ) : null}
       </section>
 
+      {/* 2. KPI tiles — each number carries its own interpretation, not just a raw figure. */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <StatCard label="Students ranked" value={number.format(data.participants)} icon={<FaUsers aria-hidden="true" />} />
+        <StatCard label="Highest mark" value={displayMark(data.highestScore)} icon={<FaArrowTrendUp aria-hidden="true" />} />
+        <StatCard
+          label="Average mark"
+          value={displayMark(data.averageScore)}
+          icon={<FaChartSimple aria-hidden="true" />}
+          hint={aboveAvg == null ? undefined : `You scored ${aboveAvg >= 0 ? '+' : ''}${number.format(aboveAvg)} ${aboveAvg >= 0 ? 'above' : 'below'} avg`}
+        />
+      </div>
+
+      {/* 3. Peer comparison. */}
       <section aria-labelledby="standings-title">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
@@ -90,21 +119,27 @@ function Standings({ examId, demo = false }) {
                 <tr>
                   <th scope="col" className="w-20 px-3 py-3 sm:w-28 sm:px-5">Position</th>
                   <th scope="col" className="px-3 py-3 sm:px-5">Student</th>
-                  <th scope="col" className="w-24 px-3 py-3 text-right sm:w-36 sm:px-5">Marks</th>
+                  <th scope="col" className="w-28 px-3 py-3 text-right sm:w-40 sm:px-5">Score</th>
                   <th scope="col" className="hidden w-32 px-5 py-3 text-right sm:table-cell">Result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200">
                 {data.items.map((entry, index) => <tr key={page * limit + index} aria-current={entry.isMe ? 'true' : undefined} className={entry.isMe ? 'bg-brand-50 dark:bg-brand-950' : 'even:bg-stone-50/70 dark:even:bg-surface-dark/60'}>
                   <td className="px-3 py-4 align-top sm:px-5">
-                    <span className={`font-bold tabular-nums ${entry.rank <= 3 ? 'text-brand-700 dark:text-brand-300' : 'text-stone-700 dark:text-brand-200'}`}>#{number.format(entry.rank)}</span>
+                    <span className={`inline-flex items-center gap-1 font-bold tabular-nums ${entry.rank <= 3 ? 'text-brand-700 dark:text-brand-300' : 'text-stone-700 dark:text-brand-200'}`}>
+                      {entry.rank === 1 && <FaTrophy aria-hidden="true" className="h-3 w-3" />}
+                      #{number.format(entry.rank)}
+                    </span>
                     {entry.tied && <span className="mt-0.5 block text-xs text-stone-500 dark:text-brand-200">Joint</span>}
                   </td>
                   <th scope="row" className="break-words px-3 py-4 font-medium text-stone-900 sm:px-5 dark:text-white">
                     {entry.name}{entry.isMe && <span className="ml-2 inline-block text-xs font-bold text-brand-700 dark:text-brand-300">You</span>}
                     <span className="mt-1 block text-xs font-normal text-stone-500 sm:hidden dark:text-brand-200">{entry.passed ? 'Passed' : 'Not passed'}</span>
                   </th>
-                  <td className="px-3 py-4 text-right tabular-nums sm:px-5"><span className="font-semibold text-stone-900 dark:text-white">{displayMark(entry.score)}</span><span className="block text-xs text-stone-500 sm:inline dark:text-brand-200"> / {displayMark(entry.totalMarks)}</span></td>
+                  <td className="px-3 py-4 text-right sm:px-5">
+                    <span className="tabular-nums"><span className="font-semibold text-stone-900 dark:text-white">{displayMark(entry.score)}</span><span className="block text-xs text-stone-500 sm:inline dark:text-brand-200"> / {displayMark(entry.totalMarks)}</span></span>
+                    <ScoreBar share={scoreShare(entry.score)} className="mt-1.5 ml-auto w-16" />
+                  </td>
                   <td className="hidden px-5 py-4 text-right sm:table-cell"><Badge tone={entry.passed ? 'success' : 'neutral'}>{entry.passed ? 'Passed' : 'Not passed'}</Badge></td>
                 </tr>)}
               </tbody>
@@ -153,19 +188,26 @@ export default function ExamPositions({ demo = false } = {}) {
           : params.has('examId') && !requestedExam ? <EmptyState title="Exam unavailable" action={<Button variant="outline" onClick={() => setParams({})}>All exam positions</Button>} />
           : !exams.length ? <EmptyState title="No exams available" action={<Button to="/dashboard/courses">My courses</Button>} />
             : <>
+              {/* Course and exam side by side — one glance to see and change both. */}
               <div className="grid gap-4 border-b border-stone-200 pb-5 sm:grid-cols-2">
-                <label className="min-w-0 text-xs font-semibold text-stone-600 dark:text-brand-200">Course
-                  <select className={SELECT} value={courseId} onChange={event => setParams(event.target.value ? { courseId: event.target.value } : {})}>
+                {courses.length > 1 && (
+                  <Select
+                    label="Course"
+                    value={courseId}
+                    onChange={event => setParams(event.target.value ? { courseId: event.target.value } : {})}
+                  >
                     <option value="">All courses</option>
                     {courses.map(([id, title]) => <option key={id} value={id}>{title}</option>)}
-                  </select>
-                </label>
-                <label className="min-w-0 text-xs font-semibold text-stone-600 dark:text-brand-200">Exam
-                  <select className={SELECT} value={selected?.id ?? ''} onChange={event => setParams({ examId: event.target.value })}>
-                    {!selected && <option value="">No exams</option>}
-                    {filtered.map(exam => <option key={exam.id} value={exam.id}>{exam.title}</option>)}
-                  </select>
-                </label>
+                  </Select>
+                )}
+                <Select
+                  label="Exam"
+                  value={selected?.id ?? ''}
+                  onChange={event => setParams({ examId: event.target.value })}
+                >
+                  {!selected && <option value="">No exams</option>}
+                  {filtered.map(exam => <option key={exam.id} value={exam.id}>{exam.title}</option>)}
+                </Select>
               </div>
               {selected && <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="min-w-0 break-words text-lg font-bold text-stone-900 dark:text-white">{selected.title}</h2>

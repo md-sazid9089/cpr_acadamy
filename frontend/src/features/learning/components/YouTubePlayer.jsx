@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FaPlay, FaPause, FaVolumeHigh, FaVolumeXmark, FaExpand, FaCompress } from 'react-icons/fa6';
+import PlaybackRateControl from './PlaybackRateControl.jsx';
 
 let apiPromise = null;
 /** Loads the YouTube IFrame API script once and resolves with `window.YT`. */
@@ -27,17 +28,27 @@ function formatTime(seconds) {
   return `${m}:${s}`;
 }
 
-const RATES = [0.75, 1, 1.25, 1.5, 2];
+// How long to wait for the API to load and the player to fire onReady before
+// giving up and falling back to a plain, fully-native YouTube embed.
+const READY_TIMEOUT_MS = 8000;
 
 /**
  * Hardened embed for an unlisted YouTube lecture.
  *
  * YouTube's own chrome is turned off (controls=0, fs=0, rel=0, disablekb=1,
- * modestbranding=1, iv_load_policy=3) and a custom control bar takes its
- * place, so a student is never one click away from a "Watch on YouTube"
- * link, the channel page, or related-video suggestions. A transparent
- * overlay keeps every click inside our own controls instead of the raw
- * iframe.
+ * modestbranding=1, iv_load_policy=3, the youtube-nocookie.com host) and a
+ * custom control bar takes its place, so a student is never one click away
+ * from a "Watch on YouTube" link, the channel page, or related-video
+ * suggestions. A transparent overlay keeps every click inside our own
+ * controls instead of the raw iframe, the video is cropped in slightly to
+ * push YouTube's own title card off the visible edge, and reaching the end
+ * seeks back to the first frame immediately so the related-videos end
+ * screen never has a chance to render.
+ *
+ * If the IFrame API fails to load, the player never becomes ready, or the
+ * video itself errors out, this gives up on the custom chrome entirely and
+ * renders a plain YouTube embed with YouTube's own normal controls — a
+ * working video with YouTube's own UI beats a broken custom one.
  *
  * This is deterrence, not DRM: the video id necessarily reaches the browser
  * to play at all, and a determined viewer can still find it in devtools.
@@ -55,14 +66,19 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
   const [muted, setMuted] = useState(false);
   const [rate, setRate] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
+  const [nativeFallback, setNativeFallback] = useState(false);
 
   useEffect(() => {
+    if (nativeFallback) return undefined;
     let cancelled = false;
     let player;
+    const giveUp = () => { if (!cancelled) setNativeFallback(true); };
+    const readyTimeout = setTimeout(giveUp, READY_TIMEOUT_MS);
     loadYouTubeApi().then((YT) => {
       if (cancelled || !hostRef.current) return;
       player = new YT.Player(hostRef.current, {
         videoId,
+        host: 'https://www.youtube-nocookie.com',
         width: '100%',
         height: '100%',
         playerVars: {
@@ -71,6 +87,7 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         },
         events: {
           onReady: (event) => {
+            clearTimeout(readyTimeout);
             playerRef.current = event.target;
             setDuration(event.target.getDuration());
             setReady(true);
@@ -78,19 +95,28 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
           onStateChange: (event) => {
             if (event.data === YT.PlayerState.PLAYING) { setPlaying(true); setDuration(event.target.getDuration()); }
             if (event.data === YT.PlayerState.PAUSED) setPlaying(false);
-            if (event.data === YT.PlayerState.ENDED) { setPlaying(false); onEnded?.(); }
+            if (event.data === YT.PlayerState.ENDED) {
+              setPlaying(false);
+              // Snap back to the first frame instead of letting YouTube's own
+              // related-videos grid render over the finished video.
+              event.target.seekTo(0, true);
+              event.target.pauseVideo();
+              setCurrent(0);
+              onEnded?.();
+            }
           },
-          onError: () => onError?.(),
+          onError: () => { clearTimeout(readyTimeout); onError?.(); giveUp(); },
         },
       });
-    });
+    }).catch(giveUp);
     return () => {
       cancelled = true;
+      clearTimeout(readyTimeout);
       player?.destroy?.();
       playerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId]);
+  }, [videoId, nativeFallback]);
 
   useEffect(() => {
     if (!playing) return undefined;
@@ -145,6 +171,23 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
     if (event.key === 'ArrowLeft') playerRef.current?.seekTo(Math.max(0, current - 5), true);
   };
 
+  // The custom chrome above didn't pan out — give the student a working
+  // player with YouTube's own familiar controls instead of nothing.
+  if (nativeFallback) {
+    return (
+      <div className="relative overflow-hidden rounded-xl bg-black">
+        <iframe
+          key={videoId}
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
+          title={title ?? 'Lecture video'}
+          className="aspect-video w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       ref={wrapperRef}
@@ -155,8 +198,11 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
       onContextMenu={(event) => event.preventDefault()}
       className="relative overflow-hidden rounded-xl bg-black outline-none"
     >
-      <div className="pointer-events-none aspect-video w-full">
-        <div ref={hostRef} className="h-full w-full" />
+      {/* Slightly oversized and re-centered, then clipped by this wrapper's overflow-hidden —
+          crops YouTube's own title card off the top edge (and matches it on every side so
+          the video doesn't look off-center). Cosmetic only: it doesn't affect click-through. */}
+      <div className="pointer-events-none aspect-video w-full overflow-hidden">
+        <div ref={hostRef} className="h-[116%] w-[116%] -translate-x-[8%] -translate-y-[8%]" />
       </div>
 
       {/* Everything happens here, never on the raw iframe underneath. */}
@@ -173,6 +219,11 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
           </span>
         )}
       </button>
+
+      {/* Positioned the same as the plain <video> player's speed control, for a consistent feel between the two. */}
+      <div className="absolute left-3 top-3 rounded-lg bg-black/40 p-1">
+        <PlaybackRateControl rate={rate} onChange={applyRate} />
+      </div>
 
       {watermark && (
         <span className="pointer-events-none absolute right-3 top-3 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70">
@@ -207,17 +258,6 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         <button type="button" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'} className="shrink-0 text-white">
           {muted ? <FaVolumeXmark aria-hidden="true" className="h-4 w-4" /> : <FaVolumeHigh aria-hidden="true" className="h-4 w-4" />}
         </button>
-
-        <select
-          value={rate}
-          onChange={(event) => applyRate(Number(event.target.value))}
-          aria-label="Playback speed"
-          className="shrink-0 rounded bg-white/10 px-1 py-0.5 text-[11px] text-white"
-        >
-          {RATES.map((value) => (
-            <option key={value} value={value} className="text-stone-900">{value}×</option>
-          ))}
-        </select>
 
         <button type="button" onClick={toggleFullscreen} aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} className="shrink-0 text-white">
           {fullscreen ? <FaCompress aria-hidden="true" className="h-4 w-4" /> : <FaExpand aria-hidden="true" className="h-4 w-4" />}

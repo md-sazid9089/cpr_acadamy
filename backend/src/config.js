@@ -33,6 +33,9 @@ export function loadConfig(env = process.env) {
     smsMode,
     smsWebhookUrl: env.SMS_WEBHOOK_URL,
     smsWebhookToken: env.SMS_WEBHOOK_TOKEN,
+    // Image uploads go to Cloudinary when this is set; otherwise they fall back to
+    // local disk (test/dev without a Cloudinary account configured).
+    cloudinaryUrl: env.CLOUDINARY_URL || null,
     // Temporary switch to let new signups skip OTP entry and go straight to the
     // approval queue, logged in. Flip back to 'false' to re-require SMS verification.
     skipPhoneVerification: env.SKIP_PHONE_VERIFICATION === 'true',

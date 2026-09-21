@@ -126,9 +126,10 @@ test('course filters and exam deep links select the correct paper and reject una
   const app = harness('examId=second');
   let view = app.page();
   assert.equal(nodes(view).find(node => node.type?.name === 'Standings').props.examId, 'second');
-  const selectors = nodes(view).filter(node => node.type === 'select');
-  assert.equal(selectors[0].props.value, 'surgery');
-  selectors[0].props.onChange({ target: { value: 'medicine' } });
+  const surgeryChip = nodes(view).find(node => node.props?.children === 'Surgery' && node.props?.onClick);
+  assert.equal(surgeryChip.props.active, true);
+  const medicineChip = nodes(view).find(node => node.props?.children === 'Medicine' && node.props?.onClick);
+  medicineChip.props.onClick();
   view = app.page();
   assert.equal(app.params.has('examId'), false);
   assert.equal(nodes(view).find(node => node.type?.name === 'Standings').props.examId, 'first');
@@ -148,8 +149,8 @@ test('demo uses isolated sample queries, working filters and pagination without 
   view = app.standings();
   assert.match(content(view), /Showing 11-20 of 36 students/);
   assert.equal(nodes(view).filter(node => node.type === 'tr' && node.props['aria-current'] === 'true').length, 1);
-  const course = nodes(app.page()).find(node => node.type === 'select');
-  course.props.onChange({ target: { value: 'demo-residency' } });
+  const residencyChip = nodes(app.page()).find(node => node.props?.children === 'Residency / Surgery 2026' && node.props?.onClick);
+  residencyChip.props.onClick();
   assert.equal(nodes(app.page()).find(node => node.type?.name === 'Standings').props.examId, 'demo-surgery');
   assert.equal(app.queries.every(query => query.queryKey[0] === 'exams-demo'), true);
   assert.equal(app.queries.filter(query => query.queryKey[1] === 'positions').every(query => query.refetchInterval === false), true);
