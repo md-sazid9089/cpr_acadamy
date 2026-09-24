@@ -8,11 +8,12 @@ import { cn } from '@/lib/utils';
  * the runner uses to auto-submit. Seeding from the absolute deadline means a
  * refresh cannot buy extra time.
  */
-export default function ExamTimer({ endsAt, durationMinutes = 60, onExpire, className }) {
+export default function ExamTimer({ endsAt, serverNow, durationMinutes = 60, onExpire, className }) {
   const initialSeconds = useMemo(() => {
+    if (endsAt && serverNow) return Math.max(0, Math.round((new Date(endsAt) - new Date(serverNow)) / 1000));
     if (endsAt) return Math.max(0, Math.round((new Date(endsAt) - Date.now()) / 1000));
     return durationMinutes * 60;
-  }, [endsAt, durationMinutes]);
+  }, [endsAt, serverNow, durationMinutes]);
 
   const { remaining, isExpired } = useCountdown(initialSeconds, { onExpire });
 

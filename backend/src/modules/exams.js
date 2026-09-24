@@ -115,7 +115,7 @@ function examDto(row) {
 }
 
 function publicPaper(attempt, exam) {
-  return { ...examDto(exam), endsAt: attempt.ends_at, answers: attempt.answers, version: attempt.version,
+  return { ...examDto(exam), endsAt: attempt.ends_at, serverNow: new Date().toISOString(), answers: attempt.answers, version: attempt.version,
     durationMinutes: attempt.paper.durationMinutes, negativeMarking: attempt.paper.negativeMarking, passMark: attempt.paper.passMark,
     totalMarks: totalMarks(attempt.paper.questions),
     questions: attempt.paper.questions.map(question => ({ id: question.id, type: question.type, stem: question.stem, imageUrl: question.imageUrl ?? '', options: question.options, marks: question.marks })) };
@@ -216,8 +216,9 @@ export function examRoutes(route, database) {
       ensure(!attempt.submitted_at, 409, 'ALREADY_SUBMITTED', 'This exam has already been submitted.');
       // Autosave never finalizes on its own: only /submit (or the expiry
       // sweep, for attempts nobody submits) decides the final snapshot. If
-      // this raced /submit and lost, /submit's own answers still land intact.
-      if (new Date(attempt.ends_at).getTime() <= Date.now()) return false;
+      // This races /submit (which handles finalization). A 60-second grace period
+      // prevents clock skew from rejecting valid last-second autosaves.
+      if (new Date(attempt.ends_at).getTime() + 60000 <= Date.now()) return false;
       const update = { [request.body.questionId]: request.body.answer };
       validateAnswers(attempt.paper.questions, update);
       const saved = await one(transaction, 'UPDATE exam_attempts SET answers=answers || $2::jsonb,version=version+1 WHERE id=$1 AND version=$3 RETURNING version', [attempt.id, JSON.stringify(update), request.body.version]);
@@ -237,8 +238,9 @@ export function examRoutes(route, database) {
     // call, a prior late one, or the expiry sweep) -- graded from whatever was
     // last autosaved instead. auto_finalized on the returned row carries that
     // fact through so the response never claims a normal, on-time submission
-    // when the student's final answers were actually discarded.
-    const answersApplied = !attempt.submitted_at && new Date(attempt.ends_at).getTime() > Date.now();
+    // when the student's final answers were actually discarded. A 60-second
+    // grace period accommodates client clock skew and network latency.
+    const answersApplied = !attempt.submitted_at && new Date(attempt.ends_at).getTime() + 60000 > Date.now();
     if (answersApplied) {
       validateAnswers(attempt.paper.questions, request.body.answers);
       attempt = await one(transaction, 'UPDATE exam_attempts SET answers=answers || $2::jsonb WHERE id=$1 RETURNING *', [attempt.id, JSON.stringify(request.body.answers)]);

@@ -182,6 +182,7 @@ export default function ExamRunner() {
           {/* Auto-submits the moment the countdown reaches zero. */}
           <ExamTimer
             endsAt={paper.endsAt}
+            serverNow={paper.serverNow}
             durationMinutes={paper.durationMinutes}
             onExpire={handleSubmit}
           />

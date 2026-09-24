@@ -15,22 +15,26 @@ export function useCountdown(seconds, { autoStart = true, onExpire } = {}) {
   const onExpireRef = useRef(onExpire);
   onExpireRef.current = onExpire;
 
+  const startRef = useRef(Date.now());
+  const initialSecondsRef = useRef(seconds);
+
   useEffect(() => {
     setRemaining(seconds);
+    startRef.current = Date.now();
+    initialSecondsRef.current = seconds;
   }, [seconds]);
 
   useEffect(() => {
     if (!isRunning) return undefined;
     const id = setInterval(() => {
-      setRemaining((value) => {
-        if (value <= 1) {
-          clearInterval(id);
-          setIsRunning(false);
-          onExpireRef.current?.();
-          return 0;
-        }
-        return value - 1;
-      });
+      const elapsed = Math.round((Date.now() - startRef.current) / 1000);
+      const value = Math.max(0, initialSecondsRef.current - elapsed);
+      setRemaining(value);
+      if (value <= 0) {
+        clearInterval(id);
+        setIsRunning(false);
+        onExpireRef.current?.();
+      }
     }, 1000);
     return () => clearInterval(id);
   }, [isRunning]);
@@ -43,6 +47,8 @@ export function useCountdown(seconds, { autoStart = true, onExpire } = {}) {
     pause: () => setIsRunning(false),
     reset: (next = seconds) => {
       setRemaining(next);
+      startRef.current = Date.now();
+      initialSecondsRef.current = next;
       setIsRunning(true);
     },
   };
