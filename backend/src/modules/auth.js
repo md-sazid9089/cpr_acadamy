@@ -10,7 +10,7 @@ const registration = z.object({
   mobile, password, fullName: text.min(2).max(100), institution: text.max(120),
   bmdcNumber: z.string().trim().max(30).optional(), email: z.union([z.string().email().max(254), z.literal('')]).optional(),
   interest: z.enum(['FCPS', 'BCS', 'MBBS', 'OTHER']), acceptTerms: z.literal(true),
-  confirmPassword: z.string().optional(),
+  confirmPassword: z.string().max(128).optional(),
 }).strict().refine(data => data.confirmPassword === undefined || data.password === data.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' });
 
 export function authRoutes(route, database, config) {
@@ -127,7 +127,7 @@ export function authRoutes(route, database, config) {
     });
   }
 
-  route('POST', '/auth/password/reset', { body: otpInput.extend({ password, confirmPassword: z.string().optional() }).strict().refine(data => data.confirmPassword === undefined || data.password === data.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' }) }, async request => {
+  route('POST', '/auth/password/reset', { body: otpInput.extend({ password, confirmPassword: z.string().max(128).optional() }).strict().refine(data => data.confirmPassword === undefined || data.password === data.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' }) }, async request => {
     await throttle(database, config, 'reset-verify', request.body.mobile, 10);
     const hash = await hashPassword(request.body.password);
     const success = await database.transaction(async transaction => {
