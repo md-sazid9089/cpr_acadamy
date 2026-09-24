@@ -10,13 +10,12 @@ function systemPrefersDark() {
 
 /** Resolve 'system' into the concrete mode currently in effect. */
 export function resolveTheme(theme) {
-  if (theme === 'system') return systemPrefersDark() ? 'dark' : 'light';
-  return theme;
+  return 'light'; // Forced light mode
 }
 
 function applyTheme(theme) {
   if (!isBrowser) return;
-  document.documentElement.classList.toggle('dark', resolveTheme(theme) === 'dark');
+  document.documentElement.classList.remove('dark');
 }
 
 /**
