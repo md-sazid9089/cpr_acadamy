@@ -10,7 +10,7 @@ const fieldStyles =
 /** Text input with label, hint, prefix and error slot. Forwards refs for RHF.
  * A `type="password"` field always gets a show/hide toggle — permanent, not opt-in. */
 const Input = forwardRef(function Input(
-  { label, hint, error, prefix, type, className, containerClassName, id, required, ...props },
+  { label, hint, error, prefix, type, className, containerClassName, id, required, maxLength, ...props },
   ref,
 ) {
   const autoId = useId();
@@ -49,6 +49,7 @@ const Input = forwardRef(function Input(
               : 'border-stone-200 dark:border-stone-200',
             className,
           )}
+          maxLength={maxLength ?? (isPassword ? 128 : type === 'email' ? 254 : type === 'tel' || type === 'number' ? 20 : 255)}
           {...props}
         />
         {isPassword && (
@@ -78,7 +79,7 @@ const Input = forwardRef(function Input(
 
 /** Multi-line sibling of Input, sharing its label/error chrome. */
 export const Textarea = forwardRef(function Textarea(
-  { label, hint, error, className, containerClassName, id, required, rows = 4, ...props },
+  { label, hint, error, className, containerClassName, id, required, rows = 4, maxLength = 5000, ...props },
   ref,
 ) {
   const autoId = useId();
@@ -103,6 +104,7 @@ export const Textarea = forwardRef(function Textarea(
           error ? 'border-stone-200 dark:border-stone-200' : 'border-stone-200 dark:border-stone-200',
           className,
         )}
+        maxLength={maxLength}
         {...props}
       />
       {error ? (
