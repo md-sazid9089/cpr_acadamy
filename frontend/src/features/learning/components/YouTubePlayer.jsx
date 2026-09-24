@@ -220,10 +220,7 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         )}
       </button>
 
-      {/* Positioned the same as the plain <video> player's speed control, for a consistent feel between the two. */}
-      <div className="absolute left-3 top-3 rounded-lg bg-black/40 p-1">
-        <PlaybackRateControl rate={rate} onChange={applyRate} />
-      </div>
+
 
       {watermark && (
         <span className="pointer-events-none absolute right-3 top-3 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70">
@@ -258,6 +255,10 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         <button type="button" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'} className="shrink-0 text-white">
           {muted ? <FaVolumeXmark aria-hidden="true" className="h-4 w-4" /> : <FaVolumeHigh aria-hidden="true" className="h-4 w-4" />}
         </button>
+
+        <div className="flex shrink-0 items-center justify-center">
+          <PlaybackRateControl rate={rate} onChange={applyRate} />
+        </div>
 
         <button type="button" onClick={toggleFullscreen} aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} className="shrink-0 text-white">
           {fullscreen ? <FaCompress aria-hidden="true" className="h-4 w-4" /> : <FaExpand aria-hidden="true" className="h-4 w-4" />}

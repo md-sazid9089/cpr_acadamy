@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { FaPlay, FaPause, FaVolumeHigh, FaVolumeXmark, FaExpand, FaCompress } from 'react-icons/fa6';
 import YouTubePlayer from './YouTubePlayer.jsx';
 import PlaybackRateControl from './PlaybackRateControl.jsx';
 
@@ -19,6 +20,14 @@ function extractYouTubeId(url) {
   }
 }
 
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const total = Math.floor(seconds);
+  const m = Math.floor(total / 60);
+  const s = String(total % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
 /**
  * Lecture video surface.
  *
@@ -33,12 +42,55 @@ function extractYouTubeId(url) {
  */
 export default function VideoPlayer({ src, poster, title, watermark, onEnded }) {
   const videoRef = useRef(null);
+  const wrapperRef = useRef(null);
   const [error, setError] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [current, setCurrent] = useState(0);
+  const [muted, setMuted] = useState(false);
   const [rate, setRate] = useState(1);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  const toggle = useCallback(() => {
+    if (!videoRef.current) return;
+    if (playing) videoRef.current.pause();
+    else videoRef.current.play();
+  }, [playing]);
+
+  const seek = (event) => {
+    if (!videoRef.current || !duration) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    videoRef.current.currentTime = ratio * duration;
+    setCurrent(ratio * duration);
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !muted;
+    setMuted(!muted);
+  };
 
   const applyRate = (value) => {
     setRate(value);
     if (videoRef.current) videoRef.current.playbackRate = value;
+  };
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else wrapperRef.current?.requestFullscreen?.();
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === ' ') { event.preventDefault(); toggle(); }
+    if (event.key === 'ArrowRight' && videoRef.current) { videoRef.current.currentTime = Math.min(duration, current + 5); }
+    if (event.key === 'ArrowLeft' && videoRef.current) { videoRef.current.currentTime = Math.max(0, current - 5); }
   };
 
   if (!src || error) {
@@ -65,31 +117,90 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl bg-black">
+    <div
+      ref={wrapperRef}
+      tabIndex={0}
+      role="group"
+      aria-label={title ?? 'Lecture video'}
+      onKeyDown={handleKeyDown}
+      onContextMenu={(event) => event.preventDefault()}
+      className="relative overflow-hidden rounded-xl bg-black outline-none group"
+    >
       <video
         ref={videoRef}
         src={src}
         poster={poster}
-        controls
-        controlsList="nodownload"
+        controlsList="nodownload noplaybackrate"
+        disablePictureInPicture
         onContextMenu={(event) => event.preventDefault()}
         onError={() => setError(true)}
-        onEnded={onEnded}
+        onEnded={() => { setPlaying(false); onEnded?.(); }}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onTimeUpdate={() => setCurrent(videoRef.current?.currentTime || 0)}
+        onLoadedMetadata={() => setDuration(videoRef.current?.duration || 0)}
         className="aspect-video w-full"
       >
         Your browser does not support embedded video.
       </video>
 
-      {/* Not every browser's native controls expose a speed setting (Firefox/Safari don't). */}
-      <div className="absolute left-3 top-3 rounded-lg bg-black/40 p-1">
-        <PlaybackRateControl rate={rate} onChange={applyRate} />
-      </div>
+      {/* Everything happens here, never on the raw video underneath. */}
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={playing ? 'Pause' : 'Play'}
+        className="absolute inset-0 flex h-full w-full items-center justify-center bg-transparent"
+      >
+        {!playing && (
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white">
+            <FaPlay aria-hidden="true" className="h-6 w-6 translate-x-0.5" />
+          </span>
+        )}
+      </button>
 
       {watermark && (
         <span className="pointer-events-none absolute right-3 top-3 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70">
           {watermark}
         </span>
       )}
+
+      {/* Bottom control bar */}
+      <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-6 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} className="shrink-0 text-white">
+          {playing ? <FaPause aria-hidden="true" className="h-4 w-4" /> : <FaPlay aria-hidden="true" className="h-4 w-4" />}
+        </button>
+
+        <div
+          role="slider"
+          aria-label="Seek"
+          aria-valuemin={0}
+          aria-valuemax={duration}
+          aria-valuenow={current}
+          onClick={seek}
+          className="relative h-1.5 flex-1 cursor-pointer rounded-full bg-white/25"
+        >
+          <div
+            className="absolute inset-y-0 left-0 rounded-full bg-brand-500"
+            style={{ width: duration ? `${(current / duration) * 100}%` : '0%' }}
+          />
+        </div>
+
+        <span className="hidden shrink-0 text-[11px] tabular-nums text-white/80 sm:inline">
+          {formatTime(current)} / {formatTime(duration)}
+        </span>
+
+        <button type="button" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'} className="shrink-0 text-white">
+          {muted ? <FaVolumeXmark aria-hidden="true" className="h-4 w-4" /> : <FaVolumeHigh aria-hidden="true" className="h-4 w-4" />}
+        </button>
+
+        <div className="flex shrink-0 items-center justify-center">
+          <PlaybackRateControl rate={rate} onChange={applyRate} />
+        </div>
+
+        <button type="button" onClick={toggleFullscreen} aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} className="shrink-0 text-white">
+          {fullscreen ? <FaCompress aria-hidden="true" className="h-4 w-4" /> : <FaExpand aria-hidden="true" className="h-4 w-4" />}
+        </button>
+      </div>
     </div>
   );
 }

@@ -9,17 +9,17 @@ const RATES = [0.75, 1, 1.25, 1.5, 2];
  */
 export default function PlaybackRateControl({ rate, onChange }) {
   return (
-    <div className="flex gap-1">
+    <select
+      value={rate}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="appearance-none bg-transparent text-[13px] text-white font-medium cursor-pointer outline-none hover:text-brand-300 transition-colors"
+      aria-label="Playback speed"
+    >
       {RATES.map((value) => (
-        <Button
-          key={value}
-          size="sm"
-          variant={value === rate ? 'primary' : 'ghost'}
-          onClick={() => onChange(value)}
-        >
-          {value}×
-        </Button>
+        <option key={value} value={value} className="text-black">
+          {value === 1 ? 'Normal' : `${value}x`}
+        </option>
       ))}
-    </div>
+    </select>
   );
 }
