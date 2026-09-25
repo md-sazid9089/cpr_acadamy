@@ -162,3 +162,22 @@ test('personal lesson notes are private to the authenticated student and never t
     assert.equal((await outsider.request('PUT', `/lessons/${lesson.id}/notes`, { content: 'x' })).statusCode, 403);
   } finally { await context.close(); }
 });
+test('admins can file courses under custom categories and batch groups', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999998');
+    let response = await admin.request('POST', '/admin/courses', { slug: 'bds-part-one', title: 'BDS Part-1 Batch', category: '  Dental ', batchGroup: 'BDS Part-1', price: 800, isPublished: true });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal(response.json().category, 'Dental');
+    assert.equal(response.json().batchGroup, 'BDS Part-1');
+    const listed = (await context.app.inject('/api/courses?category=Dental')).json();
+    assert.deepEqual(listed.map(course => course.slug), ['bds-part-one']);
+    assert.equal((await context.app.inject('/api/courses?group=BDS%20Part-1')).json().length, 1);
+    for (const category of ['all', '', 'x'.repeat(61)]) {
+      response = await admin.request('POST', '/admin/courses', { slug: `bad-${category.length}`, title: 'Bad', category, price: 1 });
+      assert.equal(response.statusCode, 400, `category ${JSON.stringify(category)} should be rejected`);
+    }
+  } finally {
+    await context.close();
+  }
+});

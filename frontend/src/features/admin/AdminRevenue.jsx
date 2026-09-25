@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FaCamera } from 'react-icons/fa6';
 import { confirmPayment, fetchAdminRevenue, rejectPayment } from './api/admin.api.js';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
@@ -50,9 +51,12 @@ export const PAYMENT_COLUMNS = [
     header: 'Transaction ID',
     render: (row) =>
       row.transactionId ? (
-        <code className="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-xs text-stone-800 dark:bg-surface-dark dark:text-brand-200">
-          {row.transactionId}
-        </code>
+        <span className="inline-flex items-center gap-1.5">
+          <code className="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-xs text-stone-800 dark:bg-surface-dark dark:text-brand-200">
+            {row.transactionId}
+          </code>
+          {row.screenshotUrl && <FaCamera aria-label="Screenshot attached" title="Screenshot attached" className="h-3 w-3 shrink-0 text-brand-500" />}
+        </span>
       ) : (
         <span className="text-xs text-stone-400 dark:text-brand-200">—</span>
       ),
@@ -73,7 +77,7 @@ export const PAYMENT_COLUMNS = [
  */
 export function ReconcileDialog({ payment, onClose, onDone }) {
   const [mode, setMode] = useState('confirm');
-  const [transactionId, setTransactionId] = useState('');
+  const [transactionId, setTransactionId] = useState(payment?.transactionId ?? '');
   const [evidence, setEvidence] = useState('');
   const [reason, setReason] = useState('');
 
@@ -116,6 +120,18 @@ export function ReconcileDialog({ payment, onClose, onDone }) {
             </button>
           ))}
         </div>
+
+        {(payment?.payerMobile || payment?.screenshotUrl) && (
+          <div className="rounded-lg border border-stone-200 bg-surface-subtle p-3 text-xs dark:border-stone-200 dark:bg-surface-dark">
+            <p className="font-semibold text-stone-700 dark:text-brand-200">Submitted by the student</p>
+            {payment.payerMobile && <p className="mt-1 text-stone-600 dark:text-brand-200">Paid from: <strong>{payment.payerMobile}</strong></p>}
+            {payment.screenshotUrl && (
+              <a href={payment.screenshotUrl} target="_blank" rel="noopener noreferrer" className="mt-2 block">
+                <img src={payment.screenshotUrl} alt="Payment screenshot submitted by the student" className="max-h-40 rounded-lg border border-stone-200" />
+              </a>
+            )}
+          </div>
+        )}
 
         {error && (
           <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
