@@ -176,12 +176,18 @@ function ExamEditor({ exam, course }) {
   const flushQuestion = (questionId) => (event) => {
     if (event.currentTarget.contains(event.relatedTarget)) return;
     if (!dirty.has(questionId)) return;
-    persist(latest.current);
-    setDirty((prev) => {
-      const next = new Set(prev);
-      next.delete(questionId);
-      return next;
-    });
+    
+    // Defer the flush slightly so if this blur was caused by clicking "Add Question"
+    // or another structural action, that action's synchronous setQuestions(next) 
+    // runs first. Then we persist whatever the latest state is.
+    setTimeout(() => {
+      persist(latest.current);
+      setDirty((prev) => {
+        const next = new Set(prev);
+        next.delete(questionId);
+        return next;
+      });
+    }, 0);
   };
 
   // Edits still pending when the admin leaves the page are flushed on unmount.

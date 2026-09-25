@@ -161,9 +161,19 @@ export default function ExamRunner() {
     );
   }
 
-  if (isLoading || !current) {
+  if (isLoading) {
     return (
       <ContentSkeleton variant="exam" label="Loading exam paper" />
+    );
+  }
+
+  if (questions.length === 0 || !current) {
+    return (
+      <EmptyState
+        title="No questions in this paper"
+        description="This exam paper has no questions yet, or they were not properly loaded."
+        action={<Button to="/dashboard/exams">Back to exams</Button>}
+      />
     );
   }
 
