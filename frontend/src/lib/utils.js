@@ -93,6 +93,12 @@ export function maskMobile(mobile = '') {
   return `${mobile.slice(0, 3)}****${mobile.slice(-4)}`;
 }
 
+export function maskEmail(email = '') {
+  const [name, domain] = email.split('@');
+  if (!domain) return email;
+  return `${name.slice(0, 2)}${'*'.repeat(Math.max(name.length - 2, 1))}@${domain}`;
+}
+
 /** Resolve after `ms` — used by the mock API layer to fake latency. */
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));

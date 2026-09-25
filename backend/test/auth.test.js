@@ -4,7 +4,74 @@ import { openDatabase, migrate, one } from '../src/db.js';
 import { loadConfig } from '../src/config.js';
 import { buildApp } from '../src/app.js';
 import { deliverSms } from '../src/sms.js';
+import { deliverEmail } from '../src/email.js';
+import { hashPassword } from '../src/security.js';
 import { fixture } from '../test-support/fixture.js';
+
+test('password reset by email: delivery, case-insensitive lookup, and non-committal misses', async () => {
+  const config = loadConfig({ NODE_ENV: 'test', SMS_MODE: 'test', EMAIL_MODE: 'test', TOKEN_SECRET: 'test-secret-with-at-least-32-characters' });
+  const database = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });
+  await migrate(database);
+  const app = await buildApp({ database, config });
+  const request = (method, url, payload) => app.inject({ method, url: `/api${url}`, payload, headers: { 'x-device-id': 'test-device-one' } });
+  const insertUser = async (mobile, email) => database.query(`INSERT INTO users(mobile,full_name,password_hash,status,email,mobile_verified_at)
+    VALUES ($1,'Email User',$2,'active',$3,now())`, [mobile, await hashPassword('Original-password-1'), email]);
+  try {
+    await insertUser('01712340001', 'Reset.Me@Example.com');
+    await insertUser('01712340002', 'shared@example.com');
+    await insertUser('01712340003', 'shared@example.com');
+    const emails = [];
+    const drain = () => deliverEmail(database, config, payload => emails.push(payload));
+
+    assert.equal((await request('POST', '/auth/password/forgot', { mobile: '01712340001', email: 'reset.me@example.com' })).statusCode, 400);
+    assert.equal((await request('POST', '/auth/password/forgot', {})).statusCode, 400);
+
+    let response = await request('POST', '/auth/password/forgot', { email: '  RESET.me@example.com ' });
+    assert.equal(response.statusCode, 200, response.body);
+    await drain();
+    assert.equal(emails.length, 1);
+    assert.equal(emails[0].to, 'Reset.Me@Example.com');
+    const code = emails[0].text.match(/\b\d{6}\b/)[0];
+    assert.ok(emails[0].html.includes(code));
+
+    for (const email of ['shared@example.com', 'nobody@example.com']) {
+      response = await request('POST', '/auth/password/forgot', { email });
+      assert.equal(response.statusCode, 200, response.body);
+    }
+    await drain();
+    assert.equal(emails.length, 1, 'shared and unknown addresses must not receive a code');
+
+    response = await request('POST', '/auth/password/reset', { email: 'reset.me@example.com', otp: code, password: 'Replacement-password-1' });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal((await request('POST', '/auth/password/reset', { email: 'reset.me@example.com', otp: code, password: 'Another-password-1' })).statusCode, 400);
+    assert.equal((await request('POST', '/auth/login', { mobile: '01712340001', password: 'Replacement-password-1' })).statusCode, 200);
+    assert.equal((await one(database, "SELECT count(*)::int AS n FROM email_outbox WHERE status='sent' AND payload=''")).n, 1);
+  } finally {
+    await app.close();
+    await database.close();
+  }
+
+  const smsOnly = loadConfig({ NODE_ENV: 'test', SMS_MODE: 'test', TOKEN_SECRET: 'test-secret-with-at-least-32-characters' });
+  const smsDatabase = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });
+  await migrate(smsDatabase);
+  const smsApp = await buildApp({ database: smsDatabase, config: smsOnly });
+  try {
+    const response = await smsApp.inject({ method: 'POST', url: '/api/auth/password/forgot', payload: { email: 'reset.me@example.com' } });
+    assert.equal(response.statusCode, 503);
+    assert.equal(response.json().code, 'EMAIL_UNAVAILABLE');
+  } finally {
+    await smsApp.close();
+    await smsDatabase.close();
+  }
+});
+
+test('email config requires a Resend key and sender', () => {
+  const base = { NODE_ENV: 'test', TOKEN_SECRET: 'test-secret-with-at-least-32-characters' };
+  assert.throws(() => loadConfig({ ...base, EMAIL_MODE: 'resend' }), /RESEND_API_KEY/);
+  assert.throws(() => loadConfig({ ...base, EMAIL_MODE: 'resend', RESEND_API_KEY: 're_x' }), /EMAIL_FROM/);
+  assert.throws(() => loadConfig({ ...base, EMAIL_MODE: 'smtp' }), /EMAIL_MODE/);
+  assert.equal(loadConfig({ ...base, EMAIL_MODE: 'resend', RESEND_API_KEY: 're_x', EMAIL_FROM: 'a@b.co' }).emailMode, 'resend');
+});
 
 test('registration, OTP limits, pending gate, session rotation, and password reset', async () => {
   const config = loadConfig({ NODE_ENV: 'test', SMS_MODE: 'test', TOKEN_SECRET: 'test-secret-with-at-least-32-characters' });

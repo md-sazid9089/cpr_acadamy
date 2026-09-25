@@ -5,6 +5,7 @@ export function loadConfig(env = process.env) {
   const databaseMode = env.DATABASE_MODE || (production ? 'postgres' : 'pglite');
   const port = Number(env.PORT || 3001);
   const smsMode = env.SMS_MODE || 'disabled';
+  const emailMode = env.EMAIL_MODE || 'disabled';
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid PORT');
   if (!['postgres', 'pglite'].includes(databaseMode)) throw new Error('Invalid DATABASE_MODE');
   if (production && databaseMode !== 'postgres') throw new Error('Production requires PostgreSQL');
@@ -18,6 +19,12 @@ export function loadConfig(env = process.env) {
   if (smsMode === 'console' && production) throw new Error('Console SMS is only allowed outside production');
   if (smsMode === 'webhook' && (!env.SMS_WEBHOOK_URL?.startsWith('https://') || !env.SMS_WEBHOOK_TOKEN)) {
     throw new Error('SMS webhook requires HTTPS and an authentication token');
+  }
+  if (!['disabled', 'resend', 'test', 'console'].includes(emailMode)) throw new Error('Invalid EMAIL_MODE');
+  if (emailMode === 'test' && env.NODE_ENV !== 'test') throw new Error('Test email is only allowed in tests');
+  if (emailMode === 'console' && production) throw new Error('Console email is only allowed outside production');
+  if (emailMode === 'resend' && (!env.RESEND_API_KEY?.startsWith('re_') || !env.EMAIL_FROM)) {
+    throw new Error('Resend email requires RESEND_API_KEY and EMAIL_FROM');
   }
   return {
     production,
@@ -33,6 +40,9 @@ export function loadConfig(env = process.env) {
     smsMode,
     smsWebhookUrl: env.SMS_WEBHOOK_URL,
     smsWebhookToken: env.SMS_WEBHOOK_TOKEN,
+    emailMode,
+    resendApiKey: env.RESEND_API_KEY,
+    emailFrom: env.EMAIL_FROM,
     // Image uploads go to Cloudinary when this is set; otherwise they fall back to
     // local disk (test/dev without a Cloudinary account configured).
     cloudinaryUrl: env.CLOUDINARY_URL || null,

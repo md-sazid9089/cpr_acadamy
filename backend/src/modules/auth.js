@@ -4,8 +4,24 @@ import { one } from '../db.js';
 import { hashPassword, verifyPassword, newToken, digestToken, publicUser } from '../security.js';
 import { ensure, mobile, password, text, throttle, audit } from '../http.js';
 import { enqueueSms, requireSms } from '../sms.js';
+import { enqueueEmail, requireEmail } from '../email.js';
 
-const otpInput = z.object({ mobile, otp: z.string().regex(/^\d{6}$/) });
+const otp = z.string().regex(/^\d{6}$/);
+const otpInput = z.object({ mobile, otp });
+const emailAddress = z.string().trim().toLowerCase().email().max(254);
+const resetIdentity = { mobile: mobile.optional(), email: emailAddress.optional() };
+const oneIdentity = [data => (data.mobile === undefined) !== (data.email === undefined), { path: ['mobile'], message: 'Enter either a mobile number or an email address' }];
+
+function resetEmail(code) {
+  const text = `Your CPR Academy password reset code is ${code}. It expires in 10 minutes.\n\nIf you did not ask to reset your password, you can ignore this email.`;
+  const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#1c1917;line-height:1.5">
+  <p>Your CPR Academy password reset code is:</p>
+  <p style="font-size:28px;font-weight:bold;letter-spacing:6px;color:#1B3F7D;margin:16px 0">${code}</p>
+  <p>It expires in 10 minutes.</p>
+  <p style="color:#78716C;font-size:13px">If you did not ask to reset your password, you can ignore this email.</p>
+</div>`;
+  return { subject: 'Your CPR Academy password reset code', text, html };
+}
 const registration = z.object({
   mobile, password, fullName: text.min(2).max(100), institution: text.max(120),
   bmdcNumber: z.string().trim().max(30).optional(), email: z.union([z.string().email().max(254), z.literal('')]).optional(),
@@ -29,13 +45,21 @@ export function authRoutes(route, database, config) {
     return { user: publicUser(user), accessToken, refreshToken, deviceId, expiresAt: new Date(session.expires_at).getTime() };
   }
 
-  async function issueOtp(transaction, user, purpose) {
+  async function findResetUser(transaction, { mobile: phone, email }) {
+    if (phone) return one(transaction, 'SELECT * FROM users WHERE mobile=$1 FOR UPDATE', [phone]);
+    // Email is not unique, so an address shared by several accounts identifies none of them.
+    const { rows } = await transaction.query('SELECT * FROM users WHERE lower(email)=$1 FOR UPDATE', [email]);
+    return rows.length === 1 ? rows[0] : null;
+  }
+
+  async function issueOtp(transaction, user, purpose, channel = 'sms') {
     const previous = await one(transaction, 'SELECT * FROM otp_challenges WHERE user_id=$1 AND purpose=$2 FOR UPDATE', [user.id, purpose]);
     ensure(!previous || Date.now() - new Date(previous.sent_at).getTime() >= 60000, 429, 'OTP_COOLDOWN', 'Wait one minute before requesting another code.');
     const code = String(randomInt(1000000)).padStart(6, '0');
     await transaction.query(`INSERT INTO otp_challenges(user_id,purpose,code_hash,expires_at) VALUES ($1,$2,$3,now()+interval '10 minutes')
       ON CONFLICT(user_id,purpose) DO UPDATE SET code_hash=EXCLUDED.code_hash,attempts=0,expires_at=EXCLUDED.expires_at,sent_at=now(),consumed_at=NULL`,
     [user.id, purpose, digestToken(`${user.id}:${purpose}:${code}`, secret)]);
+    if (channel === 'email') return enqueueEmail(transaction, config, user, resetEmail(code));
     await enqueueSms(transaction, config, user, `Your CPR Academy ${purpose === 'reset' ? 'password reset' : 'verification'} code is ${code}. It expires in 10 minutes.`);
   }
 
@@ -113,25 +137,34 @@ export function authRoutes(route, database, config) {
     return { ok: true, ...result };
   });
 
-  for (const [path, purpose] of [['/auth/otp/resend', 'registration'], ['/auth/password/forgot', 'reset']]) {
-    route('POST', path, { body: z.object({ mobile }).strict(), rateLimit: { max: 10, timeWindow: '15 minutes' } }, async request => {
-      requireSms(config);
-      await throttle(database, config, purpose, request.body.mobile, 5);
-      await database.transaction(async transaction => {
-        const user = await one(transaction, 'SELECT * FROM users WHERE mobile=$1 FOR UPDATE', [request.body.mobile]);
-        if (user && (purpose === 'registration' ? user.status === 'otp_pending' : Boolean(user.mobile_verified_at))) {
-          await issueOtp(transaction, user, purpose);
-        }
-      });
-      return { ok: true, mobile: request.body.mobile, otpSentAt: new Date().toISOString() };
+  route('POST', '/auth/otp/resend', { body: z.object({ mobile }).strict(), rateLimit: { max: 10, timeWindow: '15 minutes' } }, async request => {
+    requireSms(config);
+    await throttle(database, config, 'registration', request.body.mobile, 5);
+    await database.transaction(async transaction => {
+      const user = await one(transaction, 'SELECT * FROM users WHERE mobile=$1 FOR UPDATE', [request.body.mobile]);
+      if (user?.status === 'otp_pending') await issueOtp(transaction, user, 'registration');
     });
-  }
+    return { ok: true, mobile: request.body.mobile, otpSentAt: new Date().toISOString() };
+  });
 
-  route('POST', '/auth/password/reset', { body: otpInput.extend({ password, confirmPassword: z.string().max(128).optional() }).strict().refine(data => data.confirmPassword === undefined || data.password === data.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' }) }, async request => {
-    await throttle(database, config, 'reset-verify', request.body.mobile, 10);
+  route('POST', '/auth/password/forgot', { body: z.object(resetIdentity).strict().refine(...oneIdentity), rateLimit: { max: 10, timeWindow: '15 minutes' } }, async request => {
+    const { mobile: phone, email } = request.body;
+    if (email) requireEmail(config);
+    else requireSms(config);
+    await throttle(database, config, 'reset', phone ?? `email:${email}`, 5);
+    await database.transaction(async transaction => {
+      const user = await findResetUser(transaction, request.body);
+      if (user?.mobile_verified_at) await issueOtp(transaction, user, 'reset', email ? 'email' : 'sms');
+    });
+    // Same answer whether or not an account matched, so the form cannot be used to discover accounts.
+    return { ok: true, ...(email ? { email } : { mobile: phone }), otpSentAt: new Date().toISOString() };
+  });
+
+  route('POST', '/auth/password/reset', { body: z.object({ ...resetIdentity, otp, password, confirmPassword: z.string().max(128).optional() }).strict().refine(...oneIdentity).refine(data => data.confirmPassword === undefined || data.password === data.confirmPassword, { path: ['confirmPassword'], message: 'Passwords do not match' }) }, async request => {
+    await throttle(database, config, 'reset-verify', request.body.mobile ?? `email:${request.body.email}`, 10);
     const hash = await hashPassword(request.body.password);
     const success = await database.transaction(async transaction => {
-      const user = await one(transaction, 'SELECT * FROM users WHERE mobile=$1 FOR UPDATE', [request.body.mobile]);
+      const user = await findResetUser(transaction, request.body);
       if (!user || !await consumeOtp(transaction, user, 'reset', request.body.otp)) return false;
       await transaction.query('UPDATE users SET password_hash=$2 WHERE id=$1', [user.id, hash]);
       await transaction.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [user.id]);

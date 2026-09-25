@@ -57,13 +57,14 @@ export async function fetchMe() {
   return data;
 }
 
-export async function forgotPassword(mobile) {
-  const { data } = await apiClient.post('/auth/password/forgot', { mobile });
+/** `identity` is `{ mobile }` or `{ email }`; the code is sent by SMS or email to match. */
+export async function forgotPassword(identity) {
+  const { data } = await apiClient.post('/auth/password/forgot', identity);
   return data;
 }
 
-export async function resetPassword({ mobile, otp, password, confirmPassword }) {
-  const { data } = await apiClient.post('/auth/password/reset', { mobile, otp, password, confirmPassword });
+export async function resetPassword({ mobile, email, otp, password, confirmPassword }) {
+  const { data } = await apiClient.post('/auth/password/reset', { mobile, email, otp, password, confirmPassword });
   return data;
 }
 

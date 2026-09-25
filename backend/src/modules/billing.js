@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { one } from '../db.js';
-import { audit, ensure, uuid, text, pageQuery } from '../http.js';
+import { audit, ensure, uuid, text, mobile, pageQuery } from '../http.js';
 import { money, requireCourseAccess } from './courses.js';
 import { registrationNumber } from './students.js';
 
 export function paymentDto(row) {
   return { id: row.id, paymentId: row.id, invoiceNo: row.invoice_no, courseId: row.course_id,
     courseTitle: row.description, amount: row.amount_minor / 100, status: row.status, currency: row.currency,
-    method: row.method, transactionId: row.transaction_id, paidAt: row.paid_at, createdAt: row.created_at };
+    method: row.method, transactionId: row.transaction_id, paidAt: row.paid_at, createdAt: row.created_at,
+    payerMobile: row.payer_mobile ?? null, screenshotUrl: row.screenshot_url ?? null, proofSubmittedAt: row.proof_submitted_at ?? null };
 }
 
 export function billingRoutes(route, database) {
@@ -54,11 +55,29 @@ export function billingRoutes(route, database) {
     ensure(payment, 404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
     return paymentDto(payment);
   });
+  // Replaces the old "share it over WhatsApp" step: the student attaches their own
+  // transaction ID, the mobile they paid from, and an optional screenshot right on
+  // the invoice, for an admin to review in /admin/payments before confirming.
+  route('POST', '/payments/:id/proof', { auth: 'active', body: z.object({
+    transactionId: text.min(3).max(120), payerMobile: mobile, screenshotUrl: z.union([z.string().url(), z.literal('')]).default(''),
+  }).strict() }, async request => database.transaction(async transaction => {
+    const payment = await one(transaction, 'SELECT * FROM payments WHERE id=$1 AND user_id=$2 FOR UPDATE', [request.params.id, request.auth.user_id]);
+    ensure(payment, 404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
+    ensure(payment.method === 'manual', 409, 'PROOF_NOT_APPLICABLE', 'This payment method does not require manual proof.');
+    ensure(payment.status === 'pending', 409, 'INVALID_PAYMENT_STATE', 'Only a pending invoice can be updated with payment proof.');
+    const duplicate = await one(transaction, 'SELECT id FROM payments WHERE transaction_id=$1 AND id<>$2', [request.body.transactionId, payment.id]);
+    ensure(!duplicate, 409, 'DUPLICATE_TRANSACTION_ID', 'This transaction ID is already linked to another payment.');
+    const updated = await one(transaction, `UPDATE payments SET transaction_id=$2,payer_mobile=$3,screenshot_url=$4,proof_submitted_at=now() WHERE id=$1 RETURNING *`,
+      [payment.id, request.body.transactionId, request.body.payerMobile, request.body.screenshotUrl || null]);
+    await audit(transaction, request.auth.user_id, 'payment.proof_submitted', payment.id, { transactionId: request.body.transactionId });
+    return paymentDto(updated);
+  }));
   route('GET', '/invoices/:id', { auth: 'active' }, async request => {
     const payment = await one(database, 'SELECT * FROM payments WHERE id=$1 AND user_id=$2', [request.params.id, request.auth.user_id]);
     ensure(payment, 404, 'INVOICE_NOT_FOUND', 'Invoice not found.');
     return { id: payment.id, invoiceNo: payment.invoice_no, issuedAt: payment.created_at, paidAt: payment.paid_at, status: payment.status,
       method: payment.method, transactionId: payment.transaction_id, billedTo: payment.billed_to,
+      payerMobile: payment.payer_mobile ?? null, screenshotUrl: payment.screenshot_url ?? null, proofSubmittedAt: payment.proof_submitted_at ?? null,
       lines: [{ id: payment.id, description: payment.description, quantity: 1, unitPrice: payment.amount_minor / 100 }], discount: 0, total: payment.amount_minor / 100 };
   });
   route('GET', '/me/payments', { auth: 'active', query: pageQuery }, async request => (await database.query('SELECT * FROM payments WHERE user_id=$1 ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.auth.user_id, request.query.limit, request.query.offset])).rows.map(paymentDto));

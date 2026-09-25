@@ -1,13 +1,15 @@
 import { deliverSms } from './sms.js';
+import { deliverEmail } from './email.js';
 import { finalizeExpiredAttempts } from './modules/exams.js';
 
-export async function runMaintenance(database, config, testSink) {
+export async function runMaintenance(database, config, testSink, emailTestSink) {
   await finalizeExpiredAttempts(database);
   await database.query("UPDATE enrollments SET status='expired' WHERE status='active' AND expires_at<=now()");
   await database.query('DELETE FROM rate_buckets WHERE resets_at<now()');
   await database.query("DELETE FROM sessions WHERE refresh_expires_at<now()-interval '7 days'");
   await database.query("DELETE FROM otp_challenges WHERE expires_at<now()-interval '1 day'");
   await deliverSms(database, config, testSink);
+  await deliverEmail(database, config, emailTestSink);
 }
 
 export function startWorker(database, config, logger, { persistent = false } = {}) {
