@@ -305,9 +305,9 @@ function ExamEditor({ exam, course }) {
                     Saved
                   </span>
                 )}
-                <Button type="submit" size="sm" isLoading={settingsMutation.isPending} disabled={locked}>
-                  Save settings
-                </Button>
+                {saving && (
+                  <span className="text-sm font-medium text-stone-500">Saving...</span>
+                )}
               </div>
             }
           />
