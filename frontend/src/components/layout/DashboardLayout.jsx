@@ -81,9 +81,6 @@ export default function DashboardLayout({ variant = ROLES.STUDENT }) {
         />
 
         <div className="relative isolate min-h-screen min-w-0 flex-1">
-          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-            <MolecularBackground />
-          </div>
           {/* Mobile top bar: the sidebar is a drawer below lg, so this is the only chrome. */}
           <div className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-stone-200 bg-white/90 px-4 py-2 backdrop-blur lg:hidden dark:border-stone-200 dark:bg-surface-dark/90">
             <Logo compact className="ml-0" />
