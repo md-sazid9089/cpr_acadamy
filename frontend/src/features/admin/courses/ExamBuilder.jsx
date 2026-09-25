@@ -320,10 +320,18 @@ function ExamEditor({ exam, course }) {
                 label="Visibility"
                 value={settings.isPublished}
                 onChange={setField('isPublished')}
-                hint={incomplete > 0 ? 'Finish every question before publishing.' : undefined}
+                hint={
+                  written !== Number(settings.questionCount)
+                    ? 'Add all questions before publishing.'
+                    : incomplete > 0
+                      ? 'Finish every question before publishing.'
+                      : undefined
+                }
               >
                 <option value="draft">Draft — hidden from students</option>
-                <option value="published">Published — students can sit it</option>
+                <option value="published" disabled={written !== Number(settings.questionCount) || incomplete > 0}>
+                  Published — students can sit it
+                </option>
               </Select>
             </div>
             {typeLocked && (
