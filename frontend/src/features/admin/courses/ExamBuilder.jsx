@@ -483,10 +483,13 @@ function ExamEditor({ exam, course }) {
             />
           ))}
 
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
             <Button variant="secondary" onClick={addQuestion} isLoading={questionsMutation.isPending}>
               <FaPlus aria-hidden="true" className="h-3.5 w-3.5" />
               Add question {written + 1}
+            </Button>
+            <Button variant="outline" to={`/admin/courses/${course.id}`}>
+              Done building
             </Button>
           </div>
         </fieldset>
