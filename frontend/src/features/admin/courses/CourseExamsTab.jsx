@@ -67,13 +67,15 @@ export default function CourseExamsTab() {
 
   const handleCreate = (event) => {
     event.preventDefault();
+    const now = Date.now();
     createMutation.mutate({
       title: form.title.trim(),
       type: form.type,
       kind: 'practice',
       isPublished: false,
       courseId: course.id,
-      scheduledAt: new Date(Date.now() + 7 * 86400000).toISOString(),
+      scheduledAt: new Date(now).toISOString(),
+      closesAt: new Date(now + 24 * 3600000).toISOString(),
       durationMinutes: 60,
       questionCount: form.type === QUESTION_TYPES.MTF ? 25 : 50,
       marksPerQuestion: form.type === QUESTION_TYPES.MTF ? 0.4 : 2,
