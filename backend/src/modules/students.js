@@ -29,10 +29,14 @@ export async function myCourses(database, userId) {
     (SELECT count(*)::int FROM lessons l WHERE l.course_id=c.id AND l.status='published' AND l.scheduled_at<=now()) AS lesson_count,
     (SELECT count(*)::int FROM lesson_progress p JOIN lessons l ON l.id=p.lesson_id WHERE p.user_id=e.user_id AND l.course_id=c.id AND l.status='published' AND l.scheduled_at<=now()) AS completed_lessons,
     (SELECT jsonb_build_object('id',l.id,'title',l.title) FROM lessons l WHERE l.course_id=c.id AND l.status='published' AND l.scheduled_at<=now()
-      AND NOT EXISTS(SELECT 1 FROM lesson_progress p WHERE p.user_id=e.user_id AND p.lesson_id=l.id) ORDER BY l.position,l.id LIMIT 1) AS next_lesson
+      AND NOT EXISTS(SELECT 1 FROM lesson_progress p WHERE p.user_id=e.user_id AND p.lesson_id=l.id) ORDER BY l.position,l.id LIMIT 1) AS next_lesson,
+    (SELECT p.proof_submitted_at IS NOT NULL FROM payments p WHERE p.user_id=e.user_id AND p.course_id=c.id AND p.status='pending' ORDER BY p.created_at DESC LIMIT 1) AS payment_awaiting_approval
     FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE e.user_id=$1 ORDER BY e.created_at DESC,e.id`, [userId])).rows;
   return rows.map(row => ({ id: row.id, regNo: registrationNumber(row.id, row.created_at), courseId: row.course_id, slug: row.slug, title: row.title, courseTitle: row.title, category: row.category,
     status: row.status === 'active' && new Date(row.expires_at).getTime() <= Date.now() ? 'expired' : row.status,
+    // A pending enrolment whose payment already has a submitted transaction ID/screenshot is
+    // just waiting on an admin to look at it — distinct from one that hasn't been paid at all.
+    awaitingApproval: row.status === 'pending_payment' && Boolean(row.payment_awaiting_approval),
     lessonCount: row.lesson_count, completedLessons: row.completed_lessons,
     progress: row.lesson_count ? Math.round(row.completed_lessons / row.lesson_count * 100) : 0,
     nextLesson: row.next_lesson, enrolledAt: row.created_at, expiresOn: row.expires_at }));
