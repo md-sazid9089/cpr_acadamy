@@ -100,6 +100,8 @@ function ExamEditor({ exam, course }) {
   const [saveError, setSaveError] = useState(null);
   const [savedAt, setSavedAt] = useState(null);
 
+  const navigatingRef = useRef(false);
+
   const invalidateList = () => queryClient.invalidateQueries({ queryKey: adminExamsKey(course.id) });
 
   const remember = (saved) => {
@@ -112,8 +114,16 @@ function ExamEditor({ exam, course }) {
   // ── Settings ──
   const settingsMutation = useMutation({
     mutationFn: updateExam,
-    onSuccess: remember,
-    onError: (error) => setSaveError(error.message),
+    onSuccess: (data) => {
+      remember(data);
+      if (navigatingRef.current) {
+        navigate(`/admin/courses/${course.id}`);
+      }
+    },
+    onError: (error) => {
+      setSaveError(error.message);
+      navigatingRef.current = false;
+    },
   });
 
   const saveSettings = (event) => {
@@ -282,7 +292,7 @@ function ExamEditor({ exam, course }) {
 
       {/* ── Settings ── */}
       <Card>
-        <form onSubmit={saveSettings}>
+        <form id="exam-settings-form" onSubmit={saveSettings}>
           <CardHeader
             title="Exam settings"
             description="Type, schedule, duration and marking. Total marks are worked out from these — they are never typed."
@@ -496,7 +506,16 @@ function ExamEditor({ exam, course }) {
               <FaPlus aria-hidden="true" className="h-3.5 w-3.5" />
               Add question {written + 1}
             </Button>
-            <Button variant="outline" to={`/admin/courses/${course.id}`}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                navigatingRef.current = true;
+                const form = document.getElementById('exam-settings-form');
+                if (form) form.requestSubmit();
+                else navigate(`/admin/courses/${course.id}`);
+              }}
+              isLoading={settingsMutation.isPending}
+            >
               Done building
             </Button>
           </div>
