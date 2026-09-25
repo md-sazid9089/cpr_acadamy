@@ -148,10 +148,13 @@ function ExamEditor({ exam, course }) {
     });
   };
 
-  const setField = (field) => (event) => setSettings((prev) => ({
-    ...prev,
-    [field]: event.target.value,
-  }));
+  const setField = (field) => (event) => setSettings((prev) => {
+    const next = { ...prev, [field]: event.target.value };
+    if (field === 'closesAt') {
+      next.resultsAt = event.target.value;
+    }
+    return next;
+  });
 
   // ── Questions ──
   // The whole paper is one document server-side, so every structural change
