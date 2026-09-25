@@ -48,6 +48,8 @@
 .course-access-notice > svg { flex-shrink: 0; margin-top: 3px; width: 14px; height: 14px; }
 .course-primary-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 16px; border-radius: var(--course-radius); background: var(--blue-500); color: var(--white); font-size: 14px; font-weight: 600; text-align: center; transition: background-color 160ms; }
 .course-primary-action:hover { background: var(--blue-700); }
+.course-primary-action--pending { background: var(--course-border); color: var(--course-muted); cursor: default; }
+.course-primary-action--pending:hover { background: var(--course-border); }
 .course-primary-action svg { width: 14px; height: 14px; flex-shrink: 0; }
 .course-next-lesson { margin-top: 8px; font-size: 12px; color: var(--course-muted); }
 .course-secondary-links { display: flex; flex-wrap: wrap; column-gap: 16px; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--course-border); }

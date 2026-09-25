@@ -101,7 +101,9 @@ export default function MyCourses() {
                         <FaCircleInfo aria-hidden="true" />
                         <p>
                         {course.status === 'pending_payment'
-                          ? 'Access opens as soon as the academy confirms your course fee payment.'
+                          ? course.awaitingApproval
+                            ? 'Your payment is submitted and awaiting admin approval. Access opens as soon as it’s confirmed.'
+                            : 'Complete your payment to start this batch.'
                           : course.status === 'expired'
                             ? <>Access to this batch ended on <strong>{formatDate(course.expiresOn)}</strong>.</>
                             : <>Your batch access remains active till <strong>{formatDate(course.expiresOn)}</strong>. The date is reviewed after the exam circular.</>}
@@ -110,13 +112,19 @@ export default function MyCourses() {
                     </div>
 
                     <div className="mt-6">
-                      <Link
-                        to={isActive ? `/dashboard/course/${course.slug}` : `/dashboard/checkout/${course.slug}`}
-                        className="course-primary-action"
-                      >
-                        {isCompleted && isActive ? <FaBookOpen aria-hidden="true" /> : isActive ? <FaPlay aria-hidden="true" /> : null}
-                        {isActive ? (isCompleted ? 'Review Materials' : course.nextLesson ? 'Continue Course' : 'Open Course') : course.status === 'expired' ? 'Renew Access' : 'Pay Course Fee'}
-                      </Link>
+                      {course.awaitingApproval ? (
+                        <span className="course-primary-action course-primary-action--pending">
+                          <FaClockRotateLeft aria-hidden="true" /> Waiting for Approval
+                        </span>
+                      ) : (
+                        <Link
+                          to={isActive ? `/dashboard/course/${course.slug}` : `/dashboard/checkout/${course.slug}`}
+                          className="course-primary-action"
+                        >
+                          {isCompleted && isActive ? <FaBookOpen aria-hidden="true" /> : isActive ? <FaPlay aria-hidden="true" /> : null}
+                          {isActive ? (isCompleted ? 'Review Materials' : course.nextLesson ? 'Continue Course' : 'Open Course') : course.status === 'expired' ? 'Renew Access' : 'Pay Course Fee'}
+                        </Link>
+                      )}
 
                     {isActive && !isCompleted && course.nextLesson && (
                       <p className="course-next-lesson">
