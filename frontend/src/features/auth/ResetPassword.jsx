@@ -8,14 +8,15 @@ import { resetPassword } from './api/auth.api.js';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { OTP_LENGTH } from '@/constants';
-import { maskMobile } from '@/lib/utils';
+import { maskEmail, maskMobile } from '@/lib/utils';
 
-/** Step 2 of recovery: SMS code plus a new password. */
+/** Step 2 of recovery: the SMS or email code plus a new password. */
 export default function ResetPassword() {
   const navigate = useNavigate();
   const location = useLocation();
   const [submitError, setSubmitError] = useState(null);
   const mobile = location.state?.mobile;
+  const email = location.state?.email;
 
   const {
     register,
@@ -26,12 +27,12 @@ export default function ResetPassword() {
     defaultValues: { otp: '', password: '', confirmPassword: '' },
   });
 
-  if (!mobile) return <Navigate to="/forgot-password" replace />;
+  if (!mobile && !email) return <Navigate to="/forgot-password" replace />;
 
   const onSubmit = async (values) => {
     setSubmitError(null);
     try {
-      await resetPassword({ mobile, ...values });
+      await resetPassword({ ...(email ? { email } : { mobile }), ...values });
       navigate('/login', { replace: true });
     } catch (error) {
       setSubmitError(error.message ?? 'Could not reset the password.');
@@ -41,7 +42,7 @@ export default function ResetPassword() {
   return (
     <AuthCard
       title="Set a new password"
-      description={`Enter the ${OTP_LENGTH}-digit code sent to ${maskMobile(mobile)}.`}
+      description={`Enter the ${OTP_LENGTH}-digit code sent to ${email ? maskEmail(email) : maskMobile(mobile)}.`}
       footer={
         <Link to="/login" className="font-semibold text-brand-700 hover:underline dark:text-brand-400">
           Back to sign in

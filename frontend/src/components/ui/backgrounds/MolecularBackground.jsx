@@ -143,7 +143,7 @@ export default function MolecularBackground() {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 h-full w-full text-brand-500 opacity-80 dark:text-brand-200 dark:opacity-60"
+      className="pointer-events-none absolute inset-0 h-full w-full text-brand-500 opacity-40 dark:text-brand-200 dark:opacity-30"
     />
   );
 }

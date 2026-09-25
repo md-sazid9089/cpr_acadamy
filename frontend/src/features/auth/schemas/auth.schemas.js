@@ -46,9 +46,13 @@ export const otpVerifySchema = z.object({
   otp: otpSchema,
 });
 
-export const forgotPasswordSchema = z.object({
-  mobile: bdMobileSchema,
-});
+export const forgotPasswordSchema = z.discriminatedUnion('channel', [
+  z.object({ channel: z.literal('mobile'), mobile: bdMobileSchema }),
+  z.object({
+    channel: z.literal('email'),
+    email: z.string().trim().min(1, 'Enter your email address').email('Enter a valid email address').max(254),
+  }),
+]);
 
 export const resetPasswordSchema = z
   .object({
