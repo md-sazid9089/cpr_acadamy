@@ -14,7 +14,7 @@ export function useEnrollAction() {
 
   return useCallback(
     (course) => {
-      const detailPath = `/courses/${CATEGORY_SLUGS[course.category]}/${course.slug}`;
+      const detailPath = `/courses/${CATEGORY_SLUGS[course.category] || 'fcps'}/${course.slug}`;
 
       if (!isAuthenticated) {
         navigate('/login', { state: { from: detailPath, intent: 'enroll' } });

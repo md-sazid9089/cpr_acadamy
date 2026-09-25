@@ -176,18 +176,20 @@ export default function Invoice() {
         <Button to="/dashboard/payments" variant="outline">
           <FaArrowLeft aria-hidden="true" /> Payment history
         </Button>
-        <Button onClick={() => window.print()}><FaPrint aria-hidden="true" /> Print / save PDF</Button>
+        {invoice.status === 'paid' ? (
+          <Button onClick={() => window.print()}><FaPrint aria-hidden="true" /> Print slip</Button>
+        ) : (
+          <span className="text-xs text-stone-500 dark:text-brand-200">
+            The printable slip is available once an administrator confirms this payment.
+          </span>
+        )}
       </div>
 
-      {isPending && (
-        <Card className="invoice-payment-notice border-stone-200 bg-brand-50 p-5 text-sm text-brand-900 print:hidden dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-100">
-          <p className="font-semibold">Awaiting your payment</p>
-          <p className="mt-1">
-            Send <strong>{formatBDT(invoice.total)}</strong> to the academy ({CONTACT.phone}) by bKash, Nagad, Rocket or bank
-            transfer using <strong>{invoice.invoiceNo}</strong> as the reference, then share the transaction ID on WhatsApp
-            ({CONTACT.whatsapp}). Your access opens the moment an administrator confirms it.
-          </p>
-        </Card>
+      {isPending && invoice.method === 'manual' && (
+        <PaymentProofForm
+          invoice={invoice}
+          onSubmitted={(updated) => queryClient.setQueryData(queryKey, (current) => ({ ...current, ...updated }))}
+        />
       )}
 
       <Card className="invoice-document p-5 sm:p-8">

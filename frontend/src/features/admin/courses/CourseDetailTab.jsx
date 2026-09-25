@@ -7,9 +7,9 @@ import { adminCourseKey } from './keys.js';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input, { Select, Textarea } from '@/components/ui/Input.jsx';
+import { OTHER, resolveChoice, useCatalogOptions } from './catalogOptions.js';
 import {
   BATCH_BRANCHES,
-  BATCH_GROUPS,
   BATCH_SESSIONS,
   BATCH_TYPES,
   CLASS_DAYS,
@@ -31,6 +31,7 @@ function toForm(course) {
     title: course.title ?? '',
     subtitle: course.subtitle ?? '',
     batchGroup: course.batchGroup ?? '',
+    newBatchGroup: '',
     batchType: course.batchType ?? '',
     session: course.session ?? '',
     branch: course.branch ?? 'online',
@@ -95,6 +96,14 @@ export default function CourseDetailTab() {
   const [uploadError, setUploadError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
+  const { groupsFor } = useCatalogOptions();
+
+  const groups = groupsFor(course.category);
+  // Keep the saved group selectable even before the course list has loaded.
+  if (form.batchGroup && form.batchGroup !== OTHER && !groups.some((group) => group.value === form.batchGroup)) {
+    groups.push({ value: form.batchGroup, label: form.batchGroup });
+  }
+  const batchGroup = resolveChoice(form.batchGroup, form.newBatchGroup, groups);
 
   const mutation = useMutation({
     mutationFn: updateCourse,
@@ -128,7 +137,7 @@ export default function CourseDetailTab() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    mutation.mutate({ id: course.id, ...toPayload(form) });
+    mutation.mutate({ id: course.id, ...toPayload({ ...form, batchGroup }) });
   };
 
   const uploadPoster = async (event) => {
@@ -147,7 +156,6 @@ export default function CourseDetailTab() {
     }
   };
 
-  const groups = BATCH_GROUPS.filter((group) => group.category === course.category);
   const hasDiscount = form.discountPrice !== '' && Number(form.discountPrice) > 0;
 
   return (
@@ -169,12 +177,24 @@ export default function CourseDetailTab() {
             <Select label="Batch group" value={form.batchGroup} onChange={set('batchGroup')}>
               <option value="">No batch group</option>
               {groups.map((group) => (
-                <option key={group.id} value={group.id}>
+                <option key={group.value} value={group.value}>
                   {group.label}
                 </option>
               ))}
+              <option value={OTHER}>Other (create a new batch group)</option>
             </Select>
           </div>
+          {form.batchGroup === OTHER && (
+            <Input
+              label="New batch group name"
+              required
+              autoFocus
+              maxLength={80}
+              value={form.newBatchGroup}
+              onChange={set('newBatchGroup')}
+              placeholder="e.g. BDS Part-1"
+            />
+          )}
 
           <div className="grid gap-4 sm:grid-cols-3">
             <Select label="Batch type" value={form.batchType} onChange={set('batchType')}>

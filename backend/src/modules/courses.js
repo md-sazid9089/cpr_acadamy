@@ -8,6 +8,8 @@ const timestamp = z.string().datetime({ offset: true });
 export const webUrl = z.string().url().max(2048).refine(value => value.startsWith('https://'), 'An HTTPS URL is required');
 // Posters may be self-hosted under the frontend's /assets folder as well as on an HTTPS CDN.
 const imagePath = z.union([webUrl, z.string().regex(/^\/[A-Za-z0-9_\-./%]{1,500}$/), z.literal('')]);
+// 'ALL' is reserved: the public catalogue uses it to mean "every category".
+const courseCategory = z.string().trim().min(1).max(60).refine(value => value.toUpperCase() !== 'ALL', 'This category name is reserved');
 const clock = z.union([z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), z.literal('')]);
 const metadata = z.object({
   subtitle: z.string().max(500).default(''), description: z.string().max(20000).default(''),
@@ -21,7 +23,7 @@ const metadata = z.object({
 }).strict();
 const courseFields = z.object({
   slug: z.string().min(3).max(160).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), title: text,
-  category: z.enum(['FCPS', 'BCS', 'MBBS']), price: money, discountPrice: money.nullable().optional(),
+  category: courseCategory, price: money, discountPrice: money.nullable().optional(),
   accessDays: z.number().int().min(1).max(3650).default(180), isPublished: z.boolean().default(false),
   // Allowed negativeMarking/passMark range for this course's "mixed" exams. Permissive
   // defaults mean this is opt-in: existing exams are unaffected until an admin narrows it.
@@ -51,7 +53,7 @@ const scheduleFields = z.object({
 // Facet filters arrive as one comma-separated query value (`?batchTypes=a,b`).
 const facetList = z.preprocess(value => typeof value === 'string' ? value.split(',').map(item => item.trim()).filter(Boolean) : value, z.array(z.string().max(80)).max(20)).optional();
 const catalogQuery = pageQuery.extend({
-  category: z.enum(['FCPS', 'BCS', 'MBBS', 'ALL']).optional(), group: z.string().max(80).optional(),
+  category: z.string().trim().min(1).max(60).optional(), group: z.string().max(80).optional(),
   search: z.string().max(200).optional(), featured: z.enum(['true', 'false']).optional(),
   batchTypes: facetList, sessions: facetList, branches: facetList,
 });

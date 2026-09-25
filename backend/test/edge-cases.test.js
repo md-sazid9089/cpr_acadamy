@@ -44,7 +44,7 @@ test('HTTP layer rejects malformed bodies, query bounds, path params, and tamper
     assert.equal(response.status, 405);
     assert.match(response.headers.get('allow'), /PATCH/);
 
-    for (const query of ['limit=0', 'limit=101', 'limit=abc', 'limit=1e9', 'offset=-1', 'offset=1.5', 'category=XYZ', 'featured=yes', 'search=' + 'a'.repeat(201)]) {
+    for (const query of ['limit=0', 'limit=101', 'limit=abc', 'limit=1e9', 'offset=-1', 'offset=1.5', 'category=' + 'x'.repeat(61), 'featured=yes', 'search=' + 'a'.repeat(201)]) {
       assert.equal((await send(`/courses?${query}`)).status, 400, query);
     }
     assert.equal((await send(`/courses?limit=1&offset=0&category=ALL&batchTypes=a,b,&search=${encodeURIComponent('১০০% ছাড়')}`)).status, 200);

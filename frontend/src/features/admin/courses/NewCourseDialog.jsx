@@ -1,27 +1,27 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { FaCheck } from 'react-icons/fa6';
 import { createCourse } from '../api/admin.api.js';
 import Button from '@/components/ui/Button.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import Input, { Select } from '@/components/ui/Input.jsx';
-import { BATCH_GROUPS, CATEGORY_LABELS, COURSE_CATEGORIES } from '@/constants';
-import { cn } from '@/lib/utils';
+import { OTHER, resolveChoice, useCatalogOptions } from './catalogOptions.js';
 
-const EMPTY = { category: '', batchGroup: '', title: '', price: '' };
+const EMPTY = { category: '', newCategory: '', batchGroup: '', newBatchGroup: '', title: '', price: '' };
 
 /**
- * Two-step picker: the fixed category first (it drives /courses/:category on
- * the public site), then a batch group filtered to that category. Everything
- * else about the course is filled in on the Detail tab once it exists.
+ * Category first, then a batch group filtered to it. Either can be "Other" to
+ * type a new name. Everything else is filled in on the Detail tab.
  */
 export default function NewCourseDialog({ open, onClose }) {
   const [form, setForm] = useState(EMPTY);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { categories, groupsFor } = useCatalogOptions();
 
-  const groups = BATCH_GROUPS.filter((group) => group.category === form.category);
+  const category = resolveChoice(form.category, form.newCategory, categories);
+  const groups = category ? groupsFor(category) : [];
+  const batchGroup = resolveChoice(form.batchGroup, form.newBatchGroup, groups);
 
   const mutation = useMutation({
     mutationFn: createCourse,
@@ -36,22 +36,17 @@ export default function NewCourseDialog({ open, onClose }) {
 
   const close = () => {
     setForm(EMPTY);
+    mutation.reset();
     onClose();
   };
 
-  const pickCategory = (category) => {
-    // Changing category invalidates the group chosen under the previous one.
-    setForm((prev) => ({ ...prev, category, batchGroup: '' }));
-  };
+  const set = (key) => (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  // Changing category invalidates the group chosen under the previous one.
+  const setCategory = (key) => (event) => setForm((prev) => ({ ...prev, [key]: event.target.value, batchGroup: '', newBatchGroup: '' }));
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    mutation.mutate({
-      title: form.title.trim(),
-      category: form.category,
-      batchGroup: form.batchGroup || null,
-      price: Number(form.price),
-    });
+    mutation.mutate({ title: form.title.trim(), category, batchGroup: batchGroup || null, price: Number(form.price) });
   };
 
   return (
@@ -62,65 +57,63 @@ export default function NewCourseDialog({ open, onClose }) {
       description="Pick where it sits in the catalogue, give it a name, and fill in the rest from the course tabs."
     >
       <form onSubmit={handleSubmit} className="space-y-5">
-        <fieldset>
-          <legend className="text-sm font-medium text-stone-700 dark:text-brand-200">
-            Category <span className="text-red-500">*</span>
-          </legend>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            {COURSE_CATEGORIES.map((category) => {
-              const selected = form.category === category;
-              return (
-                <button
-                  key={category}
-                  type="button"
-                  onClick={() => pickCategory(category)}
-                  aria-pressed={selected}
-                  className={cn(
-                    'flex items-start justify-between gap-2 rounded-xl border p-3 text-left transition-colors',
-                    selected
-                      ? 'border-stone-200 bg-brand-50 dark:border-stone-200 dark:bg-brand-950/40'
-                      : 'border-stone-200 hover:border-stone-200 dark:border-stone-200 dark:hover:border-stone-200',
-                  )}
-                >
-                  <span>
-                    <span className="block text-sm font-semibold text-stone-900 dark:text-white">{category}</span>
-                    <span className="mt-0.5 block text-xs text-stone-500 dark:text-brand-200">
-                      {CATEGORY_LABELS[category]}
-                    </span>
-                  </span>
-                  {selected && <FaCheck aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-400" />}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
+        {mutation.isError && (
+          <p role="alert" className="rounded-control border border-stone-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {mutation.error?.message ?? 'The course could not be created.'}
+          </p>
+        )}
 
-        <Select
-          label="Batch group"
-          value={form.batchGroup}
-          disabled={!form.category}
-          onChange={(event) => setForm({ ...form, batchGroup: event.target.value })}
-        >
-          <option value="">
-            {form.category
-              ? groups.length
-                ? 'No batch group'
-                : 'No batch groups under this category'
-              : 'Pick a category first'}
+        <Select label="Category" required value={form.category} onChange={setCategory('category')}>
+          <option value="" disabled>
+            Select a category
           </option>
-          {groups.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.label}
-              {group.note ? ` ${group.note}` : ''}
+          {categories.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
+          <option value={OTHER}>Other (create a new category)</option>
         </Select>
+        {form.category === OTHER && (
+          <Input
+            label="New category name"
+            required
+            autoFocus
+            maxLength={60}
+            value={form.newCategory}
+            onChange={setCategory('newCategory')}
+            placeholder="e.g. Dental, Nursing, MRCP"
+            hint="It will appear in this list for future courses."
+          />
+        )}
+
+        <Select label="Batch group" value={form.batchGroup} disabled={!category} onChange={set('batchGroup')}>
+          <option value="">{category ? 'No batch group' : 'Pick a category first'}</option>
+          {groups.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+          {category && <option value={OTHER}>Other (create a new batch group)</option>}
+        </Select>
+        {form.batchGroup === OTHER && (
+          <Input
+            label="New batch group name"
+            required
+            autoFocus
+            maxLength={80}
+            value={form.newBatchGroup}
+            onChange={set('newBatchGroup')}
+            placeholder="e.g. BDS Part-1"
+          />
+        )}
 
         <Input
           label="Course title"
           required
+          maxLength={200}
           value={form.title}
-          onChange={(event) => setForm({ ...form, title: event.target.value })}
+          onChange={set('title')}
           placeholder="e.g. FCPS Part-1 Medicine — July Batch"
         />
 
@@ -132,7 +125,7 @@ export default function NewCourseDialog({ open, onClose }) {
           step={100}
           prefix="BDT"
           value={form.price}
-          onChange={(event) => setForm({ ...form, price: event.target.value })}
+          onChange={set('price')}
           hint="Discounts and offers are set on the Detail tab."
         />
 
@@ -140,7 +133,11 @@ export default function NewCourseDialog({ open, onClose }) {
           <Button type="button" variant="outline" onClick={close}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!form.category || !form.title.trim()} isLoading={mutation.isPending}>
+          <Button
+            type="submit"
+            disabled={!category || (form.batchGroup === OTHER && !batchGroup) || !form.title.trim()}
+            isLoading={mutation.isPending}
+          >
             Create draft
           </Button>
         </div>

@@ -16,7 +16,8 @@ import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
-import { BATCH_GROUPS, CATEGORY_SLUGS, COURSE_STATUS } from '@/constants';
+import { CATEGORY_SLUGS, COURSE_STATUS } from '@/constants';
+import { batchGroupLabel } from './catalogOptions.js';
 import { cn } from '@/lib/utils';
 
 const TABS = [
@@ -58,7 +59,7 @@ export default function CourseShell() {
     );
   }
 
-  const group = BATCH_GROUPS.find((item) => item.id === course.batchGroup);
+  const group = course.batchGroup ? { label: batchGroupLabel(course.batchGroup) } : null;
   const publicUrl = `/courses/${CATEGORY_SLUGS[course.category] ?? 'fcps'}/${course.slug}`;
 
   return (
