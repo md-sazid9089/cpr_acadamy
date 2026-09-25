@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useOutletContext, useParams } from 'react-router-dom';
+import { Link, useOutletContext, useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FaArrowLeftLong, FaCheck, FaPlus, FaTriangleExclamation } from 'react-icons/fa6';
 import { blankQuestion, fetchAdminExam, updateExam } from '../api/admin.api.js';
@@ -79,6 +79,7 @@ export default function ExamBuilder() {
 
 function ExamEditor({ exam, course }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [settings, setSettings] = useState({
     title: exam.title,
