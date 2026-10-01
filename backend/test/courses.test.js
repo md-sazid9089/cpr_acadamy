@@ -181,3 +181,38 @@ test('admins can file courses under custom categories and batch groups', async (
     await context.close();
   }
 });
+
+test('a signed content link stops working the moment its holder loses access, and links are tied to a student', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user();
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'link-course', title: 'Link Course', category: 'FCPS', price: 200, isPublished: true })).json();
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now()-interval '1 day',now()+interval '30 days')", [student.id, course.id]);
+    // The host does not resolve, so a link that is still honoured ends in 502 (the upstream fetch) and a refused one in 403.
+    const lesson = (await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Lecture', src: 'https://media.example.test/lecture.mp4', scheduledAt: '2025-01-01T00:00:00Z', status: 'published' })).json();
+    const mint = async () => (await student.request('GET', `/lessons/${lesson.id}/content-url?kind=video`)).json().url.split('/content/')[1];
+    const use = token => context.app.inject({ url: `/api/content/${token}` });
+
+    const link = await mint();
+    assert.equal((await use(link)).statusCode, 502, 'entitled holder: the request reaches the content host');
+
+    await context.database.query("UPDATE lessons SET status='draft' WHERE id=$1", [lesson.id]);
+    assert.equal((await use(link)).statusCode, 403, 'an unpublished lesson is no longer served');
+    await context.database.query("UPDATE lessons SET status='published' WHERE id=$1", [lesson.id]);
+    assert.equal((await use(link)).statusCode, 502);
+
+    await context.database.query("UPDATE users SET status='suspended' WHERE id=$1", [student.id]);
+    assert.equal((await use(link)).statusCode, 403, 'a suspended student loses the link');
+    await context.database.query("UPDATE users SET status='active' WHERE id=$1", [student.id]);
+    assert.equal((await use(link)).statusCode, 502);
+
+    await context.database.query("UPDATE enrollments SET expires_at=now()-interval '1 second' WHERE user_id=$1", [student.id]);
+    assert.equal((await use(link)).statusCode, 403, 'an expired enrolment loses the link before the link itself lapses');
+
+    const legacy = signContentToken({ lessonId: lesson.id, kind: 'video' }, context.config.tokenSecret, 600);
+    assert.equal((await use(legacy)).statusCode, 403, 'links that name no student are refused');
+    const forged = signContentToken({ lessonId: lesson.id, kind: 'video', userId: '00000000-0000-0000-0000-000000000000' }, context.config.tokenSecret, 600);
+    assert.equal((await use(forged)).statusCode, 403, 'a link for an unknown user is refused');
+  } finally { await context.close(); }
+});

@@ -239,16 +239,24 @@ export function courseRoutes(route, database, config) {
     // Notes are a single download, so a few minutes is plenty. A video's playback session can
     // run far longer than that, so its link outlives the lecture (with headroom for pausing).
     const ttlSeconds = request.query.kind === 'notes' ? 300 : Math.min(6 * 3600, Math.max(1800, (lesson.duration_minutes || 60) * 120));
-    const token = signContentToken({ lessonId: lesson.id, kind: request.query.kind }, config.tokenSecret, ttlSeconds);
+    const token = signContentToken({ lessonId: lesson.id, kind: request.query.kind, userId: request.auth.user_id }, config.tokenSecret, ttlSeconds);
     return { url: `/api/content/${token}`, expiresIn: ttlSeconds };
   });
 
   // No `auth` here by design: this URL is embedded directly in a <video src> / <a href>,
-  // which cannot carry an Authorization header. The signed, expiring token IS the credential.
+  // which cannot carry an Authorization header. The signed, expiring token is the credential, but it names
+  // the student it was minted for and is re-checked against their account and enrolment on every use, so
+  // an expired enrolment, a suspension or an unpublished lesson stops working at once, not when the link lapses.
   route('GET', '/content/:token', { rateLimit: { max: 600, timeWindow: '1 minute' } }, async (request, reply) => {
     const payload = verifyContentToken(request.params.token, config.tokenSecret);
-    ensure(payload, 403, 'LINK_EXPIRED', 'This link has expired. Reload the page and try again.');
-    const lesson = await one(database, 'SELECT src,notes_url FROM lessons WHERE id=$1', [payload.lessonId]);
+    ensure(payload?.userId, 403, 'LINK_EXPIRED', 'This link has expired. Reload the page and try again.');
+    const lesson = await one(database, 'SELECT src,notes_url,course_id,status,scheduled_at FROM lessons WHERE id=$1', [payload.lessonId]);
+    const holder = await one(database, 'SELECT role,status FROM users WHERE id=$1', [payload.userId]);
+    ensure(lesson && holder?.status === 'active', 403, 'LINK_EXPIRED', 'This link has expired. Reload the page and try again.');
+    if (holder.role !== 'admin') {
+      ensure(lesson.status === 'published' && new Date(lesson.scheduled_at) <= new Date(), 403, 'LINK_EXPIRED', 'This link has expired. Reload the page and try again.');
+      await requireCourseAccess(database, { role: holder.role, user_id: payload.userId }, lesson.course_id);
+    }
     const url = payload.kind === 'notes' ? lesson?.notes_url : lesson?.src;
     ensure(url, 404, 'NOT_FOUND', 'This content is no longer available.');
     let upstream;
