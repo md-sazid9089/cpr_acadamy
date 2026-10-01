@@ -134,7 +134,7 @@ test('auth edge cases: silent duplicate registration, status gates, device rotat
     assert.equal((await request('GET', '/auth/me', undefined, pending)).statusCode, 401);
     assert.equal((await request('POST', '/auth/refresh', { refreshToken })).statusCode, 401);
     assert.equal((await request('POST', '/auth/login', { mobile, password: registration.password })).statusCode, 403);
-    assert.equal((await admin.request('PATCH', `/admin/students/${user.id}/status`, { status: 'active' })).statusCode, 409);
+    assert.equal((await admin.request('PATCH', `/admin/students/${user.id}/status`, { status: 'suspended' })).statusCode, 409, 'a rejected account can be approved again, but not suspended');
 
     const student = await context.user('student', '01812222222');
     response = await request('POST', '/auth/login', { mobile: '01812222222', password: 'Synthetic-test-password' }, { 'x-device-id': 'device-two' });
