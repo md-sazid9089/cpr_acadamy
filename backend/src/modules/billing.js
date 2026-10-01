@@ -5,6 +5,9 @@ import { audit, ensure, uuid, text, mobile, pageQuery } from '../http.js';
 import { money, requireCourseAccess } from './courses.js';
 import { registrationNumber } from './students.js';
 
+// A bank/bKash reference means the same payment in any letter case, so it is stored upper-case.
+const transactionId = text.min(3).max(120).transform(value => value.toUpperCase());
+
 export function paymentDto(row) {
   return { id: row.id, paymentId: row.id, invoiceNo: row.invoice_no, courseId: row.course_id,
     courseTitle: row.description, amount: row.amount_minor / 100, status: row.status, currency: row.currency,
@@ -59,13 +62,13 @@ export function billingRoutes(route, database) {
   // transaction ID, the mobile they paid from, and an optional screenshot right on
   // the invoice, for an admin to review in /admin/payments before confirming.
   route('POST', '/payments/:id/proof', { auth: 'active', body: z.object({
-    transactionId: text.min(3).max(120), payerMobile: mobile, screenshotUrl: z.union([z.string().url(), z.literal('')]).default(''),
+    transactionId, payerMobile: mobile, screenshotUrl: z.union([z.string().url(), z.literal('')]).default(''),
   }).strict() }, async request => database.transaction(async transaction => {
     const payment = await one(transaction, 'SELECT * FROM payments WHERE id=$1 AND user_id=$2 FOR UPDATE', [request.params.id, request.auth.user_id]);
     ensure(payment, 404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
     ensure(payment.method === 'manual', 409, 'PROOF_NOT_APPLICABLE', 'This payment method does not require manual proof.');
     ensure(payment.status === 'pending', 409, 'INVALID_PAYMENT_STATE', 'Only a pending invoice can be updated with payment proof.');
-    const duplicate = await one(transaction, 'SELECT id FROM payments WHERE transaction_id=$1 AND id<>$2', [request.body.transactionId, payment.id]);
+    const duplicate = await one(transaction, "SELECT id FROM payments WHERE transaction_id=$1 AND id<>$2 AND status<>'failed'", [request.body.transactionId, payment.id]);
     ensure(!duplicate, 409, 'DUPLICATE_TRANSACTION_ID', 'This transaction ID is already linked to another payment.');
     const updated = await one(transaction, `UPDATE payments SET transaction_id=$2,payer_mobile=$3,screenshot_url=$4,proof_submitted_at=now() WHERE id=$1 RETURNING *`,
       [payment.id, request.body.transactionId, request.body.payerMobile, request.body.screenshotUrl || null]);
@@ -105,12 +108,12 @@ export function billingRoutes(route, database) {
   });
   route('GET', '/admin/payments', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => (await database.query('SELECT * FROM payments WHERE ($1::text IS NULL OR status=$1) ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.query.status || null, request.query.limit, request.query.offset])).rows.map(row => ({ ...paymentDto(row), userId: row.user_id })));
 
-  route('POST', '/admin/payments/:id/confirm', { auth: 'admin', body: z.object({ transactionId: text.min(3).max(120), amount: money, evidence: z.string().trim().min(10).max(2000) }).strict() }, async request => database.transaction(async transaction => {
+  route('POST', '/admin/payments/:id/confirm', { auth: 'admin', body: z.object({ transactionId, amount: money, evidence: z.string().trim().min(10).max(2000) }).strict() }, async request => database.transaction(async transaction => {
     const payment = await one(transaction, 'SELECT * FROM payments WHERE id=$1 FOR UPDATE', [request.params.id]);
     ensure(payment, 404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
     ensure(payment.method === 'manual', 409, 'GATEWAY_CONFIRMATION_REQUIRED', 'Gateway payments require provider verification.');
     ensure(payment.amount_minor === Math.round(request.body.amount * 100), 409, 'AMOUNT_MISMATCH', 'The verified amount must match the invoice.');
-    const matchingTransaction = await one(transaction, 'SELECT id FROM payments WHERE transaction_id=$1 AND id<>$2', [request.body.transactionId, payment.id]);
+    const matchingTransaction = await one(transaction, "SELECT id FROM payments WHERE transaction_id=$1 AND id<>$2 AND status<>'failed'", [request.body.transactionId, payment.id]);
     ensure(!matchingTransaction, 409, 'DUPLICATE_TRANSACTION_ID', 'This transaction ID is already linked to another payment.');
     if (payment.status === 'paid') {
       ensure(payment.transaction_id === request.body.transactionId, 409, 'PAYMENT_ALREADY_CONFIRMED', 'This payment has already been reconciled.');
