@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FORCED_LOGOUT_REASONS } from '@/constants';
-import { getAccessToken, getDeviceId, handleForcedLogout, useAuthStore } from '@/lib/auth';
+import { adoptStoredSession, getAccessToken, getDeviceId, handleForcedLogout, useAuthStore } from '@/lib/auth';
 
 const BASE_URL = import.meta.env?.VITE_API_BASE_URL ?? '/api';
 
@@ -58,18 +58,39 @@ apiClient.interceptors.response.use(
     const code = error.response?.data?.code;
     const config = error.config ?? {};
 
+    // Another tab of this browser may already have refreshed (which revokes the tokens this request used).
+    // Adopt its session and retry rather than treating that as being signed in somewhere else.
+    const usedToken = String(config.headers?.Authorization ?? '').replace(/^Bearer /, '');
+    const rotatedElsewhere = status === 401 && ['TOKEN_EXPIRED', 'SESSION_REVOKED'].includes(code) && !config._retried && usedToken;
+
     // An expired access token is transparently exchanged once; anything else
     // that ends the session logs the user out. A 401 on the login form itself
     // (INVALID_CREDENTIALS) is an ordinary error and must not trigger either.
-    if (status === 401 && code === 'TOKEN_EXPIRED' && !config._retried) {
+    if (rotatedElsewhere && await adoptStoredSession(usedToken, { wait: false })) {
+      config._retried = true;
+      config.headers = { ...config.headers, Authorization: `Bearer ${getAccessToken()}` };
+      return apiClient.request(config);
+    } else if (status === 401 && code === 'TOKEN_EXPIRED' && !config._retried) {
       try {
         const token = await refreshSession();
         config._retried = true;
         config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
         return apiClient.request(config);
       } catch {
+        // Two tabs refreshing at once: the loser is told its refresh token is spent while the winner's
+        // response is still in flight. Give the winner a moment to store the new session before giving up.
+        const adopted = await adoptStoredSession(usedToken);
+        if (adopted) {
+          config._retried = true;
+          config.headers = { ...config.headers, Authorization: `Bearer ${adopted}` };
+          return apiClient.request(config);
+        }
         handleForcedLogout(FORCED_LOGOUT_REASONS.TOKEN_EXPIRED);
       }
+    } else if (rotatedElsewhere && await adoptStoredSession(usedToken)) {
+      config._retried = true;
+      config.headers = { ...config.headers, Authorization: `Bearer ${getAccessToken()}` };
+      return apiClient.request(config);
     } else if (status === 401 && SESSION_ENDING_CODES[code]) {
       handleForcedLogout(SESSION_ENDING_CODES[code]);
     } else if (status === 401 && code === 'UNAUTHENTICATED' && getAccessToken()) {

@@ -7,6 +7,7 @@ import {
   ROLES,
   STORAGE_KEYS,
 } from '@/constants';
+import { newerStoredSession, waitForNewerSession } from '@/lib/session-sync';
 
 const isBrowser = typeof window !== 'undefined';
 const API_BASE = import.meta.env?.VITE_API_BASE_URL ?? '/api';
@@ -123,8 +124,22 @@ export function handleForcedLogout(reason = FORCED_LOGOUT_REASONS.ANOTHER_DEVICE
 }
 
 /**
- * Cross-tab sync: if another tab logs out or logs in as someone else, mirror it
- * here. Registered once from providers.jsx.
+ * Adopts the session another tab saved when it differs from `failedToken`, so a tab whose tokens were
+ * rotated elsewhere carries on instead of signing everyone out. Resolves to the new access token or null.
+ * Waits briefly because the tab that refreshed may not have stored its new tokens yet.
+ */
+export async function adoptStoredSession(failedToken, { wait = true } = {}) {
+  if (!isBrowser) return null;
+  const read = () => localStorage.getItem(STORAGE_KEYS.AUTH);
+  const session = wait ? await waitForNewerSession(read, failedToken) : newerStoredSession(read(), failedToken);
+  if (!session) return null;
+  useAuthStore.getState().setSession(session);
+  return session.accessToken;
+}
+
+/**
+ * Cross-tab sync: if another tab logs out, mirror it here; if it saves a new session (a refresh or a
+ * sign-in), adopt it. Registered once from providers.jsx.
  */
 export function watchAuthAcrossTabs() {
   if (!isBrowser) return () => {};
@@ -137,8 +152,11 @@ export function watchAuthAcrossTabs() {
         return null;
       }
     })();
-    if (!nextToken && useAuthStore.getState().accessToken) {
+    const current = useAuthStore.getState().accessToken;
+    if (!nextToken && current) {
       useAuthStore.getState().logout();
+    } else if (nextToken && nextToken !== current) {
+      void adoptStoredSession(current, { wait: false });
     }
   };
   window.addEventListener('storage', handler);
