@@ -11,6 +11,7 @@ test('readiness, generated contracts, closed SMS, and background exam finalizati
   try {
     let response = await context.app.inject('/api/ready');
     assert.equal(response.statusCode, 200);
+    assert.equal(response.json().worker, 'unknown', 'no worker has run yet');
     response = await context.app.inject('/api/openapi.json');
     assert.equal(response.statusCode, 200, response.body);
     assert.equal(response.json().openapi, '3.0.3');
@@ -26,6 +27,11 @@ test('readiness, generated contracts, closed SMS, and background exam finalizati
     await context.database.query("INSERT INTO exam_attempts(user_id,exam_id,paper,ends_at) VALUES ($1,$2,$3,now()-interval '1 second')", [user.id, exam.id, JSON.stringify({ questions: [], negativeMarking: 0.25 })]);
     await runMaintenance(context.database, context.config, () => {});
     assert.ok((await one(context.database, 'SELECT submitted_at FROM exam_attempts')).submitted_at);
+    assert.equal((await context.app.inject('/api/ready')).json().worker, 'ok', 'a maintenance cycle records a heartbeat');
+    await context.database.query("UPDATE worker_heartbeat SET beat_at=now()-interval '5 minutes'");
+    response = await context.app.inject('/api/ready');
+    assert.equal(response.statusCode, 200, 'a stopped worker is reported, it does not take the web service down');
+    assert.equal(response.json().worker, 'stale');
   } finally {
     if (disabledApp) await disabledApp.close();
     await context.close();

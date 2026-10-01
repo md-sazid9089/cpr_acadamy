@@ -22,7 +22,8 @@ async function initialize() {
     if (config.ephemeralSecret) logger.warn('TOKEN_SECRET is unset; restarting invalidates sessions and queued SMS.');
     if (config.smsMode === 'disabled') logger.warn('SMS is disabled; registration and password recovery are unavailable. Set SMS_MODE=console for local development.');
     if (config.smsMode === 'console') logger.warn('SMS_MODE=console: verification codes are printed to this terminal instead of being sent.');
-    const stopWorker = config.production ? async () => {} : startWorker(database, config, logger);
+    const stopWorker = config.workerMode === 'embedded' ? startWorker(database, config, logger) : async () => {};
+    if (config.production && config.workerMode === 'external') logger.info('WORKER_MODE=external: make sure the separate worker service is running.');
     const runtime = { database, config, stopWorker };
     const shutdown = async () => { await stopWorker(); await database.close(); };
     process.once('SIGINT', shutdown);

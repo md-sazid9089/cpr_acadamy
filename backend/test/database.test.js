@@ -27,9 +27,15 @@ test('production refuses embedded storage and missing secrets', () => {
   const production = { NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost/test', TOKEN_SECRET: 'x'.repeat(32), CORS_ORIGINS: 'https://app.example' };
   assert.throws(() => loadConfig(production), /TRUST_PROXY/);
   assert.throws(() => loadConfig({ ...production, TRUST_PROXY: 'yes' }), /TRUST_PROXY/);
-  assert.equal(loadConfig({ ...production, TRUST_PROXY: 'true' }).trustProxy, true);
-  assert.equal(loadConfig({ ...production, TRUST_PROXY: 'false' }).trustProxy, false);
+  assert.equal(loadConfig({ ...production, TRUST_PROXY: 'true', WORKER_MODE: 'embedded' }).trustProxy, true);
+  assert.equal(loadConfig({ ...production, TRUST_PROXY: 'false', WORKER_MODE: 'embedded' }).trustProxy, false);
   assert.throws(() => loadConfig({ SMS_MODE: 'test' }), /only allowed in tests/);
+  const configured = { ...production, TRUST_PROXY: 'true' };
+  assert.throws(() => loadConfig(configured), /WORKER_MODE/, 'production must choose who runs the background worker');
+  assert.throws(() => loadConfig({ ...configured, WORKER_MODE: 'sometimes' }), /WORKER_MODE/);
+  assert.equal(loadConfig({ ...configured, WORKER_MODE: 'embedded' }).workerMode, 'embedded');
+  assert.equal(loadConfig({ ...configured, WORKER_MODE: 'external' }).workerMode, 'external');
+  assert.equal(loadConfig({ SMS_MODE: 'disabled' }).workerMode, 'embedded', 'development keeps running it in the web process');
 });
 
 test('local database creates missing parent directories and persists data across restarts', async () => {

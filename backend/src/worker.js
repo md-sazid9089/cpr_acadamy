@@ -3,6 +3,7 @@ import { deliverEmail } from './email.js';
 import { finalizeExpiredAttempts } from './modules/exams.js';
 
 export async function runMaintenance(database, config, testSink, emailTestSink) {
+  await database.query('INSERT INTO worker_heartbeat(id,beat_at) VALUES (1,now()) ON CONFLICT(id) DO UPDATE SET beat_at=now()');
   await finalizeExpiredAttempts(database);
   await database.query("UPDATE enrollments SET status='expired' WHERE status='active' AND expires_at<=now()");
   await database.query('DELETE FROM rate_buckets WHERE resets_at<now()');

@@ -15,6 +15,12 @@ export function loadConfig(env = process.env) {
   if (production && !env.CORS_ORIGINS) throw new Error('CORS_ORIGINS is required');
   // Without a trusted proxy every client shares one rate-limit bucket, so production must opt in or out explicitly.
   if (production && !['true', 'false'].includes(env.TRUST_PROXY)) throw new Error('TRUST_PROXY must be set to true (behind a proxy that sets X-Forwarded-For) or false');
+  // Who runs the background worker (OTP/email delivery, exam finalisation, cleanup). Production must choose
+  // explicitly: nothing delivers SMS or finalises abandoned exams unless one of the two actually runs.
+  const workerMode = env.WORKER_MODE || (production ? '' : 'embedded');
+  if (!['embedded', 'external'].includes(workerMode)) {
+    throw new Error(production ? 'WORKER_MODE must be set to embedded (the web process runs the worker) or external (a separate `npm run worker` service)' : 'Invalid WORKER_MODE');
+  }
   const trustedProxyHops = Number(env.TRUST_PROXY_HOPS || 1);
   if (!Number.isInteger(trustedProxyHops) || trustedProxyHops < 1 || trustedProxyHops > 10) throw new Error('TRUST_PROXY_HOPS must be a whole number from 1 to 10');
   if (!['disabled', 'webhook', 'test', 'console'].includes(smsMode)) throw new Error('Invalid SMS_MODE');
@@ -41,6 +47,7 @@ export function loadConfig(env = process.env) {
     corsOrigins: (env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:4194').split(',').map(value => value.trim()),
     trustProxy: env.TRUST_PROXY === 'true',
     trustedProxyHops,
+    workerMode,
     smsMode,
     smsWebhookUrl: env.SMS_WEBHOOK_URL,
     smsWebhookToken: env.SMS_WEBHOOK_TOKEN,

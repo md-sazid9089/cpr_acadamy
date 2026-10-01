@@ -17,4 +17,6 @@ USER node
 ENV HOSTNAME=0.0.0.0 PORT=3001
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD node -e "fetch('http://127.0.0.1:3001/api/ready').then(response=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))"
+# Web service. With WORKER_MODE=external, run a second service from this same image with:
+#   node scripts/worker.js
 CMD ["node", "server.js"]

@@ -18,7 +18,11 @@ export async function buildApp({ database, config, logger = false }) {
   route('GET', '/ready', {}, async (request, reply) => {
     try {
       await database.query('SELECT 1 FROM schema_migrations LIMIT 1');
-      return { status: 'ready' };
+      // The worker beats every 10 seconds. A stale beat does not take the web service down, but monitoring
+      // should alert on worker !== 'ok': without it no SMS/email is delivered and abandoned exams stay open.
+      const beat = await database.query("SELECT extract(epoch FROM now()-beat_at) AS age FROM worker_heartbeat WHERE id=1");
+      const worker = beat.rows.length === 0 ? 'unknown' : Number(beat.rows[0].age) <= 60 ? 'ok' : 'stale';
+      return { status: 'ready', worker };
     } catch {
       return reply.code(503).send({ status: 'not_ready' });
     }
