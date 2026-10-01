@@ -1,8 +1,10 @@
-﻿import { loadConfig } from '../src/config.js';
+import { loadConfig } from '../src/config.js';
 import { openDatabase, migrate, one } from '../src/db.js';
 import { hashPassword } from '../src/security.js';
+import { requireDevelopmentDatabase } from './dev-only.js';
 
 const config = loadConfig();
+requireDevelopmentDatabase(config, 'seed-demo');
 const database = await openDatabase(config);
 
 try {

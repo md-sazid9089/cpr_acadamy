@@ -7,6 +7,7 @@ import { loadConfig } from '../src/config.js';
 import { openDatabase, migrate, one } from '../src/db.js';
 import { hashPassword } from '../src/security.js';
 import { gradePaper } from '../src/modules/exams.js';
+import { requireDevelopmentDatabase } from './dev-only.js';
 
 const DEMO_PASSWORD = 'DemoStudent123!';
 const YOUTUBE_PLACEHOLDER = 'https://www.youtube.com/watch?v=aqz-KE-bpKQ';
@@ -121,6 +122,7 @@ function simulateAnswers(questions, ability) {
 
 async function main() {
   const config = loadConfig();
+  requireDevelopmentDatabase(config, 'seed-demo-course');
   const database = await openDatabase(config);
   await migrate(database);
 
