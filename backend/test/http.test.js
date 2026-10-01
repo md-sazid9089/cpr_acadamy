@@ -115,3 +115,26 @@ test('oversized bodies are refused before they are read, and uploads need a sign
     assert.equal(response.statusCode, 200, 'a real admin upload still works');
   } finally { await context.close(); }
 });
+
+test('null characters are refused with a 400 instead of crashing the request', async () => {
+  const context = await fixture();
+  try {
+    const { containsNul } = await import('../src/web-app.js');
+    assert.equal(containsNul({ a: ['fine', { b: 'bad\u0000text' }] }), true);
+    assert.equal(containsNul({ 'bad\u0000key': 1 }), true);
+    assert.equal(containsNul({ a: ['fine', { b: 'also fine' }], c: 3, d: null }), false);
+
+    const student = await context.user();
+    const complaint = await student.request('POST', '/me/complaints', { relatedTo: 'Other', body: 'hello\u0000world' });
+    assert.equal(complaint.statusCode, 400);
+    assert.equal(complaint.json().code, 'BAD_REQUEST');
+    assert.equal((await student.request('PATCH', '/me/profile', { section: 'basic', values: { fatherName: 'a\u0000b' } })).statusCode, 400);
+    assert.equal((await student.request('PATCH', '/me/profile', { section: 'basic', values: { 'we\u0000ird': 'x' } })).statusCode, 400);
+    const register = await context.app.inject({ method: 'POST', url: '/api/auth/register', headers: { 'x-device-id': 'device-0010' },
+      payload: { mobile: '01788880001', password: 'Synthetic-test-password', fullName: 'Nul\u0000Name', institution: 'X', interest: 'FCPS', acceptTerms: true } });
+    assert.equal(register.statusCode, 400);
+    assert.equal((await context.app.inject('/api/courses?search=a%00b')).statusCode, 400);
+    assert.equal((await context.app.inject('/api/courses/a%00b')).statusCode, 400);
+    assert.equal((await student.request('POST', '/me/complaints', { relatedTo: 'Other', body: 'ordinary text' })).statusCode, 200, 'normal text still works');
+  } finally { await context.close(); }
+});
