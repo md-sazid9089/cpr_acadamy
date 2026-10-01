@@ -31,6 +31,8 @@ export default function ExamRunner() {
   const [versionConflict, setVersionConflict] = useState(false);
   const queue = useRef(null);
   const versionRef = useRef(null);
+  // One id per open exam tab: the server uses it to tell this tab retrying its own lost save from a second tab.
+  const clientId = useRef(crypto.randomUUID?.() ?? `tab-${Date.now()}-${Math.random().toString(16).slice(2)}`);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function ExamRunner() {
   useEffect(() => {
     const autosave = createAnswerQueue(async payload => {
       try {
-        const saved = await saveAnswer({ examId, ...payload, version: versionRef.current });
+        const saved = await saveAnswer({ examId, ...payload, version: versionRef.current, clientId: clientId.current });
         versionRef.current = saved.version;
       } catch (error) {
         if (error.code === 'ATTEMPT_VERSION_CONFLICT') setVersionConflict(true);
@@ -96,7 +98,7 @@ export default function ExamRunner() {
   const submitMutation = useMutation({
     mutationFn: async (payload) => {
       await queue.current?.flush();
-      return submitExam({ ...payload, version: versionRef.current });
+      return submitExam({ ...payload, version: versionRef.current, clientId: clientId.current });
     },
     onSuccess: (data) => {
       queue.current?.dispose();

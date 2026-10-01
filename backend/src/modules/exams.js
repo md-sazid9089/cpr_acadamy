@@ -8,6 +8,8 @@ import { resultsReleaseAt, resultsReleased } from './result-release.js';
 const identifier = z.string().min(1).max(80).regex(/^[a-zA-Z0-9_-]+$/).refine(value => !['__proto__', 'constructor', 'prototype'].includes(value));
 const answer = z.union([identifier, z.record(identifier, z.boolean()), z.null()]);
 const answerSheet = z.record(identifier, answer).refine(value => Object.keys(value).length <= 500, 'Too many answers');
+// Random per exam tab: lets the server tell a tab retrying its own lost save from a second tab.
+const clientId = z.string().min(8).max(100).regex(/^[A-Za-z0-9_-]+$/);
 // Drafts may be saved half-written; `isQuestionComplete` gates publication.
 const questionSchema = z.object({
   id: identifier, type: z.enum(['sba', 'mtf']), stem: z.string().trim().max(10000).default(''), imageUrl: z.union([webUrl, z.literal('')]).default(''),
@@ -208,7 +210,7 @@ export function examRoutes(route, database) {
     ensure(attempt, 409, 'ATTEMPT_REQUIRED', 'Start the exam before requesting the paper.');
     return publicPaper(attempt, exam);
   }));
-  route('POST', '/exams/:id/answers', { auth: 'active', body: z.object({ questionId: identifier, answer, version: z.number().int().min(0) }).strict() }, async request => {
+  route('POST', '/exams/:id/answers', { auth: 'active', body: z.object({ questionId: identifier, answer, version: z.number().int().min(0), clientId: clientId.optional() }).strict() }, async request => {
     const result = await database.transaction(async transaction => {
       const exam = await loadExam(transaction, request);
       const attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE', [request.auth.user_id, exam.id]);
@@ -221,18 +223,23 @@ export function examRoutes(route, database) {
       if (new Date(attempt.ends_at).getTime() + 60000 <= Date.now()) return false;
       const update = { [request.body.questionId]: request.body.answer };
       validateAnswers(attempt.paper.questions, update);
-      const saved = await one(transaction, 'UPDATE exam_attempts SET answers=answers || $2::jsonb,version=version+1 WHERE id=$1 AND version=$3 RETURNING version', [attempt.id, JSON.stringify(update), request.body.version]);
+      // A stale version is fine when this same tab wrote last: its previous response was simply lost.
+      const saved = await one(transaction, `UPDATE exam_attempts SET answers=answers || $2::jsonb,version=version+1,last_client=COALESCE($4,last_client)
+        WHERE id=$1 AND (version=$3 OR ($4::text IS NOT NULL AND last_client=$4)) RETURNING version`, [attempt.id, JSON.stringify(update), request.body.version, request.body.clientId ?? null]);
       ensure(saved, 409, 'ATTEMPT_VERSION_CONFLICT', 'This exam was updated in another tab. Reload the latest answers before saving.');
       return saved.version;
     });
     ensure(result, 409, 'EXAM_DEADLINE_PASSED', 'The deadline has passed. Saved answers were submitted.');
     return { ok: true, version: result };
   });
-  route('POST', '/exams/:id/submit', { auth: 'active', body: z.object({ answers: answerSheet.default({}), version: z.number().int().min(0) }).strict() }, async request => database.transaction(async transaction => {
+  route('POST', '/exams/:id/submit', { auth: 'active', body: z.object({ answers: answerSheet.default({}), version: z.number().int().min(0).optional(), clientId: clientId.optional() }).strict() }, async request => database.transaction(async transaction => {
     const exam = await loadExam(transaction, request);
     let attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE', [request.auth.user_id, exam.id]);
     ensure(attempt, 409, 'ATTEMPT_REQUIRED', 'Start the exam before submitting.');
-    ensure(attempt.submitted_at || attempt.version === request.body.version, 409, 'ATTEMPT_VERSION_CONFLICT', 'This exam was updated in another tab. Reload the latest answers before submitting.');
+    // Submitting must never be blocked by a version mismatch: the deadline is final. When the snapshot
+    // is not built on the latest saved state (another tab wrote since), answers already on the server
+    // win and the snapshot only fills the gaps, so a stale tab cannot overwrite newer answers.
+    const snapshotIsCurrent = request.body.version === attempt.version || (request.body.clientId !== undefined && request.body.clientId === attempt.last_client);
     // Whether THIS request's complete snapshot is what gets graded. False
     // means the deadline had already passed when the server received it (this
     // call, a prior late one, or the expiry sweep) -- graded from whatever was
@@ -243,7 +250,7 @@ export function examRoutes(route, database) {
     const answersApplied = !attempt.submitted_at && new Date(attempt.ends_at).getTime() + 60000 > Date.now();
     if (answersApplied) {
       validateAnswers(attempt.paper.questions, request.body.answers);
-      attempt = await one(transaction, 'UPDATE exam_attempts SET answers=answers || $2::jsonb WHERE id=$1 RETURNING *', [attempt.id, JSON.stringify(request.body.answers)]);
+      attempt = await one(transaction, `UPDATE exam_attempts SET answers=${snapshotIsCurrent ? 'answers || $2::jsonb' : '$2::jsonb || answers'} WHERE id=$1 RETURNING *`, [attempt.id, JSON.stringify(request.body.answers)]);
     }
     attempt = await finalize(transaction, attempt, !answersApplied);
     const released = resultsReleased(exam);
