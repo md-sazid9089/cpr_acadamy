@@ -3,11 +3,14 @@ import { one } from '../db.js';
 import { ensure, uuid, text, pageQuery, audit, ApiError } from '../http.js';
 import { signContentToken, verifyContentToken } from '../security.js';
 import { releasedSql } from './result-release.js';
+import { BlockedAddressError, isAllowedMediaUrl, safeFetch } from '../safe-fetch.js';
 
 export const money = z.number().min(0).max(1000000).refine(value => Math.abs(value * 100 - Math.round(value * 100)) < 0.000001, 'Use at most two decimal places');
 const timestamp = z.string().datetime({ offset: true });
 export const webUrl = z.string().url().max(2048).refine(value => value.startsWith('https://'), 'An HTTPS URL is required');
 // Posters may be self-hosted under the frontend's /assets folder as well as on an HTTPS CDN.
+// Lecture files are fetched by the server on a student's behalf, so they must be public HTTPS addresses.
+const mediaUrl = webUrl.refine(isAllowedMediaUrl, 'Use a public HTTPS address (no localhost or private network addresses).');
 const imagePath = z.union([webUrl, z.string().regex(/^\/[A-Za-z0-9_\-./%]{1,500}$/), z.literal('')]);
 // 'ALL' is reserved: the public catalogue uses it to mean "every category".
 const courseCategory = z.string().trim().min(1).max(60).refine(value => value.toUpperCase() !== 'ALL', 'This category name is reserved');
@@ -39,7 +42,7 @@ const instructorReviewFields = z.object({
   feedback: z.string().trim().min(1).max(2000),
 }).strict();
 const videoFields = z.object({
-  courseId: uuid, title: text, src: z.union([webUrl, z.literal('')]).default(''), notesUrl: z.union([webUrl, z.literal('')]).default(''),
+  courseId: uuid, title: text, src: z.union([mediaUrl, z.literal('')]).default(''), notesUrl: z.union([mediaUrl, z.literal('')]).default(''),
   durationMinutes: z.number().int().min(0).max(1440).default(0), scheduledAt: timestamp,
   status: z.enum(['draft', 'published']).default('draft'), position: z.number().int().min(0).max(100000).default(0),
   chapterId: uuid.nullable().default(null),
@@ -250,14 +253,15 @@ export function courseRoutes(route, database, config) {
     ensure(url, 404, 'NOT_FOUND', 'This content is no longer available.');
     let upstream;
     try {
-      upstream = await fetch(url, request.headers.range ? { headers: { range: request.headers.range } } : {});
-    } catch {
+      upstream = await safeFetch(url, request.headers.range ? { headers: { range: request.headers.range } } : {});
+    } catch (error) {
+      if (error instanceof BlockedAddressError) request.log.warn({ lessonId: payload.lessonId }, 'Blocked a lecture URL that points at a non-public address');
       throw new ApiError(502, 'UPSTREAM_UNAVAILABLE', 'The content host could not be reached.');
     }
     reply.code(upstream.status);
     const headers = { 'cache-control': 'private, no-store' };
     for (const name of ['content-type', 'content-length', 'accept-ranges', 'content-range']) {
-      const value = upstream.headers.get(name);
+      const value = upstream.headers[name];
       if (value) headers[name] = value;
     }
     return new Response(upstream.body, { headers });
