@@ -53,7 +53,9 @@ export function installRoutes(app, database, config, contract) {
     app.route({
       method,
       url: `/api${url}`,
-      config: { rateLimit: options.rateLimit ?? { max: 300, timeWindow: '1 minute' }, bodyLimit: options.bodyLimit },
+      // A route that states its own limit is guarding something sensitive (sign-in, uploads) and is counted in the
+      // database so every instance agrees; the default per-address ceiling is only flood control and stays in memory.
+      config: { rateLimit: options.rateLimit ?? { max: 300, timeWindow: '1 minute' }, inMemoryLimit: !options.rateLimit, bodyLimit: options.bodyLimit },
       // Runs before the request body is read, so callers who are not signed in (or are not admins) cannot make the
       // server buffer megabytes of upload just to be told no.
       authenticate: async request => {
@@ -76,7 +78,7 @@ export async function audit(database, actorId, action, entityId, details = {}) {
 }
 
 // With no usable client address every caller shares the `unknown` bucket, so its allowance is widened to keep real users from locking each other out.
-const SHARED_BUCKET_MULTIPLIER = 20;
+export const SHARED_BUCKET_MULTIPLIER = 20;
 
 const bucketKey = (config, scope, identity) => digestToken(`${scope}:${identity}`, config.tokenSecret);
 

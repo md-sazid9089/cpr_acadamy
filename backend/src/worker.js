@@ -9,6 +9,9 @@ export async function runMaintenance(database, config, testSink, emailTestSink) 
   await database.query('DELETE FROM rate_buckets WHERE resets_at<now()');
   await database.query("DELETE FROM sessions WHERE refresh_expires_at<now()-interval '7 days'");
   await database.query("DELETE FROM otp_challenges WHERE expires_at<now()-interval '1 day'");
+  // Delivered or abandoned messages carry no payload any more and are only history.
+  await database.query("DELETE FROM sms_outbox WHERE status<>'pending' AND created_at<now()-interval '7 days'");
+  await database.query("DELETE FROM email_outbox WHERE status<>'pending' AND created_at<now()-interval '7 days'");
   await deliverSms(database, config, testSink);
   await deliverEmail(database, config, emailTestSink);
 }

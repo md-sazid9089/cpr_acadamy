@@ -138,3 +138,27 @@ test('null characters are refused with a 400 instead of crashing the request', a
     assert.equal((await student.request('POST', '/me/complaints', { relatedTo: 'Other', body: 'ordinary text' })).statusCode, 200, 'normal text still works');
   } finally { await context.close(); }
 });
+
+test('ordinary routes are rate limited in memory, while routes that state their own limit are counted in the database', async () => {
+  const { createMemoryLimiter } = await import('../src/web-app.js');
+  let time = 1000;
+  const limiter = createMemoryLimiter({ maxKeys: 3, now: () => time });
+  assert.equal(limiter.hit('a', 2, 60), 0);
+  assert.equal(limiter.hit('a', 2, 60), 0);
+  assert.equal(limiter.hit('a', 2, 60), 60, 'third hit inside the window is refused with the wait in seconds');
+  time += 61000;
+  assert.equal(limiter.hit('a', 2, 60), 0, 'a new window starts after it lapses');
+  for (const key of ['b', 'c', 'd', 'e', 'f']) limiter.hit(key, 1, 60); // overflowing the key table resets it instead of growing forever
+  assert.equal(limiter.hit('b', 1, 60), 0);
+
+  const context = await fixture();
+  const send = path => context.app.handle(new Request(`http://localhost/api${path}`));
+  try {
+    for (let hit = 0; hit < 6000; hit += 1) assert.equal((await send('/courses?limit=1')).status, 200, `request ${hit + 1}`);
+    assert.equal((await send('/courses?limit=1')).status, 429, 'the shared bucket allows 20x the 300/minute route limit');
+    const rows = await one(context.database, "SELECT count(*)::int AS count FROM rate_buckets");
+    assert.equal(rows.count, 0, 'no database row per request for ordinary routes');
+    await context.app.inject({ method: 'POST', url: '/api/auth/login', headers: { 'x-device-id': 'device-0001' }, payload: { mobile: '01711111111', password: 'wrong-password' } });
+    assert.ok((await one(context.database, "SELECT count(*)::int AS count FROM rate_buckets")).count > 0, 'sign-in limits are still stored in the database');
+  } finally { await context.close(); }
+});

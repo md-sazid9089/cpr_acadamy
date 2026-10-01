@@ -105,8 +105,37 @@ export function gradePaper(paper, answers) {
   return { score, totalMarks: maximum, correctCount, wrongCount, skippedCount, passMark, passed: maximum > 0 && score * 100 >= maximum * passMark };
 }
 
+// Everything about an exam except its (large) question list, for the hot paths that never look at questions.
+const EXAM_LIGHT_COLUMNS = 'id,course_id,title,type,question_type,duration_minutes,negative_marking,scheduled_at,closes_at,results_at,is_published,created_at,target_question_count,marks_per_question,pass_mark';
+// Likewise for an attempt: `paper` is a full copy of the exam and is only fetched when a question is actually needed.
+const ATTEMPT_LIGHT_COLUMNS = 'id,user_id,exam_id,answers,started_at,ends_at,submitted_at,result,version,auto_finalized,last_client';
+
+/** Question count, completeness and total marks, from the questions when loaded or from SQL aggregates when they were left out. */
+function questionSummary(row) {
+  if (row.questions) return { count: row.questions.length, complete: row.questions.filter(isQuestionComplete).length, total: totalMarks(row.questions) };
+  return { count: row.question_count, complete: row.question_count, total: Number(row.total_marks) }; // only published (hence complete) exams are listed this way
+}
+
+// A paper never changes once an attempt has started, so the little autosave needs from it (question ids, types, option ids) is
+// kept in memory instead of re-reading and re-parsing the whole copy on every answer.
+const paperShapes = new Map();
+async function paperShape(transaction, attemptId) {
+  const known = paperShapes.get(attemptId);
+  if (known) {
+    paperShapes.delete(attemptId);
+    paperShapes.set(attemptId, known); // keep recently used entries last
+    return known;
+  }
+  const { paper } = await one(transaction, 'SELECT paper FROM exam_attempts WHERE id=$1', [attemptId]);
+  const shape = paper.questions.map(question => ({ id: question.id, type: question.type, options: question.options.map(option => ({ id: option.id })) }));
+  paperShapes.set(attemptId, shape);
+  if (paperShapes.size > 1000) paperShapes.delete(paperShapes.keys().next().value);
+  return shape;
+}
+
 function examDto(row) {
   const now = Date.now();
+  const summary = questionSummary(row);
   const status = !row.is_published ? 'draft' : row.submitted_at ? 'submitted' : new Date(row.scheduled_at).getTime() > now ? 'upcoming'
     : row.closes_at && new Date(row.closes_at).getTime() <= now ? 'published' : 'running';
   return { id: row.id, courseId: row.course_id, courseTitle: row.course_title, courseName: row.course_title,
@@ -114,7 +143,7 @@ function examDto(row) {
     durationMinutes: row.duration_minutes, negativeMarking: Number(row.negative_marking), passMark: Number(row.pass_mark),
     marksPerQuestion: Number(row.marks_per_question ?? 1), targetQuestionCount: row.target_question_count ?? 0,
     scheduledAt: row.scheduled_at, closesAt: row.closes_at, resultsAt: row.results_at, resultsReleaseAt: resultsReleaseAt(row),
-    questionCount: row.questions.length, completeQuestionCount: row.questions.filter(isQuestionComplete).length, totalMarks: totalMarks(row.questions) };
+    questionCount: summary.count, completeQuestionCount: summary.complete, totalMarks: summary.total };
 }
 
 function publicPaper(attempt, exam) {
@@ -168,7 +197,10 @@ async function examPositions(transaction, exam, userId, limit = 10, offset = 0) 
 
 export function examRoutes(route, database) {
   async function list(request, courseId) {
-    return (await database.query(`SELECT x.*,c.title AS course_title,a.submitted_at FROM exams x JOIN courses c ON c.id=x.course_id
+    return (await database.query(`SELECT ${EXAM_LIGHT_COLUMNS.split(',').map(column => `x.${column}`).join(',')},
+      jsonb_array_length(x.questions) AS question_count,
+      (SELECT COALESCE(round(sum((q->>'marks')::numeric*CASE WHEN q->>'type'='mtf' THEN jsonb_array_length(q->'options') ELSE 1 END),3),0) FROM jsonb_array_elements(x.questions) q) AS total_marks,
+      c.title AS course_title,a.submitted_at FROM exams x JOIN courses c ON c.id=x.course_id
       LEFT JOIN exam_attempts a ON a.exam_id=x.id AND a.user_id=$1
       WHERE x.is_published AND ($2::uuid IS NULL OR x.course_id=$2) AND
       ($3::boolean OR EXISTS(SELECT 1 FROM enrollments e WHERE e.user_id=$1 AND e.course_id=x.course_id AND e.status='active' AND e.expires_at>now()))
@@ -183,8 +215,8 @@ export function examRoutes(route, database) {
     return list(request, course.id);
   });
 
-  async function loadExam(transaction, request) {
-    const exam = await one(transaction, 'SELECT * FROM exams WHERE id=$1 AND is_published FOR SHARE', [request.params.id]);
+  async function loadExam(transaction, request, { questions = true } = {}) {
+    const exam = await one(transaction, `SELECT ${questions ? '*' : EXAM_LIGHT_COLUMNS} FROM exams WHERE id=$1 AND is_published FOR SHARE`, [request.params.id]);
     ensure(exam, 404, 'EXAM_NOT_FOUND', 'Exam not found.');
     await requireCourseAccess(transaction, request.auth, exam.course_id);
     return exam;
@@ -212,8 +244,8 @@ export function examRoutes(route, database) {
   }));
   route('POST', '/exams/:id/answers', { auth: 'active', body: z.object({ questionId: identifier, answer, version: z.number().int().min(0), clientId: clientId.optional() }).strict() }, async request => {
     const result = await database.transaction(async transaction => {
-      const exam = await loadExam(transaction, request);
-      const attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE', [request.auth.user_id, exam.id]);
+      const exam = await loadExam(transaction, request, { questions: false });
+      const attempt = await one(transaction, `SELECT ${ATTEMPT_LIGHT_COLUMNS} FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE`, [request.auth.user_id, exam.id]);
       ensure(attempt, 409, 'ATTEMPT_REQUIRED', 'Start the exam before saving answers.');
       ensure(!attempt.submitted_at, 409, 'ALREADY_SUBMITTED', 'This exam has already been submitted.');
       // Autosave never finalizes on its own: only /submit (or the expiry
@@ -222,7 +254,7 @@ export function examRoutes(route, database) {
       // prevents clock skew from rejecting valid last-second autosaves.
       if (new Date(attempt.ends_at).getTime() + 60000 <= Date.now()) return false;
       const update = { [request.body.questionId]: request.body.answer };
-      validateAnswers(attempt.paper.questions, update);
+      validateAnswers(await paperShape(transaction, attempt.id), update);
       // A stale version is fine when this same tab wrote last: its previous response was simply lost.
       const saved = await one(transaction, `UPDATE exam_attempts SET answers=answers || $2::jsonb,version=version+1,last_client=COALESCE($4,last_client)
         WHERE id=$1 AND (version=$3 OR ($4::text IS NOT NULL AND last_client=$4)) RETURNING version`, [attempt.id, JSON.stringify(update), request.body.version, request.body.clientId ?? null]);
@@ -233,7 +265,7 @@ export function examRoutes(route, database) {
     return { ok: true, version: result };
   });
   route('POST', '/exams/:id/submit', { auth: 'active', body: z.object({ answers: answerSheet.default({}), version: z.number().int().min(0).optional(), clientId: clientId.optional() }).strict() }, async request => database.transaction(async transaction => {
-    const exam = await loadExam(transaction, request);
+    const exam = await loadExam(transaction, request, { questions: false });
     let attempt = await one(transaction, 'SELECT * FROM exam_attempts WHERE user_id=$1 AND exam_id=$2 FOR UPDATE', [request.auth.user_id, exam.id]);
     ensure(attempt, 409, 'ATTEMPT_REQUIRED', 'Start the exam before submitting.');
     // Submitting must never be blocked by a version mismatch: the deadline is final. When the snapshot

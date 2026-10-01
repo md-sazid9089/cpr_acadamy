@@ -57,3 +57,41 @@ test('submit works without a version', async () => {
     assert.deepEqual(row.answers, { q1: 'a' });
   } finally { await context.close(); }
 });
+
+test('autosave keeps validating answers against the frozen paper once its shape is cached', async () => {
+  const { context, exam, save } = await attempt();
+  try {
+    const tab = { clientId: 'tab-cache-client' };
+    assert.equal((await save({ questionId: 'q1', answer: 'a', version: 0 }, tab)).statusCode, 200);
+    for (const [body, expected] of [[{ questionId: 'q9', answer: 'a' }, 400], [{ questionId: 'q1', answer: 'zzz' }, 400], [{ questionId: 'q1', answer: { a: true } }, 400], [{ questionId: 'q2', answer: 'b' }, 200]]) {
+      const response = await save({ ...body, version: 1 }, tab);
+      assert.equal(response.statusCode, expected, JSON.stringify(body));
+      if (expected === 200) assert.equal(response.json().version, 2);
+    }
+    const row = await one(context.database, 'SELECT answers FROM exam_attempts WHERE exam_id=$1', [exam.id]);
+    assert.deepEqual(row.answers, { q1: 'a', q2: 'b' });
+  } finally { await context.close(); }
+});
+
+test('exam lists report the same counts and marks as the full exam record', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user('student', '01712345678');
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'list-parity', title: 'Parity', category: 'FCPS', price: 100, isPublished: true })).json();
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [student.id, course.id]);
+    const mixed = [
+      { id: 'm1', type: 'mtf', stem: 'Judge each.', options: ['a', 'b', 'c', 'd', 'e'].map(id => ({ id, text: id })), correctAnswer: { a: true, b: false, c: true, d: false, e: true }, explanation: '', marks: 0.4 },
+      { id: 's1', type: 'sba', stem: 'Pick one.', options: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }], correctAnswer: 'b', explanation: '', marks: 2 },
+      { id: 's2', type: 'sba', stem: 'Pick again.', options: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }], correctAnswer: 'a', explanation: '', marks: 2 },
+    ];
+    const created = (await admin.request('POST', '/admin/exams', { courseId: course.id, title: 'Parity paper', type: 'practice', questionType: 'mixed', durationMinutes: 30, scheduledAt: '2025-01-01T00:00:00Z', isPublished: true, targetQuestionCount: 3, questions: mixed })).json();
+    const full = (await admin.request('GET', `/admin/exams/${created.id}`)).json();
+    const listed = (await student.request('GET', '/exams')).json().find(entry => entry.id === created.id);
+    assert.equal(listed.questionCount, 3);
+    assert.equal(listed.totalMarks, 6, '5 true/false items at 0.4 plus two single-best-answers at 2');
+    for (const field of ['questionCount', 'completeQuestionCount', 'totalMarks', 'title', 'status', 'durationMinutes', 'scheduledAt', 'courseTitle']) assert.equal(listed[field], full[field], field);
+    const byCourse = (await student.request('GET', `/courses/${course.slug}/exams`)).json().find(entry => entry.id === created.id);
+    assert.equal(byCourse.totalMarks, 6);
+  } finally { await context.close(); }
+});
