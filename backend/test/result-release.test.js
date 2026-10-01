@@ -83,3 +83,22 @@ test('progress averages count only exams whose results are released', async () =
     assert.equal((await student.request('GET', '/me/progress')).json().examsTaken, 1);
   } finally { await context.close(); }
 });
+
+test('the course leaderboard hides scores until the exam results are released', async () => {
+  const { context, admin, student, peer, course, create, sit } = await setup();
+  try {
+    const exam = await create({});
+    await sit(student, exam);
+    const hidden = (await peer.request('GET', `/courses/${course.slug}/leaderboard`)).json();
+    assert.equal(hidden.participants, 0, 'an embargoed exam contributes no standings');
+    assert.deepEqual(hidden.items, []);
+    const own = (await student.request('GET', `/courses/${course.slug}/leaderboard`)).json();
+    assert.equal(own.me, null, 'not even the student who sat it sees a score early');
+    const staff = (await admin.request('GET', `/admin/courses/${course.id}/leaderboard`)).json();
+    assert.equal(staff.participants, 1, 'admins still see the live standings');
+    await context.database.query("UPDATE exams SET closes_at=now()-interval '1 second' WHERE id=$1", [exam.id]);
+    const released = (await peer.request('GET', `/courses/${course.slug}/leaderboard`)).json();
+    assert.equal(released.participants, 1);
+    assert.equal(released.items[0].score, 1);
+  } finally { await context.close(); }
+});

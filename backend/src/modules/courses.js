@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { one } from '../db.js';
 import { ensure, uuid, text, pageQuery, audit, ApiError } from '../http.js';
 import { signContentToken, verifyContentToken } from '../security.js';
+import { releasedSql } from './result-release.js';
 
 export const money = z.number().min(0).max(1000000).refine(value => Math.abs(value * 100 - Math.round(value * 100)) < 0.000001, 'Use at most two decimal places');
 const timestamp = z.string().datetime({ offset: true });
@@ -294,9 +295,10 @@ export function courseRoutes(route, database, config) {
     ensure(course, 404, 'COURSE_NOT_FOUND', 'This course could not be found.');
     return (await database.query('SELECT * FROM schedules WHERE course_id=$1 ORDER BY scheduled_at,id', [course.id])).rows.map(scheduleDto);
   });
-  async function courseLeaderboard(database, courseId, userId, limit = 50, offset = 0) {
+  // Students only see exams whose results have been released; admins see every published exam.
+  async function courseLeaderboard(database, courseId, userId, limit = 50, offset = 0, { includeUnreleased = false } = {}) {
     const standings = await one(database, `WITH course_exams AS (
-      SELECT id FROM exams WHERE course_id=$1 AND is_published=true
+      SELECT id FROM exams WHERE course_id=$1 AND is_published=true${includeUnreleased ? '' : ` AND ${releasedSql('exams')}`}
     ), user_scores AS (
       SELECT a.user_id, u.full_name, sum((a.result->>'score')::numeric) as total_score
       FROM exam_attempts a
@@ -336,7 +338,7 @@ export function courseRoutes(route, database, config) {
   route('GET', '/admin/courses/:id/leaderboard', { auth: 'admin', query: pageQuery }, async request => {
     const course = await one(database, 'SELECT id FROM courses WHERE id=$1', [request.params.id]);
     ensure(course, 404, 'COURSE_NOT_FOUND', 'Course not found.');
-    return courseLeaderboard(database, course.id, request.auth.user_id, request.query.limit, request.query.offset);
+    return courseLeaderboard(database, course.id, request.auth.user_id, request.query.limit, request.query.offset, { includeUnreleased: true });
   });
 
   route('GET', '/admin/courses', { auth: 'admin', query: pageQuery }, async request => (await database.query(`${courseSelect} ORDER BY c.created_at DESC,c.id LIMIT $1 OFFSET $2`, [request.query.limit, request.query.offset])).rows.map(courseDto));
