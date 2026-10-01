@@ -76,7 +76,6 @@ export default function CourseExamsTab() {
       courseId: course.id,
       scheduledAt: new Date(now).toISOString(),
       closesAt: new Date(now + 24 * 3600000).toISOString(),
-      resultsAt: new Date(now + 24 * 3600000).toISOString(),
       durationMinutes: 60,
       questionCount: form.type === QUESTION_TYPES.MTF ? 25 : 50,
       marksPerQuestion: form.type === QUESTION_TYPES.MTF ? 0.4 : 2,

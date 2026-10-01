@@ -4,6 +4,7 @@ import { audit, ensure, text, password, pageQuery } from '../http.js';
 import { hashPassword, verifyPassword, publicUser } from '../security.js';
 import { enqueueSms } from '../sms.js';
 import { paymentDto } from './billing.js';
+import { releasedSql } from './result-release.js';
 
 const profileValue = z.string().trim().max(300);
 const profileSchemas = {
@@ -55,7 +56,7 @@ export function studentRoutes(route, database, config) {
     const lessonsTotal = courses.reduce((total, course) => total + course.lessonCount, 0);
     const lessonsCompleted = courses.reduce((total, course) => total + course.completedLessons, 0);
     const summary = await one(database, `SELECT count(*)::int AS exams_taken,COALESCE(avg((a.result->>'score')::numeric/NULLIF((a.result->>'totalMarks')::numeric,0)*100),0) AS average_score
-      FROM exam_attempts a JOIN exams x ON x.id=a.exam_id WHERE a.user_id=$1 AND a.submitted_at IS NOT NULL AND (x.results_at IS NULL OR x.results_at<=now())`, [request.auth.user_id]);
+      FROM exam_attempts a JOIN exams x ON x.id=a.exam_id WHERE a.user_id=$1 AND a.submitted_at IS NOT NULL AND ${releasedSql('x')}`, [request.auth.user_id]);
     const study = await one(database, 'SELECT COALESCE(sum(l.duration_minutes),0)::int AS minutes FROM lesson_progress p JOIN lessons l ON l.id=p.lesson_id WHERE p.user_id=$1', [request.auth.user_id]);
     const activity = (await database.query(`SELECT to_char(p.completed_at AT TIME ZONE 'Asia/Dhaka','Dy') AS day,sum(l.duration_minutes)::int AS minutes
       FROM lesson_progress p JOIN lessons l ON l.id=p.lesson_id WHERE p.user_id=$1 AND p.completed_at>=now()-interval '7 days'

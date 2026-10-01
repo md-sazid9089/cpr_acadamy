@@ -266,7 +266,7 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
       [{ questions: [questions[0], questions[0]] }, 'DUPLICATE_QUESTION'],
       [{ questionType: 'sba' }, 'QUESTION_TYPE_MISMATCH'],
       [{ closesAt: '2024-12-31T00:00:00Z' }, 'INVALID_SCHEDULE'],
-      [{ type: 'live' }, 'INVALID_RESULTS_RELEASE'],
+      [{ type: 'live' }, 'CLOSING_TIME_REQUIRED'],
       [{ type: 'mock', closesAt: '2025-01-02T00:00:00Z', resultsAt: '2025-01-01T12:00:00Z' }, 'INVALID_RESULTS_RELEASE'],
     ]) {
       const response = await admin.request('POST', '/admin/exams', { ...base, ...patch });

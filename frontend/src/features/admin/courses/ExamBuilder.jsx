@@ -138,7 +138,7 @@ function ExamEditor({ exam, course }) {
       isPublished: settings.isPublished === 'published',
       scheduledAt: fromLocalInput(settings.scheduledAt) ?? exam.scheduledAt,
       closesAt: timed || settings.closesAt ? fromLocalInput(settings.closesAt) : null,
-      resultsAt: timed || settings.resultsAt ? fromLocalInput(settings.resultsAt) : null,
+      resultsAt: settings.resultsAt ? fromLocalInput(settings.resultsAt) : null,
       durationMinutes: Number(settings.durationMinutes) || 0,
       questionCount: Number(settings.questionCount) || 0,
       marksPerQuestion: Number(settings.marksPerQuestion) || 0,
@@ -148,13 +148,10 @@ function ExamEditor({ exam, course }) {
     });
   };
 
-  const setField = (field) => (event) => setSettings((prev) => {
-    const next = { ...prev, [field]: event.target.value };
-    if (field === 'closesAt') {
-      next.resultsAt = event.target.value;
-    }
-    return next;
-  });
+  const setField = (field) => (event) => setSettings((prev) => ({
+    ...prev,
+    [field]: event.target.value,
+  }));
 
   // ── Questions ──
   // The whole paper is one document server-side, so every structural change
@@ -367,10 +364,12 @@ function ExamEditor({ exam, course }) {
               <Input
                 label="Results released"
                 type="datetime-local"
-                required={isTimed}
+                min={settings.closesAt || undefined}
                 value={settings.resultsAt}
                 onChange={setField('resultsAt')}
-                hint={isTimed ? 'No earlier than the closing time.' : 'Blank shows results immediately.'}
+                hint={settings.closesAt
+                  ? 'Optional. Blank releases results when the exam closes; otherwise at this time (not before closing).'
+                  : 'Optional. Blank shows results as soon as a student submits.'}
               />
             </div>
 

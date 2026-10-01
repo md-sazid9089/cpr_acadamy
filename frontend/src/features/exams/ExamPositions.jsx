@@ -174,7 +174,8 @@ export default function ExamPositions({ demo = false } = {}) {
   const courseId = requestedExam?.courseId ?? params.get('courseId') ?? '';
   const courses = [...new Map(exams.map(exam => [exam.courseId, exam.courseTitle])).entries()];
   const filtered = exams.filter(exam => !courseId || exam.courseId === courseId);
-  const released = exam => !exam.resultsAt || new Date(exam.resultsAt).getTime() <= Date.now();
+  const releaseTime = exam => exam.resultsReleaseAt ?? exam.resultsAt;
+  const released = exam => !releaseTime(exam) || new Date(releaseTime(exam)).getTime() <= Date.now();
   const selected = requestedExam ?? filtered.find(exam => exam.status === 'submitted' && released(exam)) ?? filtered.find(released) ?? filtered[0];
 
   return (
@@ -211,7 +212,7 @@ export default function ExamPositions({ demo = false } = {}) {
               </div>
               {selected && <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 className="min-w-0 break-words text-lg font-bold text-stone-900 dark:text-white">{selected.title}</h2>
-                <p className="text-xs text-stone-500 dark:text-brand-200">{selected.totalMarks} marks / {selected.durationMinutes} min{!released(selected) && ` / Results ${formatDateTime(selected.resultsAt)}`}</p>
+                <p className="text-xs text-stone-500 dark:text-brand-200">{selected.totalMarks} marks / {selected.durationMinutes} min{!released(selected) && ` / Results ${formatDateTime(releaseTime(selected))}`}</p>
               </div>}
               {selected ? <Standings key={`${demo}:${selected.id}`} examId={selected.id} demo={demo} /> : <EmptyState title="No exams in this course" />}
             </>}

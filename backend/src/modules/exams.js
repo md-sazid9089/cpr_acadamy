@@ -3,6 +3,7 @@ import { one } from '../db.js';
 import { audit, ensure, uuid, text, pageQuery } from '../http.js';
 import { requireCourseAccess, webUrl } from './courses.js';
 import { reviseAttemptScore } from './result-revisions.js';
+import { resultsReleaseAt, resultsReleased } from './result-release.js';
 
 const identifier = z.string().min(1).max(80).regex(/^[a-zA-Z0-9_-]+$/).refine(value => !['__proto__', 'constructor', 'prototype'].includes(value));
 const answer = z.union([identifier, z.record(identifier, z.boolean()), z.null()]);
@@ -110,7 +111,7 @@ function examDto(row) {
     title: row.title, type: row.type, questionType: row.question_type, status, isPublished: row.is_published,
     durationMinutes: row.duration_minutes, negativeMarking: Number(row.negative_marking), passMark: Number(row.pass_mark),
     marksPerQuestion: Number(row.marks_per_question ?? 1), targetQuestionCount: row.target_question_count ?? 0,
-    scheduledAt: row.scheduled_at, closesAt: row.closes_at, resultsAt: row.results_at,
+    scheduledAt: row.scheduled_at, closesAt: row.closes_at, resultsAt: row.results_at, resultsReleaseAt: resultsReleaseAt(row),
     questionCount: row.questions.length, completeQuestionCount: row.questions.filter(isQuestionComplete).length, totalMarks: totalMarks(row.questions) };
 }
 
@@ -245,7 +246,7 @@ export function examRoutes(route, database) {
       attempt = await one(transaction, 'UPDATE exam_attempts SET answers=answers || $2::jsonb WHERE id=$1 RETURNING *', [attempt.id, JSON.stringify(request.body.answers)]);
     }
     attempt = await finalize(transaction, attempt, !answersApplied);
-    const released = !exam.results_at || new Date(exam.results_at).getTime() <= Date.now();
+    const released = resultsReleased(exam);
     return { examId: exam.id, submittedAt: attempt.submitted_at, resultsAvailable: released,
       lateSubmission: Boolean(attempt.auto_finalized), ...(released ? attempt.result : {}) };
   }));
@@ -255,7 +256,7 @@ export function examRoutes(route, database) {
     ensure(attempt, 404, 'RESULT_NOT_FOUND', 'No attempt was found.');
     if (!attempt.submitted_at && new Date(attempt.ends_at).getTime() <= Date.now()) attempt = await finalize(transaction, attempt, true);
     ensure(attempt.submitted_at, 409, 'NOT_SUBMITTED', 'Submit this exam before viewing the result.');
-    ensure(!exam.results_at || new Date(exam.results_at).getTime() <= Date.now(), 403, 'RESULTS_NOT_RELEASED', 'Results have not been released yet.');
+    ensure(resultsReleased(exam), 403, 'RESULTS_NOT_RELEASED', 'Results have not been released yet.');
     const positions = await examPositions(transaction, exam, request.auth.user_id, 1);
     return { examId: exam.id, ...attempt.result, rank: positions.me?.rank ?? null, participants: positions.participants,
       tied: positions.me?.tied ?? false, provisional: positions.provisional, submittedAt: attempt.submitted_at,
@@ -264,7 +265,7 @@ export function examRoutes(route, database) {
 
   route('GET', '/exams/:id/positions', { auth: 'active', query: pageQuery }, async request => database.transaction(async transaction => {
     const exam = await loadExam(transaction, request);
-    ensure(!exam.results_at || new Date(exam.results_at).getTime() <= Date.now(), 403, 'RESULTS_NOT_RELEASED', 'Results have not been released yet.');
+    ensure(resultsReleased(exam), 403, 'RESULTS_NOT_RELEASED', 'Results have not been released yet.');
     return examPositions(transaction, exam, request.auth.user_id, request.query.limit, request.query.offset);
   }));
 
@@ -316,7 +317,8 @@ export function examRoutes(route, database) {
       }
       validatePublication(input, bounds);
       ensure(!input.closesAt || new Date(input.closesAt) > new Date(input.scheduledAt), 400, 'INVALID_SCHEDULE', 'Closing time must follow the start.');
-      ensure(input.type === 'practice' || (input.closesAt && input.resultsAt && new Date(input.resultsAt) >= new Date(input.closesAt)), 400, 'INVALID_RESULTS_RELEASE', 'Timed exams require a closing time and results released no earlier than closing.');
+      ensure(input.type === 'practice' || input.closesAt, 400, 'CLOSING_TIME_REQUIRED', 'Timed exams require a closing time.');
+      ensure(!input.resultsAt || !input.closesAt || new Date(input.resultsAt) >= new Date(input.closesAt), 400, 'INVALID_RESULTS_RELEASE', 'Results cannot be released before the exam closes.');
       const values = [input.courseId, input.title, input.type, input.questionType, input.durationMinutes, input.negativeMarking, input.scheduledAt, input.closesAt, input.resultsAt, input.isPublished, JSON.stringify(input.questions), input.targetQuestionCount, input.marksPerQuestion, input.passMark];
       const columns = ['course_id', 'title', 'type', 'question_type', 'duration_minutes', 'negative_marking', 'scheduled_at', 'closes_at', 'results_at', 'is_published', 'questions', 'target_question_count', 'marks_per_question', 'pass_mark'];
       const exam = creating
