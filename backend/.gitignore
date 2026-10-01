@@ -7,3 +7,5 @@ coverage/
 .local/
 .next/
 out/
+# Local-disk image uploads (dev fallback when CLOUDINARY_URL is unset)
+public/uploads/

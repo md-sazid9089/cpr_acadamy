@@ -42,10 +42,10 @@ test('exam attempts hide keys, preserve deadlines, freeze papers, and reject lat
     response = await student.request('POST', `/exams/${exam.id}/answers`, { questionId: 'question-one', answer: 'first', version: 0 });
     assert.equal(response.statusCode, 409);
     assert.equal(response.json().code, 'ATTEMPT_VERSION_CONFLICT');
-    await context.database.query("UPDATE exam_attempts SET ends_at=now()-interval '1 second' WHERE exam_id=$1", [exam.id]);
+    await context.database.query("UPDATE exam_attempts SET ends_at=now()-interval '61 seconds' WHERE exam_id=$1", [exam.id]);
     response = await student.request('POST', `/exams/${exam.id}/submit`, { answers: { 'question-two': { first: true, second: false } }, version: 1 });
     assert.equal(response.statusCode, 200, response.body);
-    assert.equal(response.json().score, 2);
+    assert.equal(response.json().score, 2, 'only the autosaved answer counts once the 60 second grace has passed');
     response = await student.request('GET', `/exams/${exam.id}/result`);
     assert.equal(response.statusCode, 200, response.body);
     assert.equal(response.json().review.find(question => question.id === 'question-two').yourAnswer, null);

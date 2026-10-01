@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { openDatabase, migrate, one } from '../src/db.js';
 import { loadConfig } from '../src/config.js';
 import { buildApp } from '../src/app.js';
@@ -6,7 +8,8 @@ import { hashPassword } from '../src/security.js';
 export async function fixture() {
   const database = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });
   await migrate(database);
-  const config = loadConfig({ NODE_ENV: 'test', SMS_MODE: 'test', TOKEN_SECRET: 'test-secret-with-at-least-32-characters' });
+  // Uploads from tests go to a throwaway folder, not the project's public/uploads.
+  const config = loadConfig({ NODE_ENV: 'test', SMS_MODE: 'test', TOKEN_SECRET: 'test-secret-with-at-least-32-characters', UPLOAD_DIR: join(tmpdir(), 'cpr-academy-test-uploads') });
   const app = await buildApp({ database, config });
   async function user(role = 'student', mobile = '01712345678', status = 'active') {
     const password = 'Synthetic-test-password';

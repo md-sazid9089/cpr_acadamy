@@ -14,8 +14,8 @@ test('navbar header is opaque everywhere, not just on the student dashboard', ()
   assert.ok(!source.includes('bg-transparent'));
 });
 
-test('navbar theme and mobile menu controls reserve 44px touch targets', () => {
-  assert.match(read('../src/components/layout/ThemeToggle.jsx'), /h-11 w-11 shrink-0/);
+test('navbar mobile menu control reserves a 44px touch target', () => {
+  // The theme toggle is disabled (it renders nothing), so only the menu button remains.
   assert.match(read('../src/components/layout/Navbar.jsx'), /min-h-11 min-w-11/);
 });
 

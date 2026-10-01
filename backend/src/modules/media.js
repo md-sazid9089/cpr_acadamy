@@ -14,8 +14,8 @@ const imageTypes = {
   webp: { extension: 'webp', mime: 'image/webp', signature: bytes => bytes.subarray(0, 4).equals(Buffer.from('RIFF')) && bytes.subarray(8, 12).equals(Buffer.from('WEBP')) },
 };
 
-function uploadsPath() {
-  return resolve(process.cwd(), 'public', 'uploads');
+function uploadsPath(config) {
+  return config?.uploadDir ?? resolve(process.cwd(), 'public', 'uploads');
 }
 
 // `cloudinary://<api_key>:<api_secret>@<cloud_name>` — parsed by hand rather than
@@ -45,9 +45,9 @@ async function storeImage(config, dataUrlValue) {
   }
 
   // No Cloudinary account configured (local dev/test) — same validated bytes, kept on disk instead.
-  await mkdir(uploadsPath(), { recursive: true });
+  await mkdir(uploadsPath(config), { recursive: true });
   const filename = `${randomUUID()}.${definition.extension}`;
-  await writeFile(resolve(uploadsPath(), filename), bytes, { flag: 'wx' });
+  await writeFile(resolve(uploadsPath(config), filename), bytes, { flag: 'wx' });
   return { url: `/api/media/${filename}` };
 }
 
@@ -64,7 +64,7 @@ export function mediaRoutes(route, config) {
   route('GET', '/media/:filename', {}, async request => {
     const filename = basename(request.params.filename);
     ensure(/^[0-9a-f-]{36}\.(jpg|png|webp)$/.test(filename), 404, 'NOT_FOUND', 'Image not found.');
-    const path = resolve(uploadsPath(), filename);
+    const path = resolve(uploadsPath(config), filename);
     try {
       const info = await stat(path);
       ensure(info.isFile() && info.size <= MAX_IMAGE_BYTES, 404, 'NOT_FOUND', 'Image not found.');

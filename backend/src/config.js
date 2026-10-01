@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { resolve } from 'node:path';
 
 export function loadConfig(env = process.env) {
   const production = env.NODE_ENV === 'production';
@@ -46,6 +47,8 @@ export function loadConfig(env = process.env) {
     // Image uploads go to Cloudinary when this is set; otherwise they fall back to
     // local disk (test/dev without a Cloudinary account configured).
     cloudinaryUrl: env.CLOUDINARY_URL || null,
+    // Where the local-disk fallback keeps uploads; defaults to ./public/uploads.
+    uploadDir: env.UPLOAD_DIR ? resolve(env.UPLOAD_DIR) : null,
     // Temporary switch to let new signups skip OTP entry and go straight to the
     // approval queue, logged in. Flip back to 'false' to re-require SMS verification.
     skipPhoneVerification: env.SKIP_PHONE_VERIFICATION === 'true',

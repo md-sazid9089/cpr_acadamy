@@ -58,7 +58,7 @@ test('exam positions share ties, paginate globally, protect results, and exclude
     assert.equal(standings.me.score, 0);
     assert.deepEqual(standings.items.map(entry => entry.rank), [1, 2]);
     assert.equal(standings.items[1].tied, true);
-    assert.deepEqual(Object.keys(standings.items[0]).sort(), ['isMe', 'name', 'passed', 'rank', 'score', 'tied', 'totalMarks'].sort());
+    assert.deepEqual(Object.keys(standings.items[0]).sort(), ['isMe', 'name', 'passed', 'rank', 'score', 'tied', 'totalMarks', 'userId'].sort());
     const next = (await students[3].request('GET', `${path}?limit=2&offset=2`)).json();
     assert.deepEqual(next.items.map(entry => entry.rank), [2, 4]);
     assert.equal(next.items[1].isMe, true);

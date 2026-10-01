@@ -216,7 +216,7 @@ test('billing edge cases: idempotency conflicts, pending reuse, rejected invoice
     assert.equal((await admin.request('POST', `/admin/payments/${otherPayment.id}/confirm`, confirmation)).statusCode, 200);
     response = await admin.request('POST', `/admin/payments/${retry.id}/confirm`, confirmation);
     assert.equal(response.statusCode, 409, 'a bank reference can only reconcile one invoice');
-    assert.equal(response.json().code, 'CONFLICT');
+    assert.equal(response.json().code, 'DUPLICATE_TRANSACTION_ID');
     assert.equal((await one(context.database, 'SELECT status FROM payments WHERE id=$1', [retry.id])).status, 'pending');
     assert.equal((await one(context.database, 'SELECT status FROM enrollments WHERE user_id=$1 AND course_id=$2', [student.id, course.id])).status, 'pending_payment');
     assert.equal((await admin.request('POST', `/admin/payments/${retry.id}/confirm`, { ...confirmation, transactionId: 'BANK-REF-EDGE-2' })).statusCode, 200);
@@ -313,7 +313,7 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
     assert.equal(response.json().code, 'EXAM_CLOSED');
     assert.equal((await student.request('GET', `/exams/${closed.id}`)).json().code, 'ATTEMPT_REQUIRED');
     assert.equal((await student.request('GET', `/exams/${closed.id}/result`)).statusCode, 404);
-    assert.equal((await student.request('POST', `/exams/${closed.id}/submit`, { answers: {} })).json().code, 'ATTEMPT_REQUIRED');
+    assert.equal((await student.request('POST', `/exams/${closed.id}/submit`, { answers: {}, version: 0 })).json().code, 'ATTEMPT_REQUIRED');
 
     const closesAt = new Date(Date.now() + 600000);
     response = await admin.request('POST', '/admin/exams', { ...base, type: 'live', closesAt: closesAt.toISOString(), resultsAt: new Date(Date.now() + 3600000).toISOString() });
@@ -322,6 +322,13 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
     response = await student.request('POST', `/exams/${live.id}/start`);
     assert.equal(response.statusCode, 200, response.body);
     assert.equal(new Date(response.json().endsAt).getTime(), closesAt.getTime(), 'the attempt deadline is capped by the closing time');
+    const versions = new Map();
+    const versionOf = (user, exam) => versions.get(`${user.id}:${exam.id}`) ?? 0;
+    const save = async (user, exam, body) => {
+      const result = await user.request('POST', `/exams/${exam.id}/answers`, { ...body, version: versionOf(user, exam) });
+      if (result.statusCode === 200) versions.set(`${user.id}:${exam.id}`, result.json().version);
+      return result;
+    };
     for (const body of [
       { questionId: 'question-two', answer: ['first'] },
       { questionId: 'question-two', answer: { first: 'yes' } },
@@ -333,42 +340,42 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
       { questionId: 'question-one' },
       { questionId: 'question-one', answer: 'first', extra: 1 },
     ]) {
-      response = await student.request('POST', `/exams/${live.id}/answers`, body);
+      response = await save(student, live, body);
       assert.equal(response.statusCode, 400, JSON.stringify(body));
     }
-    assert.equal((await student.request('POST', `/exams/${live.id}/answers`, { questionId: 'question-one', answer: 'first' })).statusCode, 200);
-    assert.equal((await student.request('POST', `/exams/${live.id}/answers`, { questionId: 'question-one', answer: null })).statusCode, 200);
-    assert.equal((await student.request('POST', `/exams/${live.id}/answers`, { questionId: 'question-two', answer: { first: true } })).statusCode, 200);
+    assert.equal((await save(student, live, { questionId: 'question-one', answer: 'first' })).statusCode, 200);
+    assert.equal((await save(student, live, { questionId: 'question-one', answer: null })).statusCode, 200);
+    assert.equal((await save(student, live, { questionId: 'question-two', answer: { first: true } })).statusCode, 200);
     assert.deepEqual((await student.request('GET', `/exams/${live.id}`)).json().answers, { 'question-one': null, 'question-two': { first: true } });
     assert.equal((await rival.request('GET', `/exams/${live.id}`)).json().code, 'ATTEMPT_REQUIRED');
     const tooMany = Object.fromEntries(Array.from({ length: 501 }, (_, index) => [`q${index}`, null]));
-    assert.equal((await student.request('POST', `/exams/${live.id}/submit`, { answers: tooMany })).statusCode, 400);
-    assert.equal((await student.request('POST', `/exams/${live.id}/submit`, { answers: { 'question-one': 'ghost' } })).statusCode, 400);
+    assert.equal((await student.request('POST', `/exams/${live.id}/submit`, { answers: tooMany, version: versionOf(student, live) })).statusCode, 400);
+    assert.equal((await student.request('POST', `/exams/${live.id}/submit`, { answers: { 'question-one': 'ghost' }, version: versionOf(student, live) })).statusCode, 400);
     assert.equal((await admin.request('DELETE', `/admin/exams/${live.id}`)).statusCode, 409);
     assert.equal((await admin.request('DELETE', `/admin/exams/${draft.id}`)).statusCode, 200);
     assert.equal((await admin.request('DELETE', `/admin/exams/${draft.id}`)).statusCode, 404);
 
-    response = await student.request('POST', `/exams/${live.id}/submit`, { answers: { 'question-one': 'second', 'question-two': { first: true, second: false } } });
+    response = await student.request('POST', `/exams/${live.id}/submit`, { answers: { 'question-one': 'second', 'question-two': { first: true, second: false } }, version: versionOf(student, live) });
     assert.equal(response.statusCode, 200, response.body);
     assert.equal(response.json().resultsAvailable, false);
     assert.equal('score' in response.json(), false);
     response = await student.request('GET', `/exams/${live.id}/result`);
     assert.equal(response.statusCode, 403);
     assert.equal(response.json().code, 'RESULTS_NOT_RELEASED');
-    assert.equal((await student.request('POST', `/exams/${live.id}/answers`, { questionId: 'question-one', answer: 'first' })).json().code, 'ALREADY_SUBMITTED');
+    assert.equal((await save(student, live, { questionId: 'question-one', answer: 'first' })).json().code, 'ALREADY_SUBMITTED');
     assert.equal((await student.request('POST', `/exams/${live.id}/start`)).json().code, 'ALREADY_SUBMITTED');
-    assert.equal((await student.request('POST', `/exams/${live.id}/submit`, { answers: { 'question-one': 'first' } })).statusCode, 200);
+    assert.equal((await student.request('POST', `/exams/${live.id}/submit`, { answers: { 'question-one': 'first' }, version: versionOf(student, live) })).statusCode, 200);
     assert.equal((await one(context.database, 'SELECT answers FROM exam_attempts WHERE exam_id=$1 AND user_id=$2', [live.id, student.id])).answers['question-one'], 'second', 'answers are frozen after submission');
     assert.equal((await student.request('GET', '/me/progress')).json().examsTaken, 0, 'embargoed results stay out of progress');
 
     await rival.request('POST', `/exams/${live.id}/start`);
-    await rival.request('POST', `/exams/${live.id}/answers`, { questionId: 'question-one', answer: 'second' });
-    await rival.request('POST', `/exams/${live.id}/answers`, { questionId: 'question-two', answer: { first: true, second: false } });
-    await context.database.query("UPDATE exam_attempts SET ends_at=now()-interval '1 second' WHERE exam_id=$1 AND user_id=$2", [live.id, rival.id]);
-    response = await rival.request('POST', `/exams/${live.id}/answers`, { questionId: 'question-one', answer: 'first' });
+    await save(rival, live, { questionId: 'question-one', answer: 'second' });
+    await save(rival, live, { questionId: 'question-two', answer: { first: true, second: false } });
+    await context.database.query("UPDATE exam_attempts SET ends_at=now()-interval '61 seconds' WHERE exam_id=$1 AND user_id=$2", [live.id, rival.id]);
+    response = await save(rival, live, { questionId: 'question-one', answer: 'first' });
     assert.equal(response.json().code, 'EXAM_DEADLINE_PASSED');
-    assert.ok((await one(context.database, 'SELECT submitted_at FROM exam_attempts WHERE exam_id=$1 AND user_id=$2', [live.id, rival.id])).submitted_at, 'a late answer finalizes the attempt');
-    assert.equal(await finalizeExpiredAttempts(context.database), 0);
+    assert.equal((await one(context.database, 'SELECT submitted_at FROM exam_attempts WHERE exam_id=$1 AND user_id=$2', [live.id, rival.id])).submitted_at, null, 'autosave never finalizes; the sweep does');
+    assert.equal(await finalizeExpiredAttempts(context.database), 1);
     await context.database.query("UPDATE exams SET closes_at=now()-interval '2 seconds',results_at=now()-interval '1 second' WHERE id=$1", [live.id]);
     assert.equal((await student.request('GET', `/exams/${live.id}/result`)).json().rank, 1);
     response = await rival.request('GET', `/exams/${live.id}/result`);
@@ -378,7 +385,7 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
     assert.equal(response.json().review.find(question => question.id === 'question-one').correctAnswer, 'second');
     assert.equal((await student.request('GET', '/me/progress')).json().examsTaken, 1);
     assert.equal((await student.request('GET', '/me/progress')).json().averageScore, 2.8);
-    await context.database.query("UPDATE enrollments SET expires_at=now()-interval '1 second' WHERE user_id=$1", [rival.id]);
+    await context.database.query("UPDATE enrollments SET starts_at=now()-interval '1 day',expires_at=now()-interval '1 second' WHERE user_id=$1", [rival.id]);
     assert.equal((await rival.request('GET', `/exams/${live.id}/result`)).statusCode, 403);
     assert.equal((await rival.request('GET', '/exams')).json().length, 0);
     assert.equal((await student.request('GET', `/courses/${course.slug}/exams`)).json().length, 3);

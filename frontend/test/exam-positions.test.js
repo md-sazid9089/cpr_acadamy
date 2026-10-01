@@ -54,6 +54,8 @@ function harness(search = '', demo = false) {
       } };
     } },
     '@/components/ui/Button.jsx': { __esModule: true, default: 'button' },
+    '@/components/ui/Input.jsx': { __esModule: true, Select: 'select' },
+    '@/components/ui/Card.jsx': { __esModule: true, StatCard: 'stat' },
     '@/components/ui/Badge.jsx': { __esModule: true, default: 'badge' },
     '@/components/ui/EmptyState.jsx': { __esModule: true, default: 'empty' },
     '@/components/ui/Skeleton.jsx': { __esModule: true, default: 'skeleton' },
@@ -126,10 +128,9 @@ test('course filters and exam deep links select the correct paper and reject una
   const app = harness('examId=second');
   let view = app.page();
   assert.equal(nodes(view).find(node => node.type?.name === 'Standings').props.examId, 'second');
-  const surgeryChip = nodes(view).find(node => node.props?.children === 'Surgery' && node.props?.onClick);
-  assert.equal(surgeryChip.props.active, true);
-  const medicineChip = nodes(view).find(node => node.props?.children === 'Medicine' && node.props?.onClick);
-  medicineChip.props.onClick();
+  const courseSelect = nodes(view).find(node => node.type === 'select' && node.props.label === 'Course');
+  assert.equal(courseSelect.props.value, 'surgery');
+  courseSelect.props.onChange({ target: { value: 'medicine' } });
   view = app.page();
   assert.equal(app.params.has('examId'), false);
   assert.equal(nodes(view).find(node => node.type?.name === 'Standings').props.examId, 'first');
@@ -149,8 +150,8 @@ test('demo uses isolated sample queries, working filters and pagination without 
   view = app.standings();
   assert.match(content(view), /Showing 11-20 of 36 students/);
   assert.equal(nodes(view).filter(node => node.type === 'tr' && node.props['aria-current'] === 'true').length, 1);
-  const residencyChip = nodes(app.page()).find(node => node.props?.children === 'Residency / Surgery 2026' && node.props?.onClick);
-  residencyChip.props.onClick();
+  const examSelect = nodes(app.page()).find(node => node.type === 'select' && node.props.label === 'Exam');
+  examSelect.props.onChange({ target: { value: 'demo-surgery' } });
   assert.equal(nodes(app.page()).find(node => node.type?.name === 'Standings').props.examId, 'demo-surgery');
   assert.equal(app.queries.every(query => query.queryKey[0] === 'exams-demo'), true);
   assert.equal(app.queries.filter(query => query.queryKey[1] === 'positions').every(query => query.refetchInterval === false), true);
