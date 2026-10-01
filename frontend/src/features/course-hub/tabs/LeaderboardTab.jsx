@@ -18,7 +18,7 @@ export default function LeaderboardTab({ courseSlug }) {
     queryFn: () => selectedExamId ? fetchExamPositions(selectedExamId) : fetchCourseLeaderboard(courseSlug),
   });
 
-  const exams = examsData ? [...examsData.sba, ...examsData.mcq] : [];
+  const exams = examsData ?? [];
 
   const rows = leaderboard?.items ?? [];
   const myRank = leaderboard?.me;

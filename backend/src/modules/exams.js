@@ -177,8 +177,7 @@ export function examRoutes(route, database) {
     const course = await one(database, 'SELECT id FROM courses WHERE slug=$1', [request.params.slug]);
     ensure(course, 404, 'COURSE_NOT_FOUND', 'This course could not be found.');
     await requireCourseAccess(database, request.auth, course.id);
-    const exams = await list(request, course.id);
-    return { sba: exams.filter(exam => exam.questionType !== 'mtf'), mcq: exams.filter(exam => exam.questionType === 'mtf') };
+    return list(request, course.id);
   });
 
   async function loadExam(transaction, request) {

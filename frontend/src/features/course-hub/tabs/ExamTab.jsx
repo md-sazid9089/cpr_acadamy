@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaClipboardList, FaCircleCheck } from 'react-icons/fa6';
 import { useCourseExams } from '../api/courseHub.queries.js';
@@ -6,12 +5,6 @@ import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatDateTime } from '@/lib/utils';
-import { cn } from '@/lib/utils';
-
-const EXAM_TABS = [
-  { id: 'sba', label: 'SBA', description: 'Single Best Answer' },
-  { id: 'mcq', label: 'MCQ', description: 'True / False' },
-];
 
 function ExamCard({ exam }) {
   const isRunning = exam.status === 'running';
@@ -74,13 +67,8 @@ function ExamCard({ exam }) {
   );
 }
 
-/**
- * Exam tab — shows SBA and MCQ exam categories with a sub-tab toggle.
- * SBA = Single Best Answer (option-based, pick one of A–E).
- * MCQ = Multiple True/False (each stem answered True or False).
- */
+/** Exam tab — every published exam of the course in one list, whatever its question format. */
 export default function ExamTab({ courseSlug }) {
-  const [activeType, setActiveType] = useState('sba');
   const { data: exams, isLoading, isError, error, isFetching, refetch } = useCourseExams(courseSlug);
 
   if (isLoading) {
@@ -102,45 +90,22 @@ export default function ExamTab({ courseSlug }) {
     );
   }
 
-  const currentExams = activeType === 'sba' ? (exams?.sba ?? []) : (exams?.mcq ?? []);
+  if (!exams?.length) {
+    return (
+      <div className="rounded-xl border border-stone-200 bg-white px-6 py-12 text-center dark:border-stone-200 dark:bg-surface-dark">
+        <FaClipboardList aria-hidden="true" className="mx-auto h-8 w-8 text-stone-300 dark:text-brand-200" />
+        <p className="mt-3 text-sm font-semibold text-stone-500 dark:text-brand-200">
+          No exams available yet.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-5">
-      {/* ── Sub-tab toggle: SBA | MCQ ── */}
-      <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white p-1.5 dark:border-stone-200 dark:bg-surface-dark">
-        {EXAM_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveType(tab.id)}
-            className={cn(
-              'flex-1 rounded-lg px-4 py-2.5 text-center text-xs font-semibold transition-all sm:text-sm',
-              activeType === tab.id
-                ? 'bg-brand-600 text-white border border-stone-200'
-                : 'text-stone-600 hover:bg-stone-100 dark:text-brand-200 dark:hover:bg-surface-dark',
-            )}
-          >
-            <span className="block">{tab.label}</span>
-            <span className="block text-[10px] font-medium opacity-80">{tab.description}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* ── Exam cards ── */}
-      {currentExams.length === 0 ? (
-        <div className="rounded-xl border border-stone-200 bg-white px-6 py-12 text-center dark:border-stone-200 dark:bg-surface-dark">
-          <FaClipboardList aria-hidden="true" className="mx-auto h-8 w-8 text-stone-300 dark:text-brand-200" />
-          <p className="mt-3 text-sm font-semibold text-stone-500 dark:text-brand-200">
-            No {activeType === 'sba' ? 'SBA' : 'MCQ'} exams available yet.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {currentExams.map((exam) => (
-            <ExamCard key={exam.id} exam={exam} />
-          ))}
-        </div>
-      )}
+    <div className="grid gap-4 sm:grid-cols-2">
+      {exams.map((exam) => (
+        <ExamCard key={exam.id} exam={exam} />
+      ))}
     </div>
   );
 }

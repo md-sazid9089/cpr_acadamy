@@ -48,7 +48,7 @@ $null = Call POST "/lessons/$($videos[0].videos[0].id)/complete" $null $t
 $schedule = Call GET "/courses/$Slug/schedule"
 "schedule rows: $($schedule.Count)"
 $exams = Call GET "/courses/$Slug/exams" $null $t
-"exams sba=$($exams.sba.Count) mcq=$($exams.mcq.Count)"
+"exams=$(@($exams).Count)"
 $paper = Call POST "/exams/$ExamId/start" $null $t
 "paper: $($paper.questions.Count) q, endsAt=$($paper.endsAt), hasKey=$([bool]($paper.questions[0].PSObject.Properties['correctAnswer']))"
 $null = Call POST "/exams/$ExamId/answers" @{ questionId = 'q1'; answer = 'b' } $t

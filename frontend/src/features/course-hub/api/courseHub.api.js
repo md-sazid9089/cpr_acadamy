@@ -11,7 +11,7 @@ export async function fetchCourseVideos(slug) {
   return data;
 }
 
-/** `{ sba, mcq }` — published exams of the course split by question type. */
+/** Published exams of the course, latest scheduled first. */
 export async function fetchCourseExams(slug) {
   const { data } = await apiClient.get(`/courses/${encodeURIComponent(slug)}/exams`);
   return data;

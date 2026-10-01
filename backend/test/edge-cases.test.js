@@ -381,7 +381,7 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
     await context.database.query("UPDATE enrollments SET expires_at=now()-interval '1 second' WHERE user_id=$1", [rival.id]);
     assert.equal((await rival.request('GET', `/exams/${live.id}/result`)).statusCode, 403);
     assert.equal((await rival.request('GET', '/exams')).json().length, 0);
-    assert.equal((await student.request('GET', `/courses/${course.slug}/exams`)).json().sba.length, 3);
+    assert.equal((await student.request('GET', `/courses/${course.slug}/exams`)).json().length, 3);
   } finally { await context.close(); }
 });
 
