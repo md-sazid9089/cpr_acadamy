@@ -15,7 +15,27 @@ export function paymentDto(row) {
     payerMobile: row.payer_mobile ?? null, screenshotUrl: row.screenshot_url ?? null, proofSubmittedAt: row.proof_submitted_at ?? null };
 }
 
-export function billingRoutes(route, database) {
+const ownUpload = /^\/api\/media\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/;
+
+/**
+ * The screenshot must be an image this app stored itself (the upload endpoint answers with either a local
+ * /api/media path or this account's Cloudinary URL). Anything else — javascript:/data: URLs, plain http,
+ * other hosts — would let a student point the admin's browser at an arbitrary address.
+ */
+export function isOwnScreenshotUrl(value, config) {
+  if (ownUpload.test(value)) return true;
+  if (!config?.cloudinaryUrl) return false;
+  try {
+    const url = new URL(value);
+    const cloud = new URL(config.cloudinaryUrl).hostname;
+    return url.protocol === 'https:' && url.hostname === 'res.cloudinary.com' && !url.username && url.pathname.startsWith(`/${cloud}/image/upload/`);
+  } catch {
+    return false;
+  }
+}
+
+export function billingRoutes(route, database, config) {
+  const screenshotUrl = z.union([z.string().max(2048).refine(value => isOwnScreenshotUrl(value, config), 'Attach the screenshot with the upload button.'), z.literal('')]).default('');
   route('POST', '/payments/initiate', { auth: 'active', body: z.object({
     courseSlug: text, method: z.enum(['bkash', 'nagad', 'rocket', 'card', 'manual']),
     amount: money.optional(), planId: uuid.optional(),
@@ -62,7 +82,7 @@ export function billingRoutes(route, database) {
   // transaction ID, the mobile they paid from, and an optional screenshot right on
   // the invoice, for an admin to review in /admin/payments before confirming.
   route('POST', '/payments/:id/proof', { auth: 'active', body: z.object({
-    transactionId, payerMobile: mobile, screenshotUrl: z.union([z.string().url(), z.literal('')]).default(''),
+    transactionId, payerMobile: mobile, screenshotUrl,
   }).strict() }, async request => database.transaction(async transaction => {
     const payment = await one(transaction, 'SELECT * FROM payments WHERE id=$1 AND user_id=$2 FOR UPDATE', [request.params.id, request.auth.user_id]);
     ensure(payment, 404, 'PAYMENT_NOT_FOUND', 'Payment not found.');

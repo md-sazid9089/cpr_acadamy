@@ -29,7 +29,7 @@ export async function buildApp({ database, config, logger = false }) {
   });
   authRoutes(route, database, config);
   courseRoutes(route, database, config);
-  billingRoutes(route, database);
+  billingRoutes(route, database, config);
   examRoutes(route, database);
   studentRoutes(route, database, config);
   reportRoutes(route, database);
