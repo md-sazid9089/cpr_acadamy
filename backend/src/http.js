@@ -71,7 +71,11 @@ export async function audit(database, actorId, action, entityId, details = {}) {
   await database.query('INSERT INTO audit_log(actor_id,action,entity_id,details) VALUES ($1,$2,$3,$4)', [actorId, action, entityId, JSON.stringify(details)]);
 }
 
+// With no usable client address every caller shares the `unknown` bucket, so its allowance is widened to keep real users from locking each other out.
+const SHARED_BUCKET_MULTIPLIER = 20;
+
 export async function throttle(database, config, scope, identity, max = 10, seconds = 900) {
+  if (identity === 'unknown') max *= SHARED_BUCKET_MULTIPLIER;
   const key = digestToken(`${scope}:${identity}`, config.tokenSecret);
   const bucket = await one(database, `INSERT INTO rate_buckets(key,resets_at) VALUES ($1,now()+$2*interval '1 second')
     ON CONFLICT(key) DO UPDATE SET hits=CASE WHEN rate_buckets.resets_at<=now() THEN 1 ELSE rate_buckets.hits+1 END,

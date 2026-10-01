@@ -3,6 +3,19 @@ import { ZodError } from 'zod';
 import { ApiError, throttle } from './http.js';
 
 const bodyLimit = 1048576;
+const ipLiteral = /^(?:\d{1,3}(?:\.\d{1,3}){3}|[0-9a-fA-F:]{2,45})$/;
+
+/**
+ * The caller's address as seen by our own proxy. A client can put anything at the front of
+ * X-Forwarded-For, but each trusted proxy appends the peer it actually saw, so the address is
+ * counted from the right: `hops` is how many trusted proxies sit in front of the app.
+ */
+export function clientIp(headers, config) {
+  if (!config.trustProxy) return 'unknown';
+  const parts = (headers.get('x-forwarded-for') ?? '').split(',').map(part => part.trim()).filter(Boolean);
+  const candidate = parts[Math.max(0, parts.length - (config.trustedProxyHops ?? 1))];
+  return candidate && ipLiteral.test(candidate) ? candidate : 'unknown';
+}
 
 async function readBody(request, limit = bodyLimit) {
   if (!request.body) return undefined;
@@ -106,7 +119,7 @@ export function createWebApp({ database, config, logger }) {
             catch { throw new ApiError(400, 'BAD_REQUEST', 'Invalid path encoding.'); }
           }
         });
-        const ip = config.trustProxy ? webRequest.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown' : 'unknown';
+        const ip = clientIp(webRequest.headers, config);
         const request = { id, method, url: url.pathname, headers: Object.fromEntries(webRequest.headers), params, query: Object.fromEntries(url.searchParams), ip, log };
         const limit = route.config?.rateLimit || { max: 300, timeWindow: '1 minute' };
         const duration = typeof limit.timeWindow === 'number' ? Math.ceil(limit.timeWindow / 1000) : Number.parseInt(limit.timeWindow, 10) * (limit.timeWindow.includes('hour') ? 3600 : limit.timeWindow.includes('minute') ? 60 : 1);

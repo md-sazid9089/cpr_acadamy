@@ -32,7 +32,8 @@ test('Web API enforces CORS, JSON, body limits, HTTP methods, and shared rate li
     response = await send('/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ value: 'a'.repeat(1048576) }) });
     assert.equal(response.status, 413);
     context.app.route({ method: 'GET', url: '/api/hourly', config: { rateLimit: { max: 1, timeWindow: '1 hour' } }, handler: () => ({ ok: true }) });
-    assert.equal((await send('/hourly')).status, 200);
+    // No trusted proxy: everyone shares the `unknown` bucket, whose allowance is 20x the route limit, and X-Forwarded-For is ignored.
+    for (let hit = 0; hit < 20; hit += 1) assert.equal((await send('/hourly', { headers: { 'x-forwarded-for': `1.2.3.${hit}` } })).status, 200);
     response = await send('/hourly', { headers: { 'x-forwarded-for': '1.2.3.4' } });
     assert.equal(response.status, 429);
     assert.ok(Number(response.headers.get('retry-after')) > 3500);
@@ -41,4 +42,46 @@ test('Web API enforces CORS, JSON, body limits, HTTP methods, and shared rate li
   } finally {
     await context.close();
   }
+});
+test('client address comes from the trusted proxy hop and cannot be chosen by the caller', async () => {
+  const { clientIp } = await import('../src/web-app.js');
+  const headers = value => new Headers(value === undefined ? {} : { 'x-forwarded-for': value });
+  const behind = { trustProxy: true, trustedProxyHops: 1 };
+  assert.equal(clientIp(headers('198.51.100.7'), behind), '198.51.100.7');
+  assert.equal(clientIp(headers('6.6.6.6, 198.51.100.7'), behind), '198.51.100.7', 'a spoofed leading entry is ignored');
+  assert.equal(clientIp(headers('6.6.6.6, 7.7.7.7, 198.51.100.7'), behind), '198.51.100.7');
+  assert.equal(clientIp(headers('198.51.100.7, 10.0.0.2'), { trustProxy: true, trustedProxyHops: 2 }), '198.51.100.7', 'two proxies in front');
+  assert.equal(clientIp(headers('198.51.100.7'), { trustProxy: true, trustedProxyHops: 3 }), '198.51.100.7', 'fewer entries than hops falls back to the first');
+  assert.equal(clientIp(headers('not-an-ip'), behind), 'unknown');
+  assert.equal(clientIp(headers(), behind), 'unknown');
+  assert.equal(clientIp(headers('198.51.100.7'), { trustProxy: false }), 'unknown', 'the header is ignored without a trusted proxy');
+});
+
+test('spoofed X-Forwarded-For values do not buy extra attempts, and a shared bucket does not lock real users out', async () => {
+  const { openDatabase, migrate } = await import('../src/db.js');
+  const { loadConfig } = await import('../src/config.js');
+  const { buildApp } = await import('../src/app.js');
+  const boot = async env => {
+    const database = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });
+    await migrate(database);
+    const app = await buildApp({ database, config: loadConfig({ NODE_ENV: 'test', SMS_MODE: 'test', TOKEN_SECRET: 'test-secret-with-at-least-32-characters', ...env }) });
+    return { app, database };
+  };
+  const register = (app, index, forwardedFor) => app.inject({ method: 'POST', url: '/api/auth/register', headers: { 'x-device-id': 'device-0001', 'x-forwarded-for': forwardedFor },
+    payload: { mobile: `0174${String(1000000 + index)}`, password: 'Synthetic-test-password', fullName: 'Spam Account', institution: 'X', interest: 'FCPS', acceptTerms: true } });
+  let context = await boot({ TRUST_PROXY: 'true' });
+  try {
+    const statuses = [];
+    // Each request claims a fresh leading address; the proxy-appended last entry is always the same real client.
+    for (let index = 0; index < 8; index += 1) statuses.push((await register(context.app, index, `203.0.113.${index}, 198.51.100.7`)).statusCode);
+    assert.deepEqual(statuses, [200, 200, 200, 200, 200, 429, 429, 429]);
+    assert.equal((await register(context.app, 99, '203.0.113.9, 198.51.100.8')).statusCode, 200, 'a different real client is unaffected');
+  } finally { await context.database.close(); }
+
+  context = await boot({});
+  try {
+    const statuses = [];
+    for (let index = 0; index < 12; index += 1) statuses.push((await register(context.app, index, `203.0.113.${index}`)).statusCode);
+    assert.equal(statuses.every(status => status === 200), true, 'no usable address: many different people may still register');
+  } finally { await context.database.close(); }
 });

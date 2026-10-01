@@ -15,6 +15,8 @@ export function loadConfig(env = process.env) {
   if (production && !env.CORS_ORIGINS) throw new Error('CORS_ORIGINS is required');
   // Without a trusted proxy every client shares one rate-limit bucket, so production must opt in or out explicitly.
   if (production && !['true', 'false'].includes(env.TRUST_PROXY)) throw new Error('TRUST_PROXY must be set to true (behind a proxy that sets X-Forwarded-For) or false');
+  const trustedProxyHops = Number(env.TRUST_PROXY_HOPS || 1);
+  if (!Number.isInteger(trustedProxyHops) || trustedProxyHops < 1 || trustedProxyHops > 10) throw new Error('TRUST_PROXY_HOPS must be a whole number from 1 to 10');
   if (!['disabled', 'webhook', 'test', 'console'].includes(smsMode)) throw new Error('Invalid SMS_MODE');
   if (smsMode === 'test' && env.NODE_ENV !== 'test') throw new Error('Test SMS is only allowed in tests');
   if (smsMode === 'console' && production) throw new Error('Console SMS is only allowed outside production');
@@ -38,6 +40,7 @@ export function loadConfig(env = process.env) {
     ephemeralSecret: !env.TOKEN_SECRET,
     corsOrigins: (env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:4194').split(',').map(value => value.trim()),
     trustProxy: env.TRUST_PROXY === 'true',
+    trustedProxyHops,
     smsMode,
     smsWebhookUrl: env.SMS_WEBHOOK_URL,
     smsWebhookToken: env.SMS_WEBHOOK_TOKEN,
