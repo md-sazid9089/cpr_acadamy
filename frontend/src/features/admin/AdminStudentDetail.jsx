@@ -148,6 +148,9 @@ export default function AdminStudentDetail() {
               {student.status === ACCOUNT_STATUS.SUSPENDED && (
                 <Button size="sm" variant="outline" onClick={() => setConfirming(ACCOUNT_STATUS.ACTIVE)}>Reinstate</Button>
               )}
+              {student.status === ACCOUNT_STATUS.REJECTED && (
+                <Button size="sm" variant="outline" onClick={() => setConfirming(ACCOUNT_STATUS.ACTIVE)}>Approve</Button>
+              )}
             </div>
           }
         />

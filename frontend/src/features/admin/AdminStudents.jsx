@@ -15,6 +15,7 @@ const FILTERS = [
   { id: ACCOUNT_STATUS.AWAITING_APPROVAL, label: 'Pending approval' },
   { id: ACCOUNT_STATUS.ACTIVE, label: 'Active' },
   { id: ACCOUNT_STATUS.SUSPENDED, label: 'Suspended' },
+  { id: ACCOUNT_STATUS.REJECTED, label: 'Rejected' },
 ];
 
 /** Student directory and the approval queue. */
@@ -104,6 +105,15 @@ export default function AdminStudents() {
               onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE }))}
             >
               Reinstate
+            </Button>
+          )}
+          {row.status === ACCOUNT_STATUS.REJECTED && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={stop(() => setConfirming({ student: row, action: ACCOUNT_STATUS.ACTIVE }))}
+            >
+              Approve
             </Button>
           )}
           <Button size="sm" variant="ghost" to={`/admin/students/${row.id}`} onClick={(event) => event.stopPropagation()}>

@@ -151,7 +151,8 @@ export function studentRoutes(route, database, config) {
     ensure(user, 404, 'STUDENT_NOT_FOUND', 'Student not found.');
     const next = request.body.status;
     if (user.status === next) return { ok: true, studentId: user.id, status: next };
-    const transitions = { awaiting_approval: ['active', 'rejected'], active: ['suspended'], suspended: ['active'] };
+    // A rejection can be reversed: the admin may have misjudged it, and the student cannot register the number again.
+    const transitions = { awaiting_approval: ['active', 'rejected'], active: ['suspended'], suspended: ['active'], rejected: ['active'] };
     ensure(transitions[user.status]?.includes(next) && user.mobile_verified_at, 409, 'INVALID_STATUS_TRANSITION', 'This account cannot transition to that status.');
     await transaction.query('UPDATE users SET status=$2 WHERE id=$1', [user.id, next]);
     if (next !== 'active') await transaction.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [user.id]);

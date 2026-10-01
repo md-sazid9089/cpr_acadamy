@@ -38,3 +38,19 @@ test('student profile ownership, support thread lifecycle, approval transitions,
     assert.equal((await student.request('GET', '/me/profile')).statusCode, 401);
   } finally { await context.close(); }
 });
+test('a rejected registration can still be approved later, but only by an admin', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user('student', '01712345678', 'awaiting_approval');
+    const status = value => admin.request('PATCH', `/admin/students/${student.id}/status`, { status: value });
+    assert.equal((await status('rejected')).statusCode, 200);
+    const stuck = await student.request('GET', '/auth/me');
+    assert.equal(stuck.statusCode, 401, 'rejecting ends the student\'s session');
+    const reapproved = await status('active');
+    assert.equal(reapproved.statusCode, 200, reapproved.body);
+    assert.equal(reapproved.json().status, 'active');
+    assert.equal((await status('suspended')).statusCode, 200);
+    assert.equal((await status('rejected')).json().code, 'INVALID_STATUS_TRANSITION', 'other transitions are unchanged');
+  } finally { await context.close(); }
+});
