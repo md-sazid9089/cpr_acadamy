@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { z } from 'zod';
 import { one } from '../db.js';
 import { hashPassword, verifyPassword, newToken, digestToken, publicUser } from '../security.js';
-import { ensure, mobile, password, text, throttle, audit } from '../http.js';
+import { ApiError, ensure, mobile, password, text, throttle, failureThrottle, audit } from '../http.js';
 import { enqueueSms, requireSms } from '../sms.js';
 import { enqueueEmail, requireEmail } from '../email.js';
 
@@ -106,12 +106,22 @@ export function authRoutes(route, database, config) {
     return { ok: true, mobile: data.mobile, otpSentAt: new Date().toISOString() };
   });
 
-  route('POST', '/auth/login', { body: z.object({ mobile, password: z.string().min(1).max(128), rememberMe: z.boolean().optional() }).strict(), rateLimit: { max: 30, timeWindow: '15 minutes' } }, async request => {
+  route('POST', '/auth/login', { body: z.object({ mobile, password: z.string().min(1).max(128), rememberMe: z.boolean().optional() }).strict(), rateLimit: { max: 120, timeWindow: '15 minutes' } }, async request => {
     const deviceId = device(request);
-    await throttle(database, config, 'login', request.body.mobile);
+    // Only wrong passwords count. The tight limit is per account AND caller, so a stranger cannot lock the owner
+    // out; wider per-address and per-account ceilings still stop brute forcing from many places.
+    const known = request.ip !== 'unknown';
+    const failures = failureThrottle(database, config, known
+      ? [['login-pair', `${request.body.mobile}:${request.ip}`, 10], ['login-address', request.ip, 60], ['login-account', request.body.mobile, 50]]
+      : [['login-account', request.body.mobile, 50]]);
+    await failures.blocked();
     const user = await one(database, 'SELECT * FROM users WHERE mobile=$1', [request.body.mobile]);
     const valid = await verifyPassword(request.body.password, user?.password_hash || await dummyHashPromise);
-    ensure(valid && user, 401, 'INVALID_CREDENTIALS', 'No account matches that mobile number and password.');
+    if (!valid || !user) {
+      await failures.fail();
+      throw new ApiError(401, 'INVALID_CREDENTIALS', 'No account matches that mobile number and password.');
+    }
+    await failures.succeed();
     return database.transaction(async transaction => {
       const current = await one(transaction, 'SELECT * FROM users WHERE id=$1 FOR UPDATE', [user.id]);
       ensure(current.password_hash === user.password_hash, 401, 'INVALID_CREDENTIALS', 'Please sign in again.');

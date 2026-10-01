@@ -74,15 +74,46 @@ export async function audit(database, actorId, action, entityId, details = {}) {
 // With no usable client address every caller shares the `unknown` bucket, so its allowance is widened to keep real users from locking each other out.
 const SHARED_BUCKET_MULTIPLIER = 20;
 
+const bucketKey = (config, scope, identity) => digestToken(`${scope}:${identity}`, config.tokenSecret);
+
+function rateLimited(resetsAt) {
+  const error = new ApiError(429, 'RATE_LIMITED', 'Too many attempts. Please try again later.');
+  error.retryAfter = Math.max(1, Math.ceil((new Date(resetsAt).getTime() - Date.now()) / 1000));
+  return error;
+}
+
+/** Counts one hit against a bucket and returns it. */
+async function hitBucket(database, config, scope, identity, seconds) {
+  return one(database, `INSERT INTO rate_buckets(key,resets_at) VALUES ($1,now()+$2*interval '1 second')
+    ON CONFLICT(key) DO UPDATE SET hits=CASE WHEN rate_buckets.resets_at<=now() THEN 1 ELSE rate_buckets.hits+1 END,
+    resets_at=CASE WHEN rate_buckets.resets_at<=now() THEN EXCLUDED.resets_at ELSE rate_buckets.resets_at END RETURNING hits,resets_at`, [bucketKey(config, scope, identity), seconds]);
+}
+
 export async function throttle(database, config, scope, identity, max = 10, seconds = 900) {
   if (identity === 'unknown') max *= SHARED_BUCKET_MULTIPLIER;
-  const key = digestToken(`${scope}:${identity}`, config.tokenSecret);
-  const bucket = await one(database, `INSERT INTO rate_buckets(key,resets_at) VALUES ($1,now()+$2*interval '1 second')
-    ON CONFLICT(key) DO UPDATE SET hits=CASE WHEN rate_buckets.resets_at<=now() THEN 1 ELSE rate_buckets.hits+1 END,
-    resets_at=CASE WHEN rate_buckets.resets_at<=now() THEN EXCLUDED.resets_at ELSE rate_buckets.resets_at END RETURNING hits,resets_at`, [key, seconds]);
-  if (bucket.hits > max) {
-    const error = new ApiError(429, 'RATE_LIMITED', 'Too many attempts. Please try again later.');
-    error.retryAfter = Math.max(1, Math.ceil((new Date(bucket.resets_at).getTime() - Date.now()) / 1000));
-    throw error;
-  }
+  const bucket = await hitBucket(database, config, scope, identity, seconds);
+  if (bucket.hits > max) throw rateLimited(bucket.resets_at);
+}
+
+/**
+ * Failure-only throttling for credential checks: `attempts` are counted only when the check fails, so a
+ * stranger hammering an account cannot lock the genuine owner out (each bucket is keyed by who is asking
+ * as well as what is asked). Call `blocked` before checking, `fail` after a bad attempt, `succeed` after a good one.
+ */
+export function failureThrottle(database, config, buckets, seconds = 900) {
+  return {
+    async blocked() {
+      for (const [scope, identity, max] of buckets) {
+        const bucket = await one(database, 'SELECT hits,resets_at FROM rate_buckets WHERE key=$1 AND resets_at>now()', [bucketKey(config, scope, identity)]);
+        if (bucket && bucket.hits >= max) throw rateLimited(bucket.resets_at);
+      }
+    },
+    async fail() {
+      for (const [scope, identity] of buckets) await hitBucket(database, config, scope, identity, seconds);
+    },
+    async succeed() {
+      const [scope, identity] = buckets[0];
+      await database.query('DELETE FROM rate_buckets WHERE key=$1', [bucketKey(config, scope, identity)]);
+    },
+  };
 }

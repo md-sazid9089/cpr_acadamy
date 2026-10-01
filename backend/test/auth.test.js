@@ -142,3 +142,30 @@ test('admin sessions expire sooner than student sessions', async () => {
     await context.close();
   }
 });
+test('wrong guesses lock out only the guesser, never the account owner, and good logins are never counted', async () => {
+  const { openDatabase, migrate } = await import('../src/db.js');
+  const { loadConfig } = await import('../src/config.js');
+  const { buildApp } = await import('../src/app.js');
+  const { hashPassword } = await import('../src/security.js');
+  const database = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });
+  await migrate(database);
+  const app = await buildApp({ database, config: loadConfig({ NODE_ENV: 'test', SMS_MODE: 'test', TRUST_PROXY: 'true', TOKEN_SECRET: 'test-secret-with-at-least-32-characters' }) });
+  const password = 'Synthetic-test-password';
+  await database.query("INSERT INTO users(mobile,full_name,password_hash,role,status,mobile_verified_at) VALUES ('01711111111','Admin',$1,'admin','active',now())", [await hashPassword(password)]);
+  const login = (guess, address, device = 'device-0001') => app.inject({ method: 'POST', url: '/api/auth/login', headers: { 'x-device-id': device, 'x-forwarded-for': address }, payload: { mobile: '01711111111', password: guess } });
+  try {
+    const attacker = [];
+    for (let attempt = 0; attempt < 12; attempt += 1) attacker.push((await login(`wrong-guess-${attempt}`, '203.0.113.50')).statusCode);
+    assert.deepEqual(attacker, [401, 401, 401, 401, 401, 401, 401, 401, 401, 401, 429, 429]);
+    assert.equal((await login(password, '203.0.113.50')).statusCode, 429, 'the attacker is locked out of that account');
+    const owner = await login(password, '198.51.100.9');
+    assert.equal(owner.statusCode, 200, 'the real owner, from another address, is unaffected');
+
+    for (let session = 0; session < 15; session += 1) assert.equal((await login(password, '198.51.100.9', `device-${session}-xxxx`)).statusCode, 200, 'successful logins are not counted');
+    assert.equal((await login('wrong-once', '198.51.100.9')).statusCode, 401);
+    assert.equal((await login(password, '198.51.100.9')).statusCode, 200);
+  } finally {
+    await app.close();
+    await database.close();
+  }
+});
