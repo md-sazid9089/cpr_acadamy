@@ -85,3 +85,33 @@ test('spoofed X-Forwarded-For values do not buy extra attempts, and a shared buc
     assert.equal(statuses.every(status => status === 200), true, 'no usable address: many different people may still register');
   } finally { await context.database.close(); }
 });
+
+test('oversized bodies are refused before they are read, and uploads need a signed-in admin first', async () => {
+  const context = await fixture();
+  const send = (path, options) => context.app.handle(new Request(`http://localhost/api${path}`, options));
+  const stream = (total, counter) => {
+    const chunk = new Uint8Array(64 * 1024).fill(97);
+    let sent = 0;
+    return new ReadableStream({ pull(controller) { if (sent >= total) return controller.close(); sent += chunk.length; counter.sent = sent; controller.enqueue(chunk); } });
+  };
+  try {
+    const anonymous = { sent: 0 };
+    let response = await send('/admin/uploads/images', { method: 'POST', headers: { 'content-type': 'application/json' }, body: stream(7 * 1024 * 1024, anonymous), duplex: 'half' });
+    assert.equal(response.status, 401);
+    assert.ok(anonymous.sent <= 64 * 1024, `an unauthenticated upload is not read (the stream only pre-buffered ${anonymous.sent} bytes of 7 MB)`);
+
+    const student = await context.user();
+    const forbidden = { sent: 0 };
+    response = await send('/admin/uploads/images', { method: 'POST', headers: { ...student.headers, 'content-type': 'application/json' }, body: stream(7 * 1024 * 1024, forbidden), duplex: 'half' });
+    assert.equal(response.status, 403);
+    assert.ok(forbidden.sent <= 64 * 1024, 'a non-admin upload is not read either');
+
+    const declared = await send('/auth/login', { method: 'POST', headers: { 'content-type': 'application/json', 'content-length': String(5 * 1024 * 1024) }, body: '{}' });
+    assert.equal(declared.status, 413, 'a declared size over the limit is refused outright');
+
+    const admin = await context.user('admin', '01799999999');
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    response = await admin.request('POST', '/admin/uploads/images', { data: `data:image/png;base64,${png}` });
+    assert.equal(response.statusCode, 200, 'a real admin upload still works');
+  } finally { await context.close(); }
+});

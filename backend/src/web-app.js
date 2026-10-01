@@ -126,7 +126,11 @@ export function createWebApp({ database, config, logger }) {
         if (!['/api/health', '/api/ready'].includes(route.url)) {
           await throttle(database, config, `http:${route.method}:${route.url}`, ip, limit.max, duration);
         }
-        request.body = await readBody(webRequest, route.config?.bodyLimit);
+        await route.authenticate?.(request, reply);
+        const allowed = route.config?.bodyLimit ?? bodyLimit;
+        const declared = Number(webRequest.headers.get('content-length'));
+        if (Number.isFinite(declared) && declared > allowed) throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request body is too large.');
+        request.body = await readBody(webRequest, allowed);
         await route.preHandler?.(request, reply);
         const result = await route.handler(request, reply);
         return respond(sent ? payload : result);

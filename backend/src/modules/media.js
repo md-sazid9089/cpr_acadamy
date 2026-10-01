@@ -52,7 +52,7 @@ async function storeImage(config, dataUrlValue) {
 }
 
 export function mediaRoutes(route, config) {
-  route('POST', '/admin/uploads/images', { auth: 'admin', bodyLimit: uploadBodyLimit, body: z.object({ data: dataUrl }).strict() }, async request => storeImage(config, request.body.data));
+  route('POST', '/admin/uploads/images', { auth: 'admin', bodyLimit: uploadBodyLimit, rateLimit: { max: 60, timeWindow: '1 minute' }, body: z.object({ data: dataUrl }).strict() }, async request => storeImage(config, request.body.data));
 
   // Same validation/storage as the admin uploader, but for a student attaching a
   // payment screenshot to their own invoice — a narrower, tighter-throttled route

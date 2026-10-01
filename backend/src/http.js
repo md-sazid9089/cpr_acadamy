@@ -54,11 +54,15 @@ export function installRoutes(app, database, config, contract) {
       method,
       url: `/api${url}`,
       config: { rateLimit: options.rateLimit ?? { max: 300, timeWindow: '1 minute' }, bodyLimit: options.bodyLimit },
-      preHandler: async request => {
+      // Runs before the request body is read, so callers who are not signed in (or are not admins) cannot make the
+      // server buffer megabytes of upload just to be told no.
+      authenticate: async request => {
         if (options.auth) await authenticate(request, options.auth);
         for (const [name, value] of Object.entries(request.params ?? {})) {
           if (name === 'id' || name.endsWith('Id')) uuid.parse(value);
         }
+      },
+      preHandler: async request => {
         if (options.body) request.body = options.body.parse(request.body);
         if (options.query) request.query = options.query.parse(request.query);
       },
