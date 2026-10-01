@@ -21,6 +21,12 @@ export function loadConfig(env = process.env) {
   if (!['embedded', 'external'].includes(workerMode)) {
     throw new Error(production ? 'WORKER_MODE must be set to embedded (the web process runs the worker) or external (a separate `npm run worker` service)' : 'Invalid WORKER_MODE');
   }
+  // Skipping the OTP step means nobody proves they own the number they sign up with: anyone can register
+  // someone else's number, and a repeat registration reveals that a number is already taken.
+  // Production only allows it when the operator acknowledges that explicitly.
+  if (production && env.SKIP_PHONE_VERIFICATION === 'true' && env.ACKNOWLEDGE_UNVERIFIED_MOBILES !== 'true') {
+    throw new Error('SKIP_PHONE_VERIFICATION=true leaves mobile numbers unverified. Set it to false, or set ACKNOWLEDGE_UNVERIFIED_MOBILES=true to run production that way on purpose');
+  }
   const trustedProxyHops = Number(env.TRUST_PROXY_HOPS || 1);
   if (!Number.isInteger(trustedProxyHops) || trustedProxyHops < 1 || trustedProxyHops > 10) throw new Error('TRUST_PROXY_HOPS must be a whole number from 1 to 10');
   if (!['disabled', 'webhook', 'test', 'console'].includes(smsMode)) throw new Error('Invalid SMS_MODE');

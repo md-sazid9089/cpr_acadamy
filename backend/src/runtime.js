@@ -20,6 +20,7 @@ async function initialize() {
     if (!config.production) await migrate(database, resolve(process.cwd(), 'migrations'));
     await database.query('SELECT name FROM schema_migrations LIMIT 1');
     if (config.ephemeralSecret) logger.warn('TOKEN_SECRET is unset; restarting invalidates sessions and queued SMS.');
+    if (config.skipPhoneVerification) logger.warn('SKIP_PHONE_VERIFICATION is on: signups are NOT verified by OTP, so mobile numbers are unproven and a repeat signup shows a number is taken.');
     if (config.smsMode === 'disabled') logger.warn('SMS is disabled; registration and password recovery are unavailable. Set SMS_MODE=console for local development.');
     if (config.smsMode === 'console') logger.warn('SMS_MODE=console: verification codes are printed to this terminal instead of being sent.');
     const stopWorker = config.workerMode === 'embedded' ? startWorker(database, config, logger) : async () => {};

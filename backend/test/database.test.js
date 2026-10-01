@@ -36,6 +36,11 @@ test('production refuses embedded storage and missing secrets', () => {
   assert.equal(loadConfig({ ...configured, WORKER_MODE: 'embedded' }).workerMode, 'embedded');
   assert.equal(loadConfig({ ...configured, WORKER_MODE: 'external' }).workerMode, 'external');
   assert.equal(loadConfig({ SMS_MODE: 'disabled' }).workerMode, 'embedded', 'development keeps running it in the web process');
+  const running = { ...configured, WORKER_MODE: 'embedded' };
+  assert.throws(() => loadConfig({ ...running, SKIP_PHONE_VERIFICATION: 'true' }), /ACKNOWLEDGE_UNVERIFIED_MOBILES/, 'production does not silently skip phone verification');
+  assert.equal(loadConfig({ ...running, SKIP_PHONE_VERIFICATION: 'true', ACKNOWLEDGE_UNVERIFIED_MOBILES: 'true' }).skipPhoneVerification, true);
+  assert.equal(loadConfig({ ...running, SKIP_PHONE_VERIFICATION: 'false' }).skipPhoneVerification, false);
+  assert.equal(loadConfig({ SKIP_PHONE_VERIFICATION: 'true' }).skipPhoneVerification, true, 'development may skip it freely');
 });
 
 test('local database creates missing parent directories and persists data across restarts', async () => {
