@@ -61,7 +61,7 @@ export default function ExamList() {
             {exam.status === EXAM_STATUS.RUNNING && (
               <Button to={`/dashboard/exams/${exam.id}`}>Start exam</Button>
             )}
-            {exam.status === EXAM_STATUS.PUBLISHED && (
+            {(exam.status === EXAM_STATUS.PUBLISHED || exam.status === EXAM_STATUS.SUBMITTED) && (
               <Button to={`/dashboard/exams/${exam.id}/result`} variant="outline">
                 View result
               </Button>

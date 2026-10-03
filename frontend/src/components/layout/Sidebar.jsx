@@ -29,7 +29,6 @@ function Icon({ name }) {
 export const STUDENT_NAV = [
   { to: '/dashboard', label: 'Overview', icon: 'grid', end: true },
   { to: '/dashboard/courses', label: 'My Courses', icon: 'book' },
-  { to: '/dashboard/progress', label: 'Progress', icon: 'chart' },
   { to: '/dashboard/exams', label: 'Upcoming Exams', icon: 'clipboard' },
   { to: '/dashboard/payments', label: 'Payment History', icon: 'wallet' },
 ];

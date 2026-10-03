@@ -64,7 +64,6 @@ export default function MyCourses() {
               {filteredCourses.map((course) => {
                 const categorySlug = CATEGORY_SLUGS[course.category] || 'fcps';
                 const scheduleUrl = `/courses/${categorySlug}/${course.slug}/schedule`;
-                const progressValue = course.progress ?? 0;
                 const isCompleted = course.lessonCount > 0 && course.completedLessons === course.lessonCount && !course.nextLesson;
                 // Read the record, not the tab: a card is only resumable when
                 // the enrolment itself is running.
@@ -86,15 +85,6 @@ export default function MyCourses() {
                         <div><dt>Discipline</dt><dd>{course.category || 'Medicine & Allied'}</dd></div>
                         <div><dt>Reg No</dt><dd>{course.regNo ?? '—'}</dd></div>
                       </dl>
-
-                      {/* Progress Bar */}
-                      <div className="mt-5 space-y-2">
-                        <div className="flex items-center justify-between text-xs font-semibold text-stone-600 dark:text-brand-200">
-                          <span>Progress</span>
-                          <span className="text-stone-900 dark:text-white">{progressValue}%</span>
-                        </div>
-                        <progress className="course-progress" aria-label={`${course.title} progress`} max="100" value={progressValue} />
-                      </div>
 
                       {/* Notice / Validity text */}
                       <div className="course-access-notice mt-4">

@@ -4,11 +4,13 @@ import { useCourseExams } from '../api/courseHub.queries.js';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
+import { EXAM_KIND_INFO } from '@/constants';
 import { formatDateTime } from '@/lib/utils';
 
 function ExamCard({ exam }) {
   const isRunning = exam.status === 'running';
-  const isPublished = exam.status === 'published';
+  // A submitted paper is locked for good: the only way forward is its result.
+  const hasResult = exam.status === 'published' || exam.status === 'submitted';
 
   return (
     <div className="flex flex-col justify-between rounded-xl border border-stone-200 bg-white p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-stone-200 dark:border-stone-200 dark:bg-surface-dark dark:hover:border-stone-200">
@@ -38,6 +40,7 @@ function ExamCard({ exam }) {
             <span className="font-semibold text-stone-700 dark:text-brand-200">Questions:</span>{' '}
             {exam.questionCount} · {exam.totalMarks} marks
           </p>
+          {EXAM_KIND_INFO[exam.type] && <p>{EXAM_KIND_INFO[exam.type].summary}</p>}
         </div>
       </div>
 
@@ -50,7 +53,7 @@ function ExamCard({ exam }) {
               Start Exam
             </Button>
           </Link>
-        ) : isPublished ? (
+        ) : hasResult ? (
           <Link to={`/dashboard/exams/${exam.id}/result`}>
             <Button fullWidth variant="outline" size="sm">
               <FaCircleCheck aria-hidden="true" className="h-3 w-3" />

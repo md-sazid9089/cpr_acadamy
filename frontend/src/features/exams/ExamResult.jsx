@@ -125,7 +125,6 @@ export default function ExamResult() {
         <Button to="/dashboard/exams" variant="outline">
           Back to exams
         </Button>
-        <Button to="/dashboard/progress">See progress report</Button>
       </div>
     </div>
   );

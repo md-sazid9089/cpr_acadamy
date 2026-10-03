@@ -26,7 +26,7 @@ test('student profile ownership, support thread lifecycle, approval transitions,
     assert.equal(response.json().status, 'answered');
     assert.equal((await admin.request('PATCH', `/admin/complaints/${complaint.id}/status`, { status: 'solved' })).statusCode, 200);
     assert.equal((await student.request('POST', `/me/complaints/${complaint.id}/replies`, { body: 'Another reply' })).statusCode, 409);
-    for (const path of ['/me/enrollments', '/me/progress', '/me/devices', '/me/subscriptions/batches']) {
+    for (const path of ['/me/enrollments', '/me/devices', '/me/subscriptions/batches']) {
       response = await student.request('GET', path);
       assert.equal(response.statusCode, 200, `${path}: ${response.body}`);
     }

@@ -21,7 +21,6 @@ const TITLES = [
   [/^\/forgot-password/, 'Forgot password'],
   [/^\/reset-password/, 'Reset password'],
   [/^\/dashboard\/courses/, 'My Courses'],
-  [/^\/dashboard\/progress/, 'My Progress'],
   [/^\/dashboard\/course\//, 'Course'],
   [/^\/dashboard\/exam-positions/, 'Exam Positions'],
   [/^\/dashboard\/exams\/[^/]+\/result/, 'Exam Result'],

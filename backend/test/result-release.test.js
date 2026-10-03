@@ -14,7 +14,8 @@ async function setup() {
   const create = async patch => {
     const response = await admin.request('POST', '/admin/exams', {
       courseId: course.id, title: 'Paper', type: 'live', questionType: 'sba', durationMinutes: 30, isPublished: true, targetQuestionCount: 1, questions,
-      scheduledAt: new Date(Date.now() - 3600000).toISOString(), closesAt: new Date(Date.now() + 3600000).toISOString(), ...patch,
+      // Opened ten minutes ago: a live paper (30 minutes on one shared clock) is still running.
+      scheduledAt: new Date(Date.now() - 600000).toISOString(), closesAt: new Date(Date.now() + 3600000).toISOString(), ...patch,
     });
     assert.equal(response.statusCode, 200, response.body);
     return response.json();
@@ -65,22 +66,20 @@ test('results cannot be scheduled before the exam closes, and untimed papers sti
       closesAt: '2025-01-02T00:00:00Z', resultsAt: '2025-01-01T12:00:00Z', targetQuestionCount: 1, questions });
     assert.equal(early.statusCode, 400);
     assert.equal(early.json().code, 'INVALID_RESULTS_RELEASE');
+    // With no closing time (a practice paper) results still cannot predate the start.
+    const beforeStart = await admin.request('POST', '/admin/exams', { courseId: course.id, title: 'Before start', type: 'practice', durationMinutes: 30, scheduledAt: '2025-01-02T00:00:00Z',
+      closesAt: null, resultsAt: '2025-01-01T00:00:00Z', targetQuestionCount: 1, questions });
+    assert.equal(beforeStart.statusCode, 400);
+    assert.equal(beforeStart.json().code, 'INVALID_RESULTS_RELEASE');
+    assert.match(beforeStart.json().message, /before the exam starts/);
+    const atStart = await admin.request('POST', '/admin/exams', { courseId: course.id, title: 'At start', type: 'practice', durationMinutes: 30, scheduledAt: '2025-01-02T00:00:00Z',
+      closesAt: null, resultsAt: '2025-01-02T00:00:00Z', targetQuestionCount: 1, questions });
+    assert.equal(atStart.statusCode, 200, atStart.body);
     const practice = await create({ type: 'practice', closesAt: null });
     assert.equal(practice.resultsReleaseAt, null);
     const submitted = (await sit(student, practice)).json();
     assert.equal(submitted.resultsAvailable, true);
     assert.equal(submitted.score, 1);
-  } finally { await context.close(); }
-});
-
-test('progress averages count only exams whose results are released', async () => {
-  const { context, student, create, sit } = await setup();
-  try {
-    const exam = await create({});
-    await sit(student, exam);
-    assert.equal((await student.request('GET', '/me/progress')).json().examsTaken, 0);
-    await context.database.query("UPDATE exams SET closes_at=now()-interval '1 second' WHERE id=$1", [exam.id]);
-    assert.equal((await student.request('GET', '/me/progress')).json().examsTaken, 1);
   } finally { await context.close(); }
 });
 

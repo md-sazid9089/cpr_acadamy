@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { z } from 'zod';
 import { one } from '../db.js';
 import { audit, ensure, uuid, text, pageQuery } from '../http.js';
@@ -52,13 +53,10 @@ export function validatePublication(input, bounds) {
   ensure(input.questions.length === input.targetQuestionCount, 400, 'QUESTION_COUNT_MISMATCH', 'The paper must contain exactly the target number of questions.');
   if (input.questionType !== 'mixed') return;
 
-  let seenSba = false;
+  // The creator may add MCQ and SBA questions in any order; the student's paper is arranged when the attempt starts.
   const optionCountByType = new Map();
   const marksByType = new Map();
   for (const question of input.questions) {
-    if (question.type === 'sba') seenSba = true;
-    else ensure(!seenSba, 400, 'MIXED_BLOCK_ORDER', 'All multiple true/false questions must come before the single-best-answer questions.');
-
     const expectedOptionCount = optionCountByType.get(question.type);
     if (expectedOptionCount === undefined) optionCountByType.set(question.type, question.options.length);
     else ensure(question.options.length === expectedOptionCount, 400, 'MIXED_OPTION_COUNT_MISMATCH', 'Every question of the same type must offer the same number of options.');
@@ -68,8 +66,30 @@ export function validatePublication(input, bounds) {
     else ensure(question.marks === expectedMarks, 400, 'MIXED_MARKS_MISMATCH', 'Every question of the same type must carry the same marks.');
   }
 
+  validateMixedBounds(input, bounds);
+}
+
+/** The course's allowed deduction and pass-mark range for its mixed exams. Checked on every save, not only on publish. */
+export function validateMixedBounds(input, bounds) {
   ensure(input.negativeMarking >= bounds.negativeMarkingMin && input.negativeMarking <= bounds.negativeMarkingMax, 400, 'NEGATIVE_MARKING_OUT_OF_RANGE', `Deduction for this course must be between ${bounds.negativeMarkingMin}% and ${bounds.negativeMarkingMax}%.`);
   ensure(input.passMark >= bounds.passMarkMin && input.passMark <= bounds.passMarkMax, 400, 'PASS_MARK_OUT_OF_RANGE', `Pass mark for this course must be between ${bounds.passMarkMin}% and ${bounds.passMarkMax}%.`);
+}
+
+/**
+ * The order a student sees a mixed paper in: all MCQ (multiple true/false) questions first, then all SBA, each block
+ * shuffled. Creators add questions in any order, so this is where the paper is organised. Other papers keep their order.
+ */
+export function arrangePaper(questions, questionType) {
+  if (questionType !== 'mixed') return questions;
+  const shuffle = list => {
+    const copy = [...list];
+    for (let index = copy.length - 1; index > 0; index -= 1) {
+      const swap = randomInt(index + 1);
+      [copy[index], copy[swap]] = [copy[swap], copy[index]];
+    }
+    return copy;
+  };
+  return [...shuffle(questions.filter(question => question.type === 'mtf')), ...shuffle(questions.filter(question => question.type !== 'mtf'))];
 }
 
 export function validateAnswers(questions, answers) {
@@ -133,11 +153,17 @@ async function paperShape(transaction, attemptId) {
   return shape;
 }
 
+/** When a live exam's shared clock stops (opening + duration); Infinity for practice and mock, whose timers are per student. */
+function liveEnd(row) {
+  return row.type === 'live' ? new Date(row.scheduled_at).getTime() + row.duration_minutes * 60000 : Infinity;
+}
+
 function examDto(row) {
   const now = Date.now();
   const summary = questionSummary(row);
+  const windowEnd = Math.min(row.closes_at ? new Date(row.closes_at).getTime() : Infinity, liveEnd(row));
   const status = !row.is_published ? 'draft' : row.submitted_at ? 'submitted' : new Date(row.scheduled_at).getTime() > now ? 'upcoming'
-    : row.closes_at && new Date(row.closes_at).getTime() <= now ? 'published' : 'running';
+    : windowEnd <= now ? 'published' : 'running';
   return { id: row.id, courseId: row.course_id, courseTitle: row.course_title, courseName: row.course_title,
     title: row.title, type: row.type, questionType: row.question_type, status, isPublished: row.is_published,
     durationMinutes: row.duration_minutes, negativeMarking: Number(row.negative_marking), passMark: Number(row.pass_mark),
@@ -231,8 +257,12 @@ export function examRoutes(route, database) {
     }
     ensure(new Date(exam.scheduled_at).getTime() <= Date.now(), 409, 'EXAM_NOT_STARTED', 'This exam has not started.');
     ensure(!exam.closes_at || new Date(exam.closes_at).getTime() > Date.now(), 409, 'EXAM_CLOSED', 'This exam is closed.');
-    const deadline = new Date(Math.min(Date.now() + exam.duration_minutes * 60000, exam.closes_at ? new Date(exam.closes_at).getTime() : Infinity));
-    const paper = { questions: exam.questions, negativeMarking: Number(exam.negative_marking), passMark: Number(exam.pass_mark), durationMinutes: exam.duration_minutes };
+    // Practice and mock: each student's timer starts when they start. Live: one shared clock, so the paper ends at the same
+    // moment for everyone and a late joiner gets only what is left of it.
+    const sharedEnd = liveEnd(exam);
+    ensure(sharedEnd > Date.now(), 409, 'EXAM_CLOSED', 'This live exam has already ended.');
+    const deadline = new Date(Math.min(sharedEnd === Infinity ? Date.now() + exam.duration_minutes * 60000 : sharedEnd, exam.closes_at ? new Date(exam.closes_at).getTime() : Infinity));
+    const paper = { questions: arrangePaper(exam.questions, exam.question_type), negativeMarking: Number(exam.negative_marking), passMark: Number(exam.pass_mark), durationMinutes: exam.duration_minutes };
     const attempt = await one(transaction, 'INSERT INTO exam_attempts(user_id,exam_id,paper,ends_at) VALUES ($1,$2,$3,$4) RETURNING *', [request.auth.user_id, exam.id, JSON.stringify(paper), deadline]);
     return publicPaper(attempt, exam);
   }));
@@ -341,6 +371,8 @@ export function examRoutes(route, database) {
         resultsAt: existing.results_at ? new Date(existing.results_at).toISOString() : null, isPublished: existing.is_published, questions: existing.questions } : {};
       const input = examFields.parse({ ...previous, ...request.body });
       ensure(new Set(input.questions.map(question => question.id)).size === input.questions.length, 400, 'DUPLICATE_QUESTION', 'Question IDs must be unique.');
+      ensure(!input.targetQuestionCount || input.questions.length <= input.targetQuestionCount, 400, 'TOO_MANY_QUESTIONS',
+        `This paper has ${input.questions.length} questions but the target is ${input.targetQuestionCount}. Delete the extra questions or raise the target.`);
       ensure(!input.isPublished || input.questions.length > 0, 400, 'EMPTY_EXAM', 'A published exam requires questions.');
       ensure(!input.isPublished || input.questions.every(isQuestionComplete), 400, 'INCOMPLETE_QUESTIONS', 'Every question needs a stem, all option texts and an answer key before the exam is published.');
       ensure(input.questionType === 'mixed' || input.questions.every(question => question.type === input.questionType), 400, 'QUESTION_TYPE_MISMATCH', 'Questions must match the exam question type.');
@@ -354,10 +386,13 @@ export function examRoutes(route, database) {
         bounds = { negativeMarkingMin: Number(course.mixed_negative_marking_min), negativeMarkingMax: Number(course.mixed_negative_marking_max),
           passMarkMin: Number(course.mixed_pass_mark_min), passMarkMax: Number(course.mixed_pass_mark_max) };
       }
+      if (bounds && !input.isPublished) validateMixedBounds(input, bounds);
       validatePublication(input, bounds);
       ensure(!input.closesAt || new Date(input.closesAt) > new Date(input.scheduledAt), 400, 'INVALID_SCHEDULE', 'Closing time must follow the start.');
       ensure(input.type === 'practice' || input.closesAt, 400, 'CLOSING_TIME_REQUIRED', 'Timed exams require a closing time.');
       ensure(!input.resultsAt || !input.closesAt || new Date(input.resultsAt) >= new Date(input.closesAt), 400, 'INVALID_RESULTS_RELEASE', 'Results cannot be released before the exam closes.');
+      // Without a closing time (practice papers) the opening time is the earliest results can appear.
+      ensure(!input.resultsAt || new Date(input.resultsAt) >= new Date(input.scheduledAt), 400, 'INVALID_RESULTS_RELEASE', 'Results cannot be released before the exam starts.');
       const values = [input.courseId, input.title, input.type, input.questionType, input.durationMinutes, input.negativeMarking, input.scheduledAt, input.closesAt, input.resultsAt, input.isPublished, JSON.stringify(input.questions), input.targetQuestionCount, input.marksPerQuestion, input.passMark];
       const columns = ['course_id', 'title', 'type', 'question_type', 'duration_minutes', 'negative_marking', 'scheduled_at', 'closes_at', 'results_at', 'is_published', 'questions', 'target_question_count', 'marks_per_question', 'pass_mark'];
       const exam = creating

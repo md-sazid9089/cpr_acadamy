@@ -103,18 +103,6 @@ export default function AdminStudentDetail() {
       ),
     },
     { key: 'enrolledAt', header: 'Enrolled', render: (row) => formatDate(row.enrolledAt) },
-    {
-      key: 'progress',
-      header: 'Progress',
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-24 overflow-hidden rounded-full bg-stone-200 dark:bg-surface-dark">
-            <div className="h-full rounded-full bg-brand-600" style={{ width: `${row.progress}%` }} />
-          </div>
-          <span className="text-xs text-stone-600 dark:text-brand-200">{row.progress}%</span>
-        </div>
-      ),
-    },
     { key: 'status', header: 'Status', align: 'right', render: (row) => <StatusBadge status={row.status} /> },
   ];
 

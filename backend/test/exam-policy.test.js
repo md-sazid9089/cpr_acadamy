@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gradePaper, validatePublication } from '../src/modules/exams.js';
+import { arrangePaper, gradePaper, validatePublication } from '../src/modules/exams.js';
 import { fixture } from '../test-support/fixture.js';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -19,12 +19,23 @@ test('mixed policy enforces count, blocks, stem count, marks and pass threshold'
   assert.doesNotThrow(() => validatePublication(policy, bounds));
   for (const invalid of [
     { questions: questions.slice(1) }, { targetQuestionCount: 49 },
-    { questions: [...questions].reverse() },
     { questions: [{ ...questions[0], options: questions[0].options.slice(1) }, ...questions.slice(1)] },
     { questions: [{ ...questions[0], marks: 1 }, ...questions.slice(1)] },
     { negativeMarking: 25 }, { passMark: 60 },
   ]) assert.throws(() => validatePublication({ ...policy, ...invalid }, bounds));
   assert.doesNotThrow(() => validatePublication({ ...policy, questions: [], isPublished: false }, bounds));
+  // Creators may add MCQ and SBA questions in any order.
+  assert.doesNotThrow(() => validatePublication({ ...policy, questions: [...questions].reverse() }, bounds));
+});
+
+test('a mixed paper reaches the student as an MCQ block then an SBA block, shuffled inside each block', () => {
+  const authored = [question('sba', 1), question('mtf', 2), question('sba', 3), question('mtf', 4), question('sba', 5), question('mtf', 6)];
+  const arranged = arrangePaper(authored, 'mixed');
+  assert.deepEqual(arranged.map(item => item.type), ['mtf', 'mtf', 'mtf', 'sba', 'sba', 'sba']);
+  assert.deepEqual(arranged.map(item => item.id).sort(), authored.map(item => item.id).sort());
+  assert.equal(arrangePaper(authored, 'sba'), authored, 'other papers keep the creator order');
+  const orders = new Set(Array.from({ length: 30 }, () => arrangePaper(authored, 'mixed').map(item => item.id).join()));
+  assert.ok(orders.size > 1, 'each block is shuffled');
 });
 
 test('server grading uses percentage points, partial credit and exact pass boundary', () => {
@@ -54,6 +65,31 @@ test('API persists and snapshots zero deduction and 70 percent pass policy', asy
     const result = (await admin.request('POST', `/exams/${exam.id}/submit`, { answers: {}, version: 0 })).json();
     assert.equal(result.passed, false);
     assert.equal(result.passMark, 70);
+  } finally { await context.close(); }
+});
+
+test('a mixed exam draft is held to the course range too, and the error names the range', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin');
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'range-course', title: 'Range course', category: 'FCPS', price: 100,
+      mixedNegativeMarkingMin: 0, mixedNegativeMarkingMax: 25, mixedPassMarkMin: 50, mixedPassMarkMax: 80 })).json();
+    const draft = { courseId: course.id, title: 'Draft', questionType: 'mixed', durationMinutes: 30, scheduledAt: '2025-01-01T00:00:00Z', isPublished: false, questions: [] };
+    for (const [patch, code, message] of [
+      [{ negativeMarking: 50 }, 'NEGATIVE_MARKING_OUT_OF_RANGE', 'between 0% and 25%'],
+      [{ passMark: 95 }, 'PASS_MARK_OUT_OF_RANGE', 'between 50% and 80%'],
+      [{ passMark: 40 }, 'PASS_MARK_OUT_OF_RANGE', 'between 50% and 80%'],
+    ]) {
+      const response = await admin.request('POST', '/admin/exams', { ...draft, ...patch });
+      assert.equal(response.statusCode, 400, JSON.stringify(patch));
+      assert.equal(response.json().code, code);
+      assert.match(response.json().message, new RegExp(message));
+    }
+    const ok = await admin.request('POST', '/admin/exams', { ...draft, negativeMarking: 10, passMark: 60 });
+    assert.equal(ok.statusCode, 200, ok.body);
+    assert.equal((await admin.request('PATCH', `/admin/exams/${ok.json().id}`, { passMark: 99 })).json().code, 'PASS_MARK_OUT_OF_RANGE');
+    // Other question types are not bound by the mixed range.
+    assert.equal((await admin.request('POST', '/admin/exams', { ...draft, questionType: 'sba', negativeMarking: 50, passMark: 95 })).statusCode, 200);
   } finally { await context.close(); }
 });
 

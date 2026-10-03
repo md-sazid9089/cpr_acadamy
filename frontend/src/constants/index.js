@@ -197,6 +197,22 @@ export const EXAM_TYPES = Object.freeze({
   PRACTICE: 'practice',
 });
 
+/** What each exam kind does, so the builder and the student pages describe it the same way. */
+export const EXAM_KIND_INFO = Object.freeze({
+  practice: {
+    label: 'Practice',
+    summary: 'Opens at the start time; a closing time is optional. Each student gets the full duration from the moment they start.',
+  },
+  mock: {
+    label: 'Mock',
+    summary: 'Open between the start and closing times. Each student gets the full duration from when they start, cut off at closing.',
+  },
+  live: {
+    label: 'Live',
+    summary: 'One shared clock: every paper ends at start time + duration (or at closing, if earlier). Late joiners get what is left, and nobody can join after it ends.',
+  },
+});
+
 export const QUESTION_TYPES = Object.freeze({
   /** Single Best Answer — one correct option out of five. */
   SBA: 'sba',

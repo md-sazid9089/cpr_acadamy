@@ -40,10 +40,6 @@
 .course-details dt { color: var(--course-muted); margin-bottom: 4px; }
 .course-details dd { font-weight: 600; }
 .course-completed { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; padding: 4px 8px; border-radius: var(--course-radius); background: var(--course-accent-surface); color: var(--course-accent-text); font-size: 12px; font-weight: 600; }
-.course-progress { display: block; appearance: none; width: 100%; height: 8px; overflow: hidden; border: 0; border-radius: var(--course-radius); background: var(--course-border); }
-.course-progress::-webkit-progress-bar { background: var(--course-border); border-radius: var(--course-radius); }
-.course-progress::-webkit-progress-value { background: var(--blue-500); border-radius: var(--course-radius); }
-.course-progress::-moz-progress-bar { background: var(--blue-500); border-radius: var(--course-radius); }
 .course-access-notice { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border-radius: var(--course-radius); background: var(--course-accent-surface); color: var(--course-accent-text); font-size: 12px; line-height: 1.65; }
 .course-access-notice > svg { flex-shrink: 0; margin-top: 3px; width: 14px; height: 14px; }
 .course-primary-action { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 16px; border-radius: var(--course-radius); background: var(--blue-500); color: var(--white); font-size: 14px; font-weight: 600; text-align: center; transition: background-color 160ms; }

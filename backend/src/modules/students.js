@@ -4,7 +4,6 @@ import { audit, ensure, text, password, pageQuery } from '../http.js';
 import { hashPassword, verifyPassword, publicUser } from '../security.js';
 import { enqueueSms } from '../sms.js';
 import { paymentDto } from './billing.js';
-import { releasedSql } from './result-release.js';
 
 const profileValue = z.string().trim().max(300);
 const profileSchemas = {
@@ -39,7 +38,6 @@ export async function myCourses(database, userId) {
     // just waiting on an admin to look at it — distinct from one that hasn't been paid at all.
     awaitingApproval: row.status === 'pending_payment' && Boolean(row.payment_awaiting_approval),
     lessonCount: row.lesson_count, completedLessons: row.completed_lessons,
-    progress: row.lesson_count ? Math.round(row.completed_lessons / row.lesson_count * 100) : 0,
     nextLesson: row.next_lesson, enrolledAt: row.created_at, expiresOn: row.expires_at }));
 }
 
@@ -51,20 +49,6 @@ function complaintDto(row) {
 
 export function studentRoutes(route, database, config) {
   route('GET', '/me/enrollments', { auth: 'active' }, request => myCourses(database, request.auth.user_id));
-  route('GET', '/me/progress', { auth: 'active' }, async request => {
-    const courses = await myCourses(database, request.auth.user_id);
-    const lessonsTotal = courses.reduce((total, course) => total + course.lessonCount, 0);
-    const lessonsCompleted = courses.reduce((total, course) => total + course.completedLessons, 0);
-    const summary = await one(database, `SELECT count(*)::int AS exams_taken,COALESCE(avg((a.result->>'score')::numeric/NULLIF((a.result->>'totalMarks')::numeric,0)*100),0) AS average_score
-      FROM exam_attempts a JOIN exams x ON x.id=a.exam_id WHERE a.user_id=$1 AND a.submitted_at IS NOT NULL AND ${releasedSql('x')}`, [request.auth.user_id]);
-    const study = await one(database, 'SELECT COALESCE(sum(l.duration_minutes),0)::int AS minutes FROM lesson_progress p JOIN lessons l ON l.id=p.lesson_id WHERE p.user_id=$1', [request.auth.user_id]);
-    const activity = (await database.query(`SELECT to_char(p.completed_at AT TIME ZONE 'Asia/Dhaka','Dy') AS day,sum(l.duration_minutes)::int AS minutes
-      FROM lesson_progress p JOIN lessons l ON l.id=p.lesson_id WHERE p.user_id=$1 AND p.completed_at>=now()-interval '7 days'
-      GROUP BY (p.completed_at AT TIME ZONE 'Asia/Dhaka')::date,day ORDER BY (p.completed_at AT TIME ZONE 'Asia/Dhaka')::date`, [request.auth.user_id])).rows;
-    return { overallProgress: lessonsTotal ? Math.round(lessonsCompleted / lessonsTotal * 100) : 0, lessonsCompleted, lessonsTotal,
-      studyHours: Math.round(study.minutes / 60), examsTaken: summary.exams_taken, averageScore: Number(summary.average_score),
-      bestRank: null, weakTopics: [], strongTopics: [], weeklyActivity: activity };
-  });
   route('GET', '/me/profile', { auth: 'active' }, async request => profileDto(await one(database, 'SELECT * FROM users WHERE id=$1', [request.auth.user_id])));
   route('PATCH', '/me/profile', { auth: 'active', body: z.object({ section: z.enum(['basic', 'contact', 'address']), values: z.record(z.unknown()) }).strict() }, async request => database.transaction(async transaction => {
     const user = await one(transaction, 'SELECT * FROM users WHERE id=$1 FOR UPDATE', [request.auth.user_id]);

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
 import { FaStar, FaRegStar, FaTrashCan, FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
 import Button from '@/components/ui/Button.jsx';
 import Spinner from '@/components/ui/Spinner.jsx';
@@ -36,7 +35,7 @@ function ReviewForm({ review, canReview, mutation }) {
       }}
     >
       <h3 className="text-base font-semibold text-stone-900 dark:text-white">{review ? 'Your review' : 'Review your instructor'}</h3>
-      {!canReview && <p className="text-sm text-stone-600 dark:text-brand-200">An active enrollment is required to edit your review.</p>}
+      {!canReview && <p className="text-sm text-stone-600 dark:text-brand-200">An active enrollment and a completed course are required to edit your review.</p>}
       <fieldset disabled={!canReview || mutation.isPending}>
         <legend className="mb-2 text-sm font-medium text-stone-700 dark:text-brand-200">Instructor rating</legend>
         <div className="flex w-fit gap-1">
@@ -100,7 +99,6 @@ function ReviewForm({ review, canReview, mutation }) {
 
 export default function InstructorReviews({ slug }) {
   const { user, isAuthenticated, isApproved } = useAuth();
-  const location = useLocation();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [notice, setNotice] = useState('');
@@ -174,10 +172,9 @@ export default function InstructorReviews({ slug }) {
           )}
         </>
       )}
-      {!isAuthenticated ? (
-        <Button to="/login" state={{ from: location }} variant="outline">Sign in to review</Button>
-      ) : !isApproved ? (
-        <p className="text-sm text-stone-600 dark:text-brand-200">An approved student account is required to review.</p>
+      {/* The review option exists only for students who have completed the course (or already hold a review). */}
+      {!isAuthenticated || !isApproved ? (
+        <p className="text-sm text-stone-600 dark:text-brand-200">Only students who have completed this course can review the instructor.</p>
       ) : own.isLoading ? <Spinner label="Checking review eligibility" /> : own.isError ? (
         <div className="space-y-3">
           <p role="alert" className="text-sm text-red-600">Your review details could not be loaded.</p>
@@ -185,8 +182,10 @@ export default function InstructorReviews({ slug }) {
         </div>
       ) : own.data?.canReview || own.data?.review ? (
         <ReviewForm key={`${user.id}:${own.data.review?.id ?? 'new'}`} review={own.data.review} canReview={own.data.canReview} mutation={mutation} />
+      ) : own.data?.enrolled ? (
+        <p className="text-sm text-stone-600 dark:text-brand-200">Complete every lesson of this course to review the instructor.</p>
       ) : (
-        <p className="text-sm text-stone-600 dark:text-brand-200">Only students with an active enrollment in this course can review the instructor.</p>
+        <p className="text-sm text-stone-600 dark:text-brand-200">Only students who have completed this course can review the instructor.</p>
       )}
       {mutation.isError && <p role="alert" className="mt-3 text-sm text-red-600">{mutation.error.message}</p>}
       <p role="status" className="mt-3 text-sm text-brand-700 dark:text-brand-300">{notice}</p>

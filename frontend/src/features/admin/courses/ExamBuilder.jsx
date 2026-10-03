@@ -13,13 +13,18 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import Input, { Select } from '@/components/ui/Input.jsx';
-import { EXAM_TYPES, QUESTION_TYPES } from '@/constants';
-import { cn } from '@/lib/utils';
+import { EXAM_KIND_INFO, EXAM_TYPES, QUESTION_TYPES } from '@/constants';
 
 const KIND_LABELS = {
-  [EXAM_TYPES.PRACTICE]: 'Practice — open-ended, results shown at once',
-  [EXAM_TYPES.MOCK]: 'Mock — timed window with a results release',
-  [EXAM_TYPES.LIVE]: 'Live — timed window with a results release',
+  [EXAM_TYPES.PRACTICE]: EXAM_KIND_INFO.practice.label,
+  [EXAM_TYPES.MOCK]: EXAM_KIND_INFO.mock.label,
+  [EXAM_TYPES.LIVE]: EXAM_KIND_INFO.live.label,
+};
+
+const CLOSING_HINTS = {
+  [EXAM_TYPES.PRACTICE]: 'Optional for practice papers.',
+  [EXAM_TYPES.MOCK]: 'Required. Last moment a student may start; papers still running are cut off here.',
+  [EXAM_TYPES.LIVE]: 'Required. End of the live window; the shared clock still stops at start time + duration.',
 };
 
 /** ISO -> value for <input type="datetime-local"> in the admin's own zone. */
@@ -118,7 +123,7 @@ function ExamEditor({ exam, course }) {
     onSuccess: (data) => {
       remember(data);
       if (navigatingRef.current) {
-        navigate(`/admin/courses/${course.id}`);
+        navigate(`/admin/courses/${course.id}/exams`);
       }
     },
     onError: (error) => {
@@ -207,16 +212,49 @@ function ExamEditor({ exam, course }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const addQuestion = () => {
-    const type = settings.type === 'mixed' ? (questions.length < 30 ? QUESTION_TYPES.MTF : QUESTION_TYPES.SBA) : settings.type;
+  // The paper never holds more questions than its target: raise the target first.
+  const targetReached = () => {
+    const limit = Number(settings.questionCount) || 0;
+    return limit > 0 && latest.current.length >= limit;
+  };
+
+  // A Mixed paper takes MCQ and SBA questions in any order, so the creator picks the type of each one added.
+  const addQuestion = (requestedType) => {
+    if (targetReached()) return;
+    const type = settings.type === 'mixed' ? (requestedType === QUESTION_TYPES.SBA ? QUESTION_TYPES.SBA : QUESTION_TYPES.MTF) : settings.type;
     const next = [...questions, settings.type === 'mixed' ? blankQuestion(type) : blankQuestion(type, Number(settings.marksPerQuestion))];
     setQuestions(next);
     persist(next);
   };
 
+  /** One "Add question" button, or an "Add MCQ" / "Add SBA" pair on a Mixed paper. */
+  const addButtons = ({ variant, disabled }) => {
+    if (disabled && questions.length > 0) {
+      return (
+        <Button variant={variant} disabled>
+          <FaPlus aria-hidden="true" className="h-3.5 w-3.5" />
+          Target reached
+        </Button>
+      );
+    }
+    const choices = settings.type === 'mixed'
+      ? [['Add MCQ', QUESTION_TYPES.MTF], ['Add SBA', QUESTION_TYPES.SBA]]
+      : [[questions.length === 0 ? 'Add question' : `Add question ${questions.length + 1}`, settings.type]];
+    return (
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        {choices.map(([label, type]) => (
+          <Button key={label} variant={variant} onClick={() => addQuestion(type)} isLoading={questionsMutation.isPending} disabled={disabled}>
+            <FaPlus aria-hidden="true" className="h-3.5 w-3.5" />
+            {label}
+          </Button>
+        ))}
+      </div>
+    );
+  };
+
   const duplicateQuestion = (questionId) => {
     const at = questions.findIndex((q) => q.id === questionId);
-    if (at < 0) return;
+    if (at < 0 || targetReached()) return;
     const next = [...questions.slice(0, at + 1), duplicateOf(questions[at]), ...questions.slice(at + 1)];
     setQuestions(next);
     persist(next);
@@ -250,16 +288,33 @@ function ExamEditor({ exam, course }) {
   const isMixed = settings.type === 'mixed';
   const isMtf = settings.type === QUESTION_TYPES.MTF;
   const isTimed = settings.kind !== EXAM_TYPES.PRACTICE;
+  // A mixed paper must stay inside the range this course allows (set under the course's Detail tab).
+  const deductionRange = isMixed
+    ? { min: course.mixedNegativeMarkingMin ?? 0, max: course.mixedNegativeMarkingMax ?? 1000 }
+    : { min: 0, max: 1000 };
+  const passRange = isMixed
+    ? { min: course.mixedPassMarkMin ?? 0, max: course.mixedPassMarkMax ?? 100 }
+    : { min: 0, max: 100 };
 
   const written = questions.length;
   const target = marking.questionCount;
   const incomplete = useMemo(() => questions.filter((q) => !isQuestionComplete(q)).length, [questions]);
-  const progress = target > 0 ? Math.min(100, Math.round((written / target) * 100)) : 0;
   const typeLocked = locked;
   const saving = settingsMutation.isPending || questionsMutation.isPending;
 
   const mixedReady = true;
   const complete = written === target && target > 0 && incomplete === 0 && mixedReady;
+  const atTarget = target > 0 && written >= target;
+  // Why this exam cannot be published yet (null when it can). Shown under Visibility and in the draft notice.
+  const publishBlocker = target < 1
+    ? 'Set a target of at least 1 question.'
+    : written < target
+      ? `Write all ${target} questions first (${written} written so far).`
+      : written > target
+        ? `The paper has ${written - target} more ${written - target === 1 ? 'question' : 'questions'} than the target of ${target}.`
+        : incomplete > 0
+          ? `${incomplete} ${incomplete === 1 ? 'question still needs' : 'questions still need'} a stem, every option and an answer key.`
+          : null;
 
   return (
     <div className="space-y-5">
@@ -308,17 +363,33 @@ function ExamEditor({ exam, course }) {
                 {saving && (
                   <span className="text-sm font-medium text-stone-500">Saving...</span>
                 )}
+                {/* Saves in place: the admin stays on this exam. */}
+                <Button type="submit" size="sm" isLoading={settingsMutation.isPending} disabled={locked}>
+                  Save settings
+                </Button>
               </div>
             }
           />
           <CardBody className="space-y-4">
+            {settings.isPublished === 'draft' && (
+              <p
+                role="status"
+                className="flex items-start gap-2 rounded-xl border border-stone-200 bg-brand-50 p-3 text-sm text-brand-900 dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-200"
+              >
+                <FaTriangleExclamation aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  <strong>This exam is a draft</strong> — students cannot see it.{' '}
+                  {publishBlocker ?? 'Everything is in place: set Visibility to Published and save to open it to students.'}
+                </span>
+              </p>
+            )}
             <Input label="Exam title" required value={settings.title} onChange={setField('title')} />
 
             <div className="grid gap-4 sm:grid-cols-3">
               <Select label="Question type" value={settings.type} onChange={setField('type')} disabled={typeLocked}>
-                <option value={QUESTION_TYPES.SBA}>SBA — single best answer</option>
-                <option value={QUESTION_TYPES.MTF}>MCQ — five true/false statements</option>
-                <option value="mixed">Mixed - 30 MCQ, then 20 SBA</option>
+                <option value={QUESTION_TYPES.SBA}>SBA</option>
+                <option value={QUESTION_TYPES.MTF}>MCQ</option>
+                <option value="mixed">Mixed</option>
               </Select>
               <Select label="Exam kind" value={settings.kind} onChange={setField('kind')}>
                 {Object.entries(KIND_LABELS).map(([value, label]) => (
@@ -331,16 +402,10 @@ function ExamEditor({ exam, course }) {
                 label="Visibility"
                 value={settings.isPublished}
                 onChange={setField('isPublished')}
-                hint={
-                  written !== Number(settings.questionCount)
-                    ? 'Add all questions before publishing.'
-                    : incomplete > 0
-                      ? 'Finish every question before publishing.'
-                      : undefined
-                }
+                hint={publishBlocker ?? undefined}
               >
                 <option value="draft">Draft — hidden from students</option>
-                <option value="published" disabled={written !== Number(settings.questionCount) || incomplete > 0}>
+                <option value="published" disabled={Boolean(publishBlocker)}>
                   Published — students can sit it
                 </option>
               </Select>
@@ -350,6 +415,9 @@ function ExamEditor({ exam, course }) {
                 Question type is locked while the paper has questions — delete them to change it.
               </p>
             )}
+            <p className="-mt-2 text-xs text-stone-500 dark:text-brand-200">
+              <strong>{EXAM_KIND_INFO[settings.kind]?.label}:</strong> {EXAM_KIND_INFO[settings.kind]?.summary}
+            </p>
 
             <div className="grid gap-4 sm:grid-cols-3">
               <Input label="Opens at" type="datetime-local" required value={settings.scheduledAt} onChange={setField('scheduledAt')} />
@@ -357,19 +425,20 @@ function ExamEditor({ exam, course }) {
                 label="Closes at"
                 type="datetime-local"
                 required={isTimed}
+                min={settings.scheduledAt || undefined}
                 value={settings.closesAt}
                 onChange={setField('closesAt')}
-                hint={isTimed ? 'Last moment a student may start.' : 'Optional for practice papers.'}
+                hint={CLOSING_HINTS[settings.kind]}
               />
               <Input
                 label="Results released"
                 type="datetime-local"
-                min={settings.closesAt || undefined}
+                min={settings.closesAt || settings.scheduledAt || undefined}
                 value={settings.resultsAt}
                 onChange={setField('resultsAt')}
                 hint={settings.closesAt
                   ? 'Optional. Blank releases results when the exam closes; otherwise at this time (not before closing).'
-                  : 'Optional. Blank shows results as soon as a student submits.'}
+                  : 'Optional. Blank shows results as soon as a student submits; otherwise at this time (not before the exam opens).'}
               />
             </div>
 
@@ -387,10 +456,11 @@ function ExamEditor({ exam, course }) {
                 label="Target questions"
                 type="number"
                 required
-                min={1}
+                min={Math.max(1, written)}
+                max={500}
                 value={settings.questionCount}
                 onChange={setField('questionCount')}
-                hint="How many the paper should have."
+                hint={written > 0 ? `How many the paper should have. Cannot go below the ${written} already written.` : 'How many the paper should have.'}
               />
               <Input
                 label={isMtf ? 'New statement marks' : 'New question marks'}
@@ -405,14 +475,26 @@ function ExamEditor({ exam, course }) {
                 label="Deduction (%)"
                 type="number"
                 required
-                min={0}
-                max={1000}
+                min={deductionRange.min}
+                max={deductionRange.max}
                 step={0.001}
                 value={settings.deductionPercent}
                 onChange={setField('deductionPercent')}
-                hint="Of the marks per answer, taken for a wrong one."
+                hint={isMixed
+                  ? `Mixed policy for this course: ${deductionRange.min}% to ${deductionRange.max}%.`
+                  : 'Of the marks per answer, taken for a wrong one.'}
               />
-              <Input label="Pass mark (%)" type="number" min={0} max={100} step={0.001} required value={settings.passMark} onChange={setField('passMark')} />
+              <Input
+                label="Pass mark (%)"
+                type="number"
+                min={passRange.min}
+                max={passRange.max}
+                step={0.001}
+                required
+                value={settings.passMark}
+                onChange={setField('passMark')}
+                hint={isMixed ? `Mixed policy for this course: ${passRange.min}% to ${passRange.max}%.` : undefined}
+              />
             </div>
 
             <p
@@ -435,7 +517,7 @@ function ExamEditor({ exam, course }) {
         </form>
       </Card>
 
-      {/* ── Progress ── */}
+      {/* ── Paper status ── */}
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -457,18 +539,6 @@ function ExamEditor({ exam, course }) {
             {complete && <Badge tone="success">Complete</Badge>}
           </div>
         </div>
-        <div
-          className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100 dark:bg-surface-dark"
-          role="progressbar"
-          aria-valuenow={written}
-          aria-valuemin={0}
-          aria-valuemax={target}
-        >
-          <div
-            className={cn('h-full rounded-full transition-[width]', written >= target ? 'bg-brand-500' : 'bg-brand-600')}
-            style={{ width: `${progress}%` }}
-          />
-        </div>
       </Card>
 
       {/* ── Questions ── */}
@@ -477,12 +547,7 @@ function ExamEditor({ exam, course }) {
           <EmptyState
             title="No questions yet"
             description={`Add the first ${TYPE_LABELS[settings.type]} question. The target for this paper is ${target}.`}
-            action={
-              <Button onClick={addQuestion} isLoading={questionsMutation.isPending} disabled={locked}>
-                <FaPlus aria-hidden="true" className="h-3.5 w-3.5" />
-                Add question
-              </Button>
-            }
+            action={addButtons({ variant: 'primary', disabled: locked })}
           />
         </Card>
       ) : (
@@ -499,23 +564,23 @@ function ExamEditor({ exam, course }) {
               onDuplicate={() => duplicateQuestion(question.id)}
               onDelete={() => setDeleting(question)}
               onMove={(delta) => moveQuestion(question.id, delta)}
+              canDuplicate={!atTarget}
               canMoveUp={index > 0}
               canMoveDown={index < questions.length - 1}
             />
           ))}
 
           <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
-            <Button variant="secondary" onClick={addQuestion} isLoading={questionsMutation.isPending}>
-              <FaPlus aria-hidden="true" className="h-3.5 w-3.5" />
-              Add question {written + 1}
-            </Button>
+            {addButtons({ variant: 'secondary', disabled: atTarget })}
             <Button
               variant="outline"
               onClick={() => {
-                navigatingRef.current = true;
                 const form = document.getElementById('exam-settings-form');
-                if (form) form.requestSubmit();
-                else navigate(`/admin/courses/${course.id}`);
+                if (!form) { navigate(`/admin/courses/${course.id}/exams`); return; }
+                // Only leave once the settings are valid and saved; an invalid form stays put with its messages.
+                if (!form.reportValidity()) return;
+                navigatingRef.current = true;
+                form.requestSubmit();
               }}
               isLoading={settingsMutation.isPending}
             >

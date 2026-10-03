@@ -167,9 +167,18 @@ export function courseRoutes(route, database, config) {
     ensure(course, 404, 'COURSE_NOT_FOUND', 'This course could not be found.');
     return course;
   }
-  async function canReview(auth, courseId) {
-    if (auth.role !== 'student') return false;
-    return Boolean(await one(database, "SELECT id FROM enrollments WHERE user_id=$1 AND course_id=$2 AND status='active' AND starts_at<=now() AND expires_at>now()", [auth.user_id, courseId]));
+  /**
+   * Who may review the instructor: a student with an active enrollment who has completed the course. Completed means every
+   * released lesson is done (the same rule as the "Completed" badge on My Courses), and the course has at least one.
+   */
+  async function reviewEligibility(auth, courseId) {
+    if (auth.role !== 'student') return { enrolled: false, completed: false };
+    const row = await one(database, `SELECT
+      EXISTS(SELECT 1 FROM enrollments WHERE user_id=$1 AND course_id=$2 AND status='active' AND starts_at<=now() AND expires_at>now()) AS enrolled,
+      (SELECT count(*)::int FROM lessons l WHERE l.course_id=$2 AND l.status='published' AND l.scheduled_at<=now()) AS total,
+      (SELECT count(*)::int FROM lessons l WHERE l.course_id=$2 AND l.status='published' AND l.scheduled_at<=now()
+        AND EXISTS(SELECT 1 FROM lesson_progress p WHERE p.user_id=$1 AND p.lesson_id=l.id)) AS done`, [auth.user_id, courseId]);
+    return { enrolled: row.enrolled, completed: row.total > 0 && row.done === row.total };
   }
   route('GET', '/courses/:slug/reviews', { query: pageQuery }, async request => {
     const course = await reviewCourse(request.params.slug);
@@ -182,11 +191,14 @@ export function courseRoutes(route, database, config) {
   route('GET', '/courses/:slug/review', { auth: 'active' }, async request => {
     const course = await reviewCourse(request.params.slug);
     const review = await one(database, 'SELECT id,rating,feedback FROM instructor_reviews WHERE course_id=$1 AND user_id=$2', [course.id, request.auth.user_id]);
-    return { canReview: await canReview(request.auth, course.id), review: review ?? null };
+    const { enrolled, completed } = await reviewEligibility(request.auth, course.id);
+    return { canReview: enrolled && completed, enrolled, completed, review: review ?? null };
   });
   route('POST', '/courses/:slug/review', { auth: 'active', body: instructorReviewFields }, async request => {
     const course = await reviewCourse(request.params.slug);
-    ensure(await canReview(request.auth, course.id), 403, 'ENROLLMENT_REQUIRED', 'An active student enrollment is required to review this instructor.');
+    const { enrolled, completed } = await reviewEligibility(request.auth, course.id);
+    ensure(enrolled, 403, 'ENROLLMENT_REQUIRED', 'An active student enrollment is required to review this instructor.');
+    ensure(completed, 403, 'COURSE_NOT_COMPLETED', 'Complete every lesson of the course before reviewing the instructor.');
     return one(database, `INSERT INTO instructor_reviews(course_id,user_id,rating,feedback) VALUES ($1,$2,$3,$4)
       ON CONFLICT(course_id,user_id) DO UPDATE SET rating=EXCLUDED.rating,feedback=EXCLUDED.feedback,updated_at=now()
       RETURNING id,rating,feedback`, [course.id, request.auth.user_id, request.body.rating, request.body.feedback]);

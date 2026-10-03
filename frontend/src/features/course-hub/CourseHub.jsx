@@ -53,8 +53,6 @@ export default function CourseHub() {
     );
   }
 
-  const progressValue = course?.progress ?? 0;
-
   return (
     <div className="space-y-5">
       <DashboardPageHeader title={course?.title ?? 'Course'} backTo="/dashboard/courses" />
@@ -75,20 +73,6 @@ export default function CourseHub() {
                 {course?.regNo ?? '—'}
               </strong>
             </span>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-stone-600 dark:text-brand-200">
-              <span>Progress</span>
-              <span className="text-stone-900 dark:text-white">{progressValue}%</span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-surface-dark">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all duration-500"
-                style={{ width: `${progressValue}%` }}
-              />
-            </div>
           </div>
 
           {/* Search Schedule */}

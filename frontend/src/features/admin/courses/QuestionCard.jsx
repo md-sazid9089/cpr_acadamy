@@ -31,6 +31,7 @@ export default function QuestionCard({
   onDuplicate,
   onDelete,
   onMove,
+  canDuplicate = true,
   canMoveUp,
   canMoveDown,
 }) {
@@ -73,7 +74,7 @@ export default function QuestionCard({
           <Button size="sm" variant="ghost" onClick={() => onMove(1)} disabled={!canMoveDown} aria-label="Move question down">
             <FaArrowDown aria-hidden="true" className="h-3.5 w-3.5" />
           </Button>
-          <Button size="sm" variant="ghost" onClick={onDuplicate} aria-label="Duplicate question">
+          <Button size="sm" variant="ghost" onClick={onDuplicate} disabled={!canDuplicate} aria-label="Duplicate question">
             <FaClone aria-hidden="true" className="h-3.5 w-3.5" />
           </Button>
           <Button size="sm" variant="ghost" onClick={onDelete} aria-label="Delete question">

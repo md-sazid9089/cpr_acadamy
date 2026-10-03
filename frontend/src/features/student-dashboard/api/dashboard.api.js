@@ -7,11 +7,6 @@ export async function fetchMyCourses() {
   return data;
 }
 
-export async function fetchProgressSummary() {
-  const { data } = await apiClient.get('/me/progress');
-  return data;
-}
-
 /** Every exam the student can see; the page groups them by status. */
 export async function fetchUpcomingExams() {
   const { data } = await apiClient.get('/me/exams', { params: { limit: 100 } });

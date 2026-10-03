@@ -44,7 +44,7 @@ $mine = Call GET '/me/enrollments' $null $t
 $videos = Call GET "/courses/$Slug/videos" $null $t
 "videos: $($videos[0].videos[0].title) src=$($videos[0].videos[0].src)"
 $null = Call POST "/lessons/$($videos[0].videos[0].id)/complete" $null $t
-"progress: $((Call GET '/me/progress' $null $t).overallProgress)%"
+"completed lessons: $((Call GET '/me/enrollments' $null $t)[0].completedLessons)"
 $schedule = Call GET "/courses/$Slug/schedule"
 "schedule rows: $($schedule.Count)"
 $exams = Call GET "/courses/$Slug/exams" $null $t

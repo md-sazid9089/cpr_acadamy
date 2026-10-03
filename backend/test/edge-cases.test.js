@@ -316,7 +316,7 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
     assert.equal((await student.request('POST', `/exams/${closed.id}/submit`, { answers: {}, version: 0 })).json().code, 'ATTEMPT_REQUIRED');
 
     const closesAt = new Date(Date.now() + 600000);
-    response = await admin.request('POST', '/admin/exams', { ...base, type: 'live', closesAt: closesAt.toISOString(), resultsAt: new Date(Date.now() + 3600000).toISOString() });
+    response = await admin.request('POST', '/admin/exams', { ...base, type: 'live', scheduledAt: new Date(Date.now() - 60000).toISOString(), closesAt: closesAt.toISOString(), resultsAt: new Date(Date.now() + 3600000).toISOString() });
     assert.equal(response.statusCode, 200, response.body);
     const live = response.json();
     response = await student.request('POST', `/exams/${live.id}/start`);
@@ -366,7 +366,6 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
     assert.equal((await student.request('POST', `/exams/${live.id}/start`)).json().code, 'ALREADY_SUBMITTED');
     assert.equal((await student.request('POST', `/exams/${live.id}/submit`, { answers: { 'question-one': 'first' }, version: versionOf(student, live) })).statusCode, 200);
     assert.equal((await one(context.database, 'SELECT answers FROM exam_attempts WHERE exam_id=$1 AND user_id=$2', [live.id, student.id])).answers['question-one'], 'second', 'answers are frozen after submission');
-    assert.equal((await student.request('GET', '/me/progress')).json().examsTaken, 0, 'embargoed results stay out of progress');
 
     await rival.request('POST', `/exams/${live.id}/start`);
     await save(rival, live, { questionId: 'question-one', answer: 'second' });
@@ -383,8 +382,6 @@ test('exam edge cases: schedule gates, deadline caps, answer shapes, result emba
     assert.equal(response.json().participants, 2);
     assert.equal(response.json().score, 2.8);
     assert.equal(response.json().review.find(question => question.id === 'question-one').correctAnswer, 'second');
-    assert.equal((await student.request('GET', '/me/progress')).json().examsTaken, 1);
-    assert.equal((await student.request('GET', '/me/progress')).json().averageScore, 2.8);
     await context.database.query("UPDATE enrollments SET starts_at=now()-interval '1 day',expires_at=now()-interval '1 second' WHERE user_id=$1", [rival.id]);
     assert.equal((await rival.request('GET', `/exams/${live.id}/result`)).statusCode, 403);
     assert.equal((await rival.request('GET', '/exams')).json().length, 0);
@@ -441,10 +438,12 @@ test('content and profile edge cases: search escaping, lesson gating, routine re
     assert.equal((await student.request('POST', `/lessons/${lesson.id}/complete`)).statusCode, 200);
     assert.equal((await student.request('POST', `/lessons/${lesson.id}/complete`)).statusCode, 200);
     assert.equal((await other.request('POST', `/lessons/${lesson.id}/complete`)).statusCode, 403);
-    response = await student.request('GET', '/me/progress');
-    assert.equal(response.json().lessonsCompleted, 1);
-    assert.equal(response.json().lessonsTotal, 1);
-    assert.equal((await student.request('GET', '/me/enrollments')).json()[0].progress, 100);
+    // Lesson completion is still tracked per enrollment (it gates instructor reviews); the progress summary is gone.
+    response = await student.request('GET', '/me/enrollments');
+    assert.equal(response.json()[0].completedLessons, 1);
+    assert.equal(response.json()[0].lessonCount, 1);
+    assert.equal('progress' in response.json()[0], false);
+    assert.equal((await student.request('GET', '/me/progress')).statusCode, 404);
     assert.equal((await admin.request('PATCH', `/admin/videos/${lesson.id}`, { courseId: thousand.id })).json().code, 'COURSE_IMMUTABLE');
     assert.equal((await admin.request('PATCH', `/admin/videos/${lesson.id}`, { src: '' })).json().code, 'VIDEO_SOURCE_REQUIRED');
     assert.equal((await admin.request('DELETE', `/admin/videos/${lesson.id}`)).statusCode, 200);

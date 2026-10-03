@@ -85,7 +85,7 @@
  * @property {'upcoming' | 'running' | 'submitted' | 'missed' | 'published'} status
  * @property {string} scheduledAt     ISO 8601.
  * @property {number} durationMinutes
- * @property {number} questionCount   Target paper length; the builder shows progress against it.
+ * @property {number} questionCount   Target paper length; the builder shows the written count against it.
  * @property {number} totalMarks      Derived from the actual questions and their marks.
  * @property {number} [marksPerQuestion]  Editor default for new questions or MTF statements.
  * @property {number} [deductionPercent]  Editor alias for negativeMarking.

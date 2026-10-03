@@ -223,10 +223,14 @@ export default function CourseExamsTab() {
             value={form.type}
             onChange={(event) => setForm({ ...form, type: event.target.value })}
           >
-            <option value={QUESTION_TYPES.SBA}>SBA - two marks each</option>
-            <option value={QUESTION_TYPES.MTF}>MCQ - five statements, 0.4 marks each</option>
-            <option value="mixed">Mixed - 30 MCQ, then 20 SBA</option>
+            <option value={QUESTION_TYPES.SBA}>SBA</option>
+            <option value={QUESTION_TYPES.MTF}>MCQ</option>
+            <option value="mixed">Mixed</option>
           </Select>
+          <p className="rounded-lg bg-brand-50 p-3 text-xs text-brand-900 dark:bg-brand-950/40 dark:text-brand-200">
+            New exams are saved as a <strong>draft</strong> and stay hidden from students. Write every question in the builder,
+            then set Visibility to Published — the builder tells you what is still missing.
+          </p>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setCreating(false)}>
               Cancel

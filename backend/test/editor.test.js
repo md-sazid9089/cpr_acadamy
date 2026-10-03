@@ -35,6 +35,16 @@ test('editor drafts: incomplete questions save, publication requires complete pa
     assert.equal(response.statusCode, 200, response.body);
     assert.equal(response.json().completeQuestionCount, 1);
 
+    // More questions than the target are refused, as a draft or published, and the error says by how many.
+    const extra = [{ ...draft, stem: 'One', options: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }], correctAnswer: 'a' }, { ...draft, id: 'q2', stem: 'Two', options: [{ id: 'a', text: 'A' }, { id: 'b', text: 'B' }], correctAnswer: 'a' }];
+    for (const isPublished of [true, false]) {
+      response = await admin.request('PATCH', `/admin/exams/${exam.id}`, { isPublished, targetQuestionCount: 1, questions: extra });
+      assert.equal(response.statusCode, 400, response.body);
+      assert.equal(response.json().code, 'TOO_MANY_QUESTIONS');
+      assert.match(response.json().message, /2 questions but the target is 1/);
+    }
+    assert.equal((await admin.request('PATCH', `/admin/exams/${exam.id}`, { targetQuestionCount: 2, questions: extra })).statusCode, 200);
+
     const video = (await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Lecture 1', src: 'https://media.example.test/v.mp4', notesUrl: 'https://media.example.test/notes.pdf', scheduledAt: '2026-07-25T08:30:00Z', durationMinutes: 80, status: 'published' })).json();
     assert.equal(video.duration, '1h 20m');
     assert.equal(video.scheduledTime, '02:30 PM');

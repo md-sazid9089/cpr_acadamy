@@ -30,7 +30,6 @@ const STUDENT_LINKS = [
   { to: '/dashboard/notice', label: 'Notices' },
   { to: '/dashboard/complaints', label: 'Complaint Box' },
   { to: '/dashboard/exam-positions', label: 'Exam Positions' },
-  { to: '/dashboard/progress', label: 'Progress' },
   { to: '/dashboard/account', label: 'My Account' },
 ];
 

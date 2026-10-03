@@ -42,7 +42,6 @@ const ResetPassword = lazy(() => import('@/features/auth/ResetPassword.jsx'));
 // Student dashboard
 const Overview = lazy(() => import('@/features/student-dashboard/Overview.jsx'));
 const MyCourses = lazy(() => import('@/features/student-dashboard/MyCourses.jsx'));
-const Progress = lazy(() => import('@/features/student-dashboard/Progress.jsx'));
 const UpcomingExams = lazy(() => import('@/features/student-dashboard/UpcomingExams.jsx'));
 const Notices = lazy(() => import('@/features/student-dashboard/Notices.jsx'));
 const PaymentHistory = lazy(() => import('@/features/student-dashboard/PaymentHistory.jsx'));
@@ -155,7 +154,6 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: suspend(<Overview />, 'dashboard') },
       { path: 'courses', element: suspend(<MyCourses />, 'cards') },
-      { path: 'progress', element: suspend(<Progress />, 'dashboard') },
       { path: 'course/:slug', element: suspend(<CourseHub />, 'detail') },
       { path: 'exams', element: suspend(<UpcomingExams />) },
       { path: 'exam-positions', element: suspend(<ExamPositions />, 'table') },

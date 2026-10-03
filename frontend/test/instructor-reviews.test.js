@@ -33,16 +33,18 @@ function renderReviews({ auth = {}, publicResult = { data: { total: 0, average: 
 
 const student = { user: { id: 'student-1' }, isAuthenticated: true, isApproved: true };
 
-test('review empty state does not invent ratings and offers guest sign-in', () => {
+test('review empty state does not invent ratings and offers guests no review option', () => {
   const { html, queries } = renderReviews();
   assert.match(html, /No instructor reviews yet/);
-  assert.match(html, /Sign in to review/);
+  assert.match(html, /Only students who have completed this course can review the instructor/);
+  assert.doesNotMatch(html, /Sign in to review/);
+  assert.doesNotMatch(html, /<form/);
   assert.doesNotMatch(html, /out of 5 stars/);
   assert.equal(Boolean(queries[1].enabled), false);
 });
 
-test('enrolled students receive five accessible rating choices and bounded feedback', () => {
-  const { html, queries } = renderReviews({ auth: student, ownResult: { data: { canReview: true, review: null } } });
+test('students who completed the course receive five accessible rating choices and bounded feedback', () => {
+  const { html, queries } = renderReviews({ auth: student, ownResult: { data: { canReview: true, enrolled: true, completed: true, review: null } } });
   assert.equal((html.match(/type="radio"/g) ?? []).length, 5);
   assert.match(html, /aria-label="5 stars"/);
   assert.match(html, /maxLength="2000"/);
@@ -51,10 +53,14 @@ test('enrolled students receive five accessible rating choices and bounded feedb
   assert.equal(queries[1].queryKey[2], 'student-1');
 });
 
-test('unenrolled students cannot submit, while existing reviews remain deletable after expiry', () => {
-  const blocked = renderReviews({ auth: student, ownResult: { data: { canReview: false, review: null } } }).html;
-  assert.match(blocked, /Only students with an active enrollment/);
-  assert.doesNotMatch(blocked, /<form/);
+test('students who have not completed the course see no review form, while existing reviews remain deletable after expiry', () => {
+  const unenrolled = renderReviews({ auth: student, ownResult: { data: { canReview: false, enrolled: false, completed: false, review: null } } }).html;
+  assert.match(unenrolled, /Only students who have completed this course/);
+  assert.doesNotMatch(unenrolled, /<form/);
+  const unfinished = renderReviews({ auth: student, ownResult: { data: { canReview: false, enrolled: true, completed: false, review: null } } }).html;
+  assert.match(unfinished, /Complete every lesson of this course to review the instructor/);
+  assert.doesNotMatch(unfinished, /<form/);
+  assert.doesNotMatch(unfinished, /Submit review/);
   const existing = renderReviews({ auth: student, ownResult: { data: { canReview: false, review: { id: 'review', rating: 4, feedback: 'Clear teaching' } } } }).html;
   assert.match(existing, /Delete review/);
   assert.match(existing, /<fieldset disabled/);

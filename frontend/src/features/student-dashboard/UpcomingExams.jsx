@@ -6,7 +6,7 @@ import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import { EXAM_STATUS } from '@/constants';
+import { EXAM_KIND_INFO, EXAM_STATUS } from '@/constants';
 import { formatDateTime } from '@/lib/utils';
 
 const TYPE_LABELS = { live: 'Live exam', mock: 'Mock exam', practice: 'Practice set' };
@@ -49,6 +49,9 @@ export default function UpcomingExams() {
                 {exam.questionCount} questions · {exam.totalMarks} marks · {exam.durationMinutes}{' '}
                 minutes
               </p>
+              {EXAM_KIND_INFO[exam.type] && (
+                <p className="mt-1 max-w-xl text-xs text-stone-500 dark:text-brand-200">{EXAM_KIND_INFO[exam.type].summary}</p>
+              )}
             </div>
 
             <div className="flex shrink-0 flex-wrap gap-2">

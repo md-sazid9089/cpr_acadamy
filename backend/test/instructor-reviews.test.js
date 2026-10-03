@@ -19,6 +19,22 @@ test('instructor reviews enforce enrollment, isolate courses, validate ratings, 
     assert.equal((await admin.request('POST', path, input)).statusCode, 403);
     assert.equal((await student.request('GET', path)).json().canReview, false);
     await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$3,'active',now(),now()+interval '30 days'),($2,$3,'active',now(),now()+interval '30 days')", [student.id, other.id, course.id]);
+    // Enrolled is not enough: the review opens only once the course is completed.
+    const gate = (await student.request('GET', path)).json();
+    assert.deepEqual([gate.canReview, gate.enrolled, gate.completed], [false, true, false], 'a course with no released lessons cannot be completed');
+    const lesson = async title => (await admin.request('POST', '/admin/videos', { courseId: course.id, title, src: 'https://cdn.example/a.mp4', scheduledAt: '2025-01-01T00:00:00Z', status: 'published', durationMinutes: 10 })).json();
+    const [first, last] = [await lesson('Lesson 1'), await lesson('Lesson 2')];
+    const early = await student.request('POST', path, input);
+    assert.equal(early.statusCode, 403);
+    assert.equal(early.json().code, 'COURSE_NOT_COMPLETED');
+    assert.equal((await student.request('POST', `/lessons/${first.id}/complete`)).statusCode, 200);
+    assert.equal((await student.request('GET', path)).json().canReview, false, 'one of two lessons done is still not complete');
+    assert.equal((await student.request('POST', path, input)).json().code, 'COURSE_NOT_COMPLETED');
+    for (const lessonId of [first.id, last.id]) await other.request('POST', `/lessons/${lessonId}/complete`);
+    assert.equal((await student.request('POST', `/lessons/${last.id}/complete`)).statusCode, 200);
+    assert.equal((await student.request('GET', path)).json().canReview, true);
+    // A lesson that has not been released yet does not hold the course open.
+    await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Next week', src: 'https://cdn.example/b.mp4', scheduledAt: new Date(Date.now() + 7 * 86400000).toISOString(), status: 'published' });
     assert.equal((await student.request('GET', path)).json().canReview, true);
     for (const invalid of [{ rating: 0 }, { rating: 6 }, { rating: 2.5 }, { feedback: '  ' }, { feedback: 'a'.repeat(2001) }, { userId: other.id }]) {
       assert.equal((await student.request('POST', path, { ...input, ...invalid })).statusCode, 400);

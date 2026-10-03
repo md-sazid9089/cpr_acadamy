@@ -52,12 +52,25 @@ Legacy rates up to 1000% remain representable to preserve historical non-default
 settings. `passMark` / `pass_mark` defaults to `70`; pass/fail is computed by the
 server from the score, not the rounded display percentage.
 
-Mixed papers must publish with exactly 50 questions: positions 1-30 are MTF
-with five statements worth 0.4 each, followed by 20 SBA questions worth 2 each.
-Their total is 100, pass mark is 70%, and negative marking must be zero.
-Other papers must match their target count; published MTF always has five
+Mixed papers take MCQ (multiple true/false) and SBA questions in any order; the
+creator picks the type of each question added. When a student starts the exam
+the paper is arranged as an MCQ block followed by an SBA block, each block
+shuffled, and that arrangement is frozen into the attempt. Every question of one
+type in a mixed paper must offer the same number of options and carry the same
+marks. A mixed exam's deduction and pass mark must stay inside the range set on
+its course (Course → Detail → Mixed exam policy); this is checked on every save,
+draft or published. A paper never holds more questions than its target, and a
+published paper must hold exactly its target. Published MTF always has five
 statements. Marks belong to each question; the editor's new-question default
 does not overwrite existing questions.
+
+Exam kinds differ in how time works. Practice: opens at the start time, closing
+time optional, each student's timer starts when they do. Mock: needs a closing
+time, each student's timer starts when they do and is cut off at closing. Live:
+needs a closing time and runs one shared clock, so every paper ends at start time
++ duration (or at closing if earlier); late joiners get what is left and nobody
+can join once it has ended. Results cannot be released before the exam starts or
+closes. Instructor reviews open only to students who completed the course.
 
 Deploy frontend and backend together because the negative-marking API units
 changed. Stop the API and worker before running `npm --prefix backend run db:migrate`
@@ -90,7 +103,7 @@ chat bubble). Everything under `/dashboard` and `/admin` sits behind
 | Marketing | `/`, `/about`, `/contact`, `/faq`, `/gallery`                                                                                                                                  |
 | Catalogue | `/batches`, `/courses`, `/courses/:category`, `/courses/:category/:slug`, `/courses/:category/:slug/schedule`, `/schedule`                                                      |
 | Auth      | `/login`, `/register`, `/verify-otp`, `/pending-approval`, `/forgot-password`, `/reset-password`                                                                                |
-| Student   | `/dashboard`, `/dashboard/courses`, `/dashboard/course/:slug`, `/dashboard/progress`, `/dashboard/exams(/:examId[/result])`, `/dashboard/payments`, `/dashboard/invoices/:id`   |
+| Student   | `/dashboard`, `/dashboard/courses`, `/dashboard/course/:slug`, `/dashboard/exams(/:examId[/result])`, `/dashboard/payments`, `/dashboard/invoices/:id`   |
 |           | `/dashboard/account`, `/dashboard/complaints(/:id)`, `/dashboard/subscriptions(/:batchId[/add])`, `/dashboard/checkout/:slug`, `/dashboard/learn/:slug`                         |
 | Player    | `/learn/:courseSlug/:lessonId` — full-bleed, outside `PublicLayout`, own auth guard                                                                                            |
 | Admin     | `/admin`, `/admin/students`, `/admin/courses`, `/admin/videos`, `/admin/exams`, `/admin/schedules`, `/admin/reports`                                                            |

@@ -7,7 +7,7 @@ let apiPromise = null;
 function loadYouTubeApi() {
   if (window.YT?.Player) return Promise.resolve(window.YT);
   if (apiPromise) return apiPromise;
-  apiPromise = new Promise((resolve) => {
+  apiPromise = new Promise((resolve, reject) => {
     const previous = window.onYouTubeIframeAPIReady;
     window.onYouTubeIframeAPIReady = () => {
       previous?.();
@@ -15,6 +15,12 @@ function loadYouTubeApi() {
     };
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
+    // A blocked or failed script must not leave a promise that never settles, or "Try again" could never work.
+    tag.onerror = () => {
+      tag.remove();
+      apiPromise = null;
+      reject(new Error('YouTube player script failed to load'));
+    };
     document.head.appendChild(tag);
   });
   return apiPromise;
@@ -45,10 +51,14 @@ const READY_TIMEOUT_MS = 8000;
  * seeks back to the first frame immediately so the related-videos end
  * screen never has a chance to render.
  *
+ * Until the first frame plays (and again after the video ends) a black cover
+ * hides the video, because YouTube paints its logo, title and "Watch on
+ * YouTube" over an unstarted embed.
+ *
  * If the IFrame API fails to load, the player never becomes ready, or the
- * video itself errors out, this gives up on the custom chrome entirely and
- * renders a plain YouTube embed with YouTube's own normal controls — a
- * working video with YouTube's own UI beats a broken custom one.
+ * video itself errors out, the player shows a "Try again" message. It never
+ * falls back to YouTube's own player, which would bring back "Watch on
+ * YouTube" and the recommended videos.
  *
  * This is deterrence, not DRM: the video id necessarily reaches the browser
  * to play at all, and a determined viewer can still find it in devtools.
@@ -66,13 +76,23 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
   const [muted, setMuted] = useState(false);
   const [rate, setRate] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
-  const [nativeFallback, setNativeFallback] = useState(false);
+  // True once the custom player gave up (API blocked, never ready, or a video error). There is no fallback to YouTube's
+  // own player: it brings back "Watch on YouTube" and the recommendations. The student gets a retry instead.
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  // False until the first frame is actually playing (and again after the video ends). YouTube paints its own logo,
+  // title and "Watch on YouTube" over an unstarted video, so a plain cover hides it until playback begins.
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
-    if (nativeFallback) return undefined;
+    if (failed) return undefined;
     let cancelled = false;
     let player;
-    const giveUp = () => { if (!cancelled) setNativeFallback(true); };
+    const giveUp = () => {
+      // If the script never answered, forget the pending load so the retry starts a fresh one.
+      if (!window.YT?.Player) apiPromise = null;
+      if (!cancelled) setFailed(true);
+    };
     const readyTimeout = setTimeout(giveUp, READY_TIMEOUT_MS);
     loadYouTubeApi().then((YT) => {
       if (cancelled || !hostRef.current) return;
@@ -93,10 +113,11 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
             setReady(true);
           },
           onStateChange: (event) => {
-            if (event.data === YT.PlayerState.PLAYING) { setPlaying(true); setDuration(event.target.getDuration()); }
+            if (event.data === YT.PlayerState.PLAYING) { setPlaying(true); setStarted(true); setDuration(event.target.getDuration()); }
             if (event.data === YT.PlayerState.PAUSED) setPlaying(false);
             if (event.data === YT.PlayerState.ENDED) {
               setPlaying(false);
+              setStarted(false);
               // Snap back to the first frame instead of letting YouTube's own
               // related-videos grid render over the finished video.
               event.target.seekTo(0, true);
@@ -116,7 +137,10 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
       playerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId, nativeFallback]);
+  }, [videoId, failed, attempt]);
+
+  // A different lecture starts covered again.
+  useEffect(() => { setStarted(false); }, [videoId]);
 
   useEffect(() => {
     if (!playing) return undefined;
@@ -171,19 +195,18 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
     if (event.key === 'ArrowLeft') playerRef.current?.seekTo(Math.max(0, current - 5), true);
   };
 
-  // The custom chrome above didn't pan out — give the student a working
-  // player with YouTube's own familiar controls instead of nothing.
-  if (nativeFallback) {
+  // The custom player could not start. Show our own message with a retry, never YouTube's own player.
+  if (failed) {
     return (
-      <div className="relative overflow-hidden rounded-xl bg-black">
-        <iframe
-          key={videoId}
-          src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`}
-          title={title ?? 'Lecture video'}
-          className="aspect-video w-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+      <div role="alert" className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-xl bg-black px-4 text-center text-white">
+        <p className="text-sm text-white/80">The video could not be loaded. Check your connection and try again.</p>
+        <button
+          type="button"
+          onClick={() => { setStarted(false); setReady(false); setAttempt((value) => value + 1); setFailed(false); }}
+          className="rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -210,7 +233,7 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         type="button"
         onClick={toggle}
         aria-label={playing ? 'Pause' : 'Play'}
-        className="absolute inset-0 flex h-full w-full items-center justify-center bg-transparent"
+        className={`absolute inset-0 flex h-full w-full items-center justify-center ${started ? 'bg-transparent' : 'bg-black'}`}
       >
         {!ready && <span className="text-sm text-white/70">Loading…</span>}
         {ready && !playing && (

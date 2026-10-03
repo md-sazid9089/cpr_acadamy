@@ -34,9 +34,9 @@ test('completion uses exact lesson counts rather than a rounded percentage', () 
   const expression = source.match(/const isCompleted = (.+);/)[1];
   const isCompleted = new Function('course', `return ${expression}`);
   assert.equal(isCompleted({ lessonCount: 2, completedLessons: 2, nextLesson: null }), true);
-  assert.equal(isCompleted({ lessonCount: 201, completedLessons: 200, progress: 100, nextLesson: { title: 'Remaining lesson' } }), false);
+  assert.equal(isCompleted({ lessonCount: 201, completedLessons: 200, nextLesson: { title: 'Remaining lesson' } }), false);
   assert.equal(isCompleted({ lessonCount: 0, completedLessons: 0, nextLesson: null }), false);
-  assert.equal(isCompleted({ progress: 100 }), false);
+  assert.equal(isCompleted({}), false);
   assert.ok(source.includes('Review Materials'));
   assert.ok(source.includes('course-completed'));
 });

@@ -234,7 +234,6 @@ export default function CoursePlayer() {
     mutationFn: markLessonComplete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dashboardKeys.myCourses });
-      queryClient.invalidateQueries({ queryKey: dashboardKeys.progress });
     },
   });
 

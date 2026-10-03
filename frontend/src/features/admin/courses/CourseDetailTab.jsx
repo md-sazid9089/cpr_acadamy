@@ -331,7 +331,7 @@ export default function CourseDetailTab() {
       <Card>
         <CardHeader
           title="Mixed exam policy"
-          description="Allowed range for deduction and pass mark when publishing a mixed (MTF + SBA) exam under this course."
+          description="Applies only to Mixed exams (MCQ + SBA) in this course: the deduction and pass mark of each Mixed exam must fall inside these ranges."
         />
         <CardBody className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -379,7 +379,7 @@ export default function CourseDetailTab() {
             />
           </div>
           <p className="text-xs text-stone-500 dark:text-brand-200">
-            A mixed exam under this course can only be published if its deduction and pass mark fall within these ranges.
+            The minimum cannot exceed the maximum. A Mixed exam under this course cannot be saved, as a draft or published, with a deduction or pass mark outside these ranges.
           </p>
         </CardBody>
       </Card>

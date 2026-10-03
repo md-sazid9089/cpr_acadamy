@@ -9,7 +9,6 @@ import {
   fetchMyCourses,
   fetchNotices,
   fetchPaymentHistory,
-  fetchProgressSummary,
   fetchSubscriptionBatches,
   fetchSubscriptionPlans,
   fetchSubscriptions,
@@ -21,7 +20,6 @@ import {
 
 export const dashboardKeys = {
   myCourses: ['dashboard', 'my-courses'],
-  progress: ['dashboard', 'progress'],
   upcomingExams: ['dashboard', 'upcoming-exams'],
   notices: ['dashboard', 'notices'],
   payments: ['dashboard', 'payments'],
@@ -36,10 +34,6 @@ export const dashboardKeys = {
 
 export function useMyCourses() {
   return useQuery({ queryKey: dashboardKeys.myCourses, queryFn: fetchMyCourses });
-}
-
-export function useProgressSummary() {
-  return useQuery({ queryKey: dashboardKeys.progress, queryFn: fetchProgressSummary });
 }
 
 export function useUpcomingExams() {
