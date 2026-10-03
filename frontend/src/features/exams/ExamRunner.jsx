@@ -8,6 +8,7 @@ import MtfQuestion from './components/MtfQuestion.jsx';
 import { fetchExamPaper, saveAnswer, submitExam } from './api/exams.api.js';
 import { answerState } from './answer-state.js';
 import { createAnswerQueue } from './answer-queue.js';
+import { dashboardKeys } from '@/features/student-dashboard/api/dashboard.queries.js';
 import Card from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -90,10 +91,20 @@ export default function ExamRunner() {
     if (paper?.version !== undefined) versionRef.current = paper.version;
   }, [paper]);
 
+  // The exam lists are cached for minutes. Once this paper is handed in they must stop offering it, or "Start exam"
+  // keeps showing on the course page until the cache expires (the server would refuse a second attempt anyway).
+  const refreshExamLists = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['course-hub', 'exams'] });
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.upcomingExams });
+    queryClient.invalidateQueries({ queryKey: ['exams', 'list'] });
+  }, [queryClient]);
+
   // A paper that was already handed in has nothing left to answer.
   useEffect(() => {
-    if (error?.code === 'ALREADY_SUBMITTED') navigate(`/dashboard/exams/${examId}/result`, { replace: true });
-  }, [error, examId, navigate]);
+    if (error?.code !== 'ALREADY_SUBMITTED') return;
+    refreshExamLists();
+    navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+  }, [error, examId, navigate, refreshExamLists]);
 
   const submitMutation = useMutation({
     mutationFn: async (payload) => {
@@ -102,13 +113,17 @@ export default function ExamRunner() {
     },
     onSuccess: (data) => {
       queue.current?.dispose();
+      refreshExamLists();
       navigate(`/dashboard/exams/${examId}/result`, {
         replace: true,
         state: data.lateSubmission ? { lateSubmission: true } : undefined,
       });
     },
     onError: (failure) => {
-      if (failure.code === 'ALREADY_SUBMITTED') navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+      if (failure.code === 'ALREADY_SUBMITTED') {
+        refreshExamLists();
+        navigate(`/dashboard/exams/${examId}/result`, { replace: true });
+      }
       if (failure.code === 'ATTEMPT_VERSION_CONFLICT') setVersionConflict(true);
     },
   });
