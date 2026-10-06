@@ -54,3 +54,22 @@ test('a rejected registration can still be approved later, but only by an admin'
     assert.equal((await status('rejected')).json().code, 'INVALID_STATUS_TRANSITION', 'other transitions are unchanged');
   } finally { await context.close(); }
 });
+test('an admin finds a student by the registration number shown on their course', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user();
+    await context.user('student', '01812345678');
+    const course = (await context.database.query("INSERT INTO courses(slug,title,category,price_minor) VALUES ('reg-course','Reg','FCPS',100) RETURNING id")).rows[0];
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [student.id, course.id]);
+    const { regNo } = (await admin.request('GET', `/admin/students/${student.id}`)).json().enrollments[0];
+    assert.match(regNo, /^\d{2}[0-9A-F]{6}$/);
+    for (const query of [regNo, regNo.toLowerCase(), ` ${regNo} `]) {
+      const response = await admin.request('GET', `/admin/students?status=ALL&search=${encodeURIComponent(query)}`);
+      assert.equal(response.statusCode, 200, response.body);
+      assert.deepEqual(response.json().map(row => row.id), [student.id], `search ${JSON.stringify(query)}`);
+    }
+    const wrongYear = `${String((Number(regNo.slice(0, 2)) + 1) % 100).padStart(2, '0')}${regNo.slice(2)}`;
+    assert.deepEqual((await admin.request('GET', `/admin/students?status=ALL&search=${wrongYear}`)).json(), []);
+  } finally { await context.close(); }
+});

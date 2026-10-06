@@ -116,9 +116,14 @@ export function studentRoutes(route, database, config) {
 
   route('GET', '/admin/students', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['ALL', 'otp_pending', 'awaiting_approval', 'active', 'rejected', 'suspended']).optional(), search: z.string().max(100).optional() }) }, async request => {
     const search = request.query.search ? `%${request.query.search.replace(/[\\%_]/g, character => `\\${character}`)}%` : null;
+    // A registration number (see registrationNumber) finds the student who holds that enrolment.
+    const regNo = /^(\d{2})([0-9a-f]{6})$/i.exec(request.query.search?.trim() ?? '');
     return (await database.query(`SELECT u.*,(SELECT count(*)::int FROM enrollments e WHERE e.user_id=u.id AND e.status='active' AND e.expires_at>now()) AS enrolment_count
     FROM users u WHERE role='student' AND ($1::text IS NULL OR $1='ALL' OR status=$1)
-    AND ($2::text IS NULL OR full_name ILIKE $2 OR mobile=$3) ORDER BY created_at DESC,id LIMIT $4 OFFSET $5`, [request.query.status || null, search, request.query.search || null, request.query.limit, request.query.offset])).rows.map(row => ({ ...publicUser(row), interest: row.interest, enrolmentCount: row.enrolment_count }));
+    AND ($2::text IS NULL OR full_name ILIKE $2 OR mobile=$3
+      OR ($6::text IS NOT NULL AND EXISTS (SELECT 1 FROM enrollments e WHERE e.user_id=u.id AND e.id::text LIKE $6 AND to_char(e.created_at AT TIME ZONE 'UTC','YY')=$7)))
+    ORDER BY created_at DESC,id LIMIT $4 OFFSET $5`, [request.query.status || null, search, request.query.search || null, request.query.limit, request.query.offset,
+      regNo ? `${regNo[2].toLowerCase()}%` : null, regNo ? regNo[1] : null])).rows.map(row => ({ ...publicUser(row), interest: row.interest, enrolmentCount: row.enrolment_count }));
   });
   route('GET', '/admin/students/:id', { auth: 'admin' }, async request => {
     const user = await one(database, "SELECT * FROM users WHERE id=$1 AND role='student'", [request.params.id]);

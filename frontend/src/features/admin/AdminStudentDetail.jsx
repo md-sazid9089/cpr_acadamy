@@ -102,6 +102,11 @@ export default function AdminStudentDetail() {
         </Link>
       ),
     },
+    {
+      key: 'regNo',
+      header: 'Reg No',
+      render: (row) => <span className="font-mono text-xs font-semibold text-stone-900 dark:text-white">{row.regNo}</span>,
+    },
     { key: 'enrolledAt', header: 'Enrolled', render: (row) => formatDate(row.enrolledAt) },
     { key: 'status', header: 'Status', align: 'right', render: (row) => <StatusBadge status={row.status} /> },
   ];

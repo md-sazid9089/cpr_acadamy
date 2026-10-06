@@ -7,6 +7,7 @@ import Table from '@/components/ui/Table.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Modal from '@/components/ui/Modal.jsx';
+import Input from '@/components/ui/Input.jsx';
 import { ACCOUNT_STATUS } from '@/constants';
 import { cn, formatDate } from '@/lib/utils';
 
@@ -22,12 +23,14 @@ const FILTERS = [
 export default function AdminStudents() {
   const [filter, setFilter] = useState(ACCOUNT_STATUS.AWAITING_APPROVAL);
   const [confirming, setConfirming] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [search, setSearch] = useState('');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: students = [], isLoading, isError, error, isFetching, refetch } = useQuery({
-    queryKey: ['admin', 'students', filter],
-    queryFn: () => fetchStudents({ status: filter }),
+    queryKey: ['admin', 'students', filter, search],
+    queryFn: () => fetchStudents({ status: filter, search }),
   });
 
   const statusMutation = useMutation({
@@ -135,6 +138,28 @@ export default function AdminStudents() {
       <Card>
         <CardHeader title="Students" description="Review registrations and manage account access. Click a row for details and payment history." />
 
+        <form
+          className="px-5 pt-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const value = searchText.trim();
+            setSearch(value);
+            // A support lookup shouldn't miss the student because of the status tab.
+            if (value) setFilter('ALL');
+          }}
+        >
+          <Input
+            type="search"
+            aria-label="Search students"
+            value={searchText}
+            onChange={(event) => {
+              setSearchText(event.target.value);
+              if (!event.target.value) setSearch('');
+            }}
+            placeholder="Search by name, mobile number or Reg No — press Enter"
+          />
+        </form>
+
         <div className="flex flex-wrap gap-2 px-5 pt-4">
           {FILTERS.map((option) => (
             <button
@@ -164,7 +189,7 @@ export default function AdminStudents() {
             onRetry={refetch}
             onRowClick={(row) => navigate(`/admin/students/${row.id}`)}
             emptyTitle="No students in this view"
-            emptyDescription="Try a different filter."
+                        emptyDescription={search ? `Nothing matches "${search}". Reg No looks like 26A3F9C1; mobile numbers must be exact.` : 'Try a different filter.'}
           />
         </div>
       </Card>
