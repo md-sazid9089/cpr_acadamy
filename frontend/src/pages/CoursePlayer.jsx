@@ -9,15 +9,14 @@ import {
   FaNoteSticky,
   FaFilePdf,
   FaCircleQuestion,
-  FaDownload,
+  FaArrowUpRightFromSquare,
   FaCheck,
 } from 'react-icons/fa6';
 import VideoPlayer from '@/features/learning/components/VideoPlayer.jsx';
-import SecurePdfViewer from '@/features/learning/components/SecurePdfViewer.jsx';
 import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useCourseVideos, useLessonContentUrl, useLessonNote, useSaveLessonNote } from '@/features/course-hub/api/courseHub.queries.js';
-import { markLessonComplete, fetchLessonContentUrl } from '@/features/course-hub/api/courseHub.api.js';
+import { markLessonComplete, openLectureNotes } from '@/features/course-hub/api/courseHub.api.js';
 import { useMyCourses, dashboardKeys, useCreateComplaint } from '@/features/student-dashboard/api/dashboard.queries.js';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -127,16 +126,11 @@ function NotesPanel({ courseSlug, lessonId }) {
   );
 }
 
-/** Downloadable / viewable lecture sheet for the lesson. */
+/** The lesson's lecture sheet, opened as a PDF in a new tab. */
 function LectureSheetPanel({ lesson }) {
   // The permanent PDF URL is never sent to the client — a fresh signed link is
   // fetched (and re-checks enrollment) only when the student actually asks for it.
-  const fetchLink = useMutation({ mutationFn: () => fetchLessonContentUrl(lesson.id, 'notes') });
-
-  const handleDownload = async () => {
-    const { url } = await fetchLink.mutateAsync();
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
+  const open = useMutation({ mutationFn: () => openLectureNotes(lesson.id) });
 
   return (
     <div>
@@ -147,25 +141,25 @@ function LectureSheetPanel({ lesson }) {
           </span>
           <div>
             <p className="text-sm font-semibold text-stone-900">Lecture Sheet (PDF)</p>
-            <p className="text-xs text-stone-500">{lesson.title}</p>
+            <p className="text-xs text-stone-500">
+              {lesson.hasNotes ? lesson.title : 'No lecture sheet has been added for this lesson yet.'}
+            </p>
           </div>
         </div>
-        {lesson.hasNotes ? (
-          <Button type="button" size="sm" variant="outline" onClick={handleDownload} isLoading={fetchLink.isPending}>
-            <FaDownload aria-hidden="true" className="h-3 w-3" />
-            Download
-          </Button>
-        ) : (
-          <Button size="sm" variant="outline" disabled title="Sheet will be available once uploaded">
-            <FaDownload aria-hidden="true" className="h-3 w-3" />
-            Download
-          </Button>
-        )}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => open.mutate()}
+          isLoading={open.isPending}
+          disabled={!lesson.hasNotes}
+          title={lesson.hasNotes ? 'Opens in a new tab' : 'Sheet will be available once uploaded'}
+        >
+          <FaArrowUpRightFromSquare aria-hidden="true" className="h-3 w-3" />
+          View PDF
+        </Button>
       </div>
-
-      <div className="mt-4">
-        <SecurePdfViewer title={`${lesson.title} — Lecture Sheet`} />
-      </div>
+      {open.isError && <p role="alert" className="mt-2 text-xs font-medium text-red-600">{open.error.message}</p>}
     </div>
   );
 }

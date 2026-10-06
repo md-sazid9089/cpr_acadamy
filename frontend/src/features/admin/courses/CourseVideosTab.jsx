@@ -11,7 +11,9 @@ import {
   fetchAdminVideos,
   updateChapter,
   updateVideo,
+  uploadPdf,
 } from '../api/admin.api.js';
+import { openLectureNotes } from '@/features/course-hub/api/courseHub.api.js';
 import { adminChaptersKey, adminVideosKey } from './keys.js';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
@@ -40,6 +42,14 @@ const EMPTY_FORM = {
   notesUrl: '',
   chapterId: '',
 };
+
+/** Uploaded PDFs live on Cloudinary or this server; anything else is a pasted link such as Google Drive. */
+const isUploadedNotes = (url) => /^\/api\/media\/[0-9a-f-]{36}\.pdf$/.test(url) || /^https:\/\/res\.cloudinary\.com\//.test(url);
+
+const NOTES_MODES = [
+  { id: 'upload', label: 'Upload PDF' },
+  { id: 'drive', label: 'Google Drive link' },
+];
 
 /** Lecture list for one course, organized by chapter (e.g. "Basic Airway", "Advanced Airway"). */
 export default function CourseVideosTab() {
@@ -93,6 +103,8 @@ export default function CourseVideosTab() {
 
   const openCreate = () => {
     setForm({ ...EMPTY_FORM, scheduledDate: new Date().toISOString().slice(0, 10) });
+    setNotesMode('upload');
+    setPdfError('');
     setEditing('new');
   };
 
@@ -107,12 +119,38 @@ export default function CourseVideosTab() {
       notesUrl: video.notesUrl ?? '',
       chapterId: video.chapterId ?? '',
     });
+    setNotesMode(video.notesUrl && !isUploadedNotes(video.notesUrl) ? 'drive' : 'upload');
+    setPdfError('');
     setEditing(video);
   };
 
   const closeModal = () => setEditing(null);
 
   const set = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
+
+  const [notesMode, setNotesMode] = useState('upload');
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [pdfError, setPdfError] = useState('');
+  const uploadNotes = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setPdfError('');
+    setPdfUploading(true);
+    try {
+      const notesUrl = await uploadPdf(file);
+      setForm((prev) => ({ ...prev, notesUrl }));
+    } catch (error) {
+      setPdfError(error.message);
+    } finally {
+      setPdfUploading(false);
+    }
+  };
+  const [notesOpenError, setNotesOpenError] = useState('');
+  const viewNotes = (lessonId) => {
+    setNotesOpenError('');
+    openLectureNotes(lessonId).catch((error) => setNotesOpenError(error.message));
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -222,6 +260,12 @@ export default function CourseVideosTab() {
           ))}
         </div>
 
+        {notesOpenError && (
+          <p role="alert" className="mx-5 mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+            {notesOpenError}
+          </p>
+        )}
+
         {isLoading ? (
           <ContentSkeleton label="Loading videos" />
         ) : isError ? (
@@ -282,15 +326,14 @@ export default function CourseVideosTab() {
                               <span className="text-brand-700 dark:text-brand-400">No video source</span>
                             )}
                             {video.notesUrl && (
-                              <a
-                                href={video.notesUrl}
-                                target="_blank"
-                                rel="noreferrer"
+                              <button
+                                type="button"
+                                onClick={() => viewNotes(video.id)}
                                 className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline dark:text-brand-400"
                               >
                                 <FaFileLines aria-hidden="true" className="h-3 w-3" />
                                 Lecture notes
-                              </a>
+                              </button>
                             )}
                           </p>
                         </div>
@@ -366,14 +409,76 @@ export default function CourseVideosTab() {
             placeholder="https://youtu.be/… (unlisted) or an HTTPS video link"
             hint="Paste the hosted video link (HTTPS). Required before a lecture can be published."
           />
-          <Input
-            label="Lecture notes URL"
-            type="url"
-            value={form.notesUrl}
-            onChange={set('notesUrl')}
-            placeholder="https://…/notes.pdf"
-            hint="Optional. Shown as a download beside the lecture."
-          />
+          <fieldset>
+            <legend className="text-sm font-medium text-stone-700 dark:text-brand-200">Lecture notes (PDF)</legend>
+            <div role="radiogroup" aria-label="How to add lecture notes" className="mt-1 inline-flex rounded-lg bg-stone-100 p-1 dark:bg-surface-dark">
+              {NOTES_MODES.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={notesMode === mode.id}
+                  onClick={() => {
+                    if (mode.id === notesMode) return;
+                    // Switching source drops the other kind of link so the two never mix.
+                    setNotesMode(mode.id);
+                    setPdfError('');
+                    setForm((prev) => ({ ...prev, notesUrl: '' }));
+                  }}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                    notesMode === mode.id ? 'border border-stone-200 bg-white text-brand-700 dark:bg-surface-dark-subtle dark:text-white' : 'text-stone-600 hover:text-stone-900 dark:text-brand-200',
+                  )}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+
+            {notesMode === 'upload' ? (
+              <div className="mt-3">
+                {form.notesUrl && (
+                  <div className="flex flex-wrap items-center gap-3 rounded-lg border border-stone-200 bg-surface-subtle px-3 py-2 text-sm dark:bg-surface-dark">
+                    <FaFileLines aria-hidden="true" className="h-4 w-4 text-red-600" />
+                    <span className="text-stone-700 dark:text-brand-200">PDF attached</span>
+                    <label htmlFor="lecture-notes-upload" className="cursor-pointer font-medium text-brand-600 hover:underline dark:text-brand-400">
+                      Replace
+                    </label>
+                    <button type="button" onClick={() => setForm((prev) => ({ ...prev, notesUrl: '' }))} className="font-medium text-red-600 hover:underline">
+                      Remove
+                    </button>
+                  </div>
+                )}
+                <input
+                  id="lecture-notes-upload"
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  aria-label="Upload lecture notes PDF"
+                  onChange={uploadNotes}
+                  disabled={pdfUploading}
+                  className={cn(
+                    'block w-full text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-700 disabled:opacity-60 dark:text-brand-200',
+                    form.notesUrl && 'sr-only',
+                  )}
+                />
+                {pdfUploading && <p className="mt-1 text-xs text-brand-600 dark:text-brand-400">Uploading PDF…</p>}
+                {pdfError && <p role="alert" className="mt-1 text-xs text-red-600">{pdfError}</p>}
+                <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">
+                  Optional. Up to 10 MB. Students open it with "View PDF" beside the lecture.
+                </p>
+              </div>
+            ) : (
+              <Input
+                containerClassName="mt-3"
+                aria-label="Google Drive link"
+                type="url"
+                value={form.notesUrl}
+                onChange={set('notesUrl')}
+                placeholder="https://drive.google.com/file/d/…/view?usp=sharing"
+                hint={'Optional. Link to one PDF file (not a folder), shared as "Anyone with the link". "View PDF" opens it in Google Drive.'}
+              />
+            )}
+          </fieldset>
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={closeModal}>

@@ -39,6 +39,26 @@ export async function fetchLessonContentUrl(lessonId, kind) {
   return data;
 }
 
+/**
+ * Opens a lesson's lecture PDF in a new tab. The tab is opened before the
+ * signed link is fetched, inside the click itself, so pop-up blockers allow it.
+ */
+export async function openLectureNotes(lessonId) {
+  const tab = window.open('', '_blank');
+  try {
+    const { url } = await fetchLessonContentUrl(lessonId, 'notes');
+    if (!tab) {
+      window.location.assign(url);
+      return;
+    }
+    tab.opener = null;
+    tab.location.replace(url);
+  } catch (error) {
+    tab?.close();
+    throw error;
+  }
+}
+
 /** The signed-in student's personal note for a lesson. `{ content, updatedAt }`. */
 export async function fetchLessonNote(lessonId) {
   const { data } = await apiClient.get(`/lessons/${lessonId}/notes`);

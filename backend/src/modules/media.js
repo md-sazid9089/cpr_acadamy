@@ -4,19 +4,20 @@ import { basename, extname, resolve } from 'node:path';
 import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
 import { ensure } from '../http.js';
+import { uploadsPath } from '../uploads.js';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const uploadBodyLimit = Math.ceil(MAX_IMAGE_BYTES * 1.4);
 const dataUrl = z.string().max(uploadBodyLimit).regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/);
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+const pdfBodyLimit = Math.ceil(MAX_PDF_BYTES * 1.4);
+const pdfDataUrl = z.string().max(pdfBodyLimit).regex(/^data:application\/pdf;base64,[A-Za-z0-9+/=]+$/);
 const imageTypes = {
   jpeg: { extension: 'jpg', mime: 'image/jpeg', signature: bytes => bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])) },
   png: { extension: 'png', mime: 'image/png', signature: bytes => bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) },
   webp: { extension: 'webp', mime: 'image/webp', signature: bytes => bytes.subarray(0, 4).equals(Buffer.from('RIFF')) && bytes.subarray(8, 12).equals(Buffer.from('WEBP')) },
 };
 
-function uploadsPath(config) {
-  return config?.uploadDir ?? resolve(process.cwd(), 'public', 'uploads');
-}
 
 // `cloudinary://<api_key>:<api_secret>@<cloud_name>` — parsed by hand rather than
 // relying on the SDK's implicit process.env.CLOUDINARY_URL pickup, so the
@@ -51,8 +52,33 @@ async function storeImage(config, dataUrlValue) {
   return { url: `/api/media/${filename}` };
 }
 
+/** Lecture-notes PDF: validated, then stored on Cloudinary (or local disk without it). */
+async function storePdf(config, dataUrlValue) {
+  const bytes = Buffer.from(dataUrlValue.slice(dataUrlValue.indexOf(',') + 1), 'base64');
+  ensure(bytes.length > 0 && bytes.length <= MAX_PDF_BYTES, 413, 'PDF_TOO_LARGE', 'PDFs must be 10 MB or smaller.');
+  ensure(bytes.subarray(0, 5).equals(Buffer.from('%PDF-')), 400, 'INVALID_PDF', 'The selected file is not a valid PDF.');
+
+  if (config?.cloudinaryUrl) {
+    configureCloudinary(config.cloudinaryUrl);
+    // 'raw' keeps the file exactly as uploaded; Cloudinary would otherwise treat a PDF as a multi-page image.
+    const result = await cloudinary.uploader.upload(dataUrlValue, {
+      folder: 'cpr-academy/notes',
+      public_id: `${randomUUID()}.pdf`,
+      resource_type: 'raw',
+    });
+    return { url: result.secure_url };
+  }
+
+  await mkdir(uploadsPath(config), { recursive: true });
+  const filename = `${randomUUID()}.pdf`;
+  await writeFile(resolve(uploadsPath(config), filename), bytes, { flag: 'wx' });
+  return { url: `/api/media/${filename}` };
+}
+
 export function mediaRoutes(route, config) {
   route('POST', '/admin/uploads/images', { auth: 'admin', bodyLimit: uploadBodyLimit, rateLimit: { max: 60, timeWindow: '1 minute' }, body: z.object({ data: dataUrl }).strict() }, async request => storeImage(config, request.body.data));
+
+  route('POST', '/admin/uploads/pdf', { auth: 'admin', bodyLimit: pdfBodyLimit, rateLimit: { max: 30, timeWindow: '1 minute' }, body: z.object({ data: pdfDataUrl }).strict() }, async request => storePdf(config, request.body.data));
 
   // Same validation/storage as the admin uploader, but for a student attaching a
   // payment screenshot to their own invoice — a narrower, tighter-throttled route

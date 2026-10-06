@@ -17,6 +17,22 @@ export async function uploadImage(file) {
 }
 import { QUESTION_TYPES } from '@/constants';
 
+/** Upload a lecture-notes PDF and return the URL to store as the lesson's notesUrl. */
+export async function uploadPdf(file) {
+  if (file?.type !== 'application/pdf' && !/\.pdf$/i.test(file?.name ?? '')) throw new Error('Choose a PDF file.');
+  if (file.size > 10 * 1024 * 1024) throw new Error('PDFs must be 10 MB or smaller.');
+  const encoded = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('The PDF could not be read.'));
+    reader.readAsDataURL(file);
+  });
+  // Some systems report a PDF with a blank or generic type; the server checks the bytes either way.
+  const data = `data:application/pdf;base64,${encoded.slice(encoded.indexOf(',') + 1)}`;
+  const response = await apiClient.post('/admin/uploads/pdf', { data });
+  return response.data.url;
+}
+
 /**
  * Admin data access. Every endpoint is role-gated server-side too — the
  * ProtectedRoute check is a UX affordance, not a security boundary.

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { fixture } from '../test-support/fixture.js';
 import { signContentToken } from '../src/security.js';
 import { one } from '../src/db.js';
+import { directNotesUrl, driveViewUrl } from '../src/modules/courses.js';
 
 test('catalog publication, admin permissions, and enrollment-protected lessons', async () => {
   const context = await fixture();
@@ -214,5 +215,65 @@ test('a signed content link stops working the moment its holder loses access, an
     assert.equal((await use(legacy)).statusCode, 403, 'links that name no student are refused');
     const forged = signContentToken({ lessonId: lesson.id, kind: 'video', userId: '00000000-0000-0000-0000-000000000000' }, context.config.tokenSecret, 600);
     assert.equal((await use(forged)).statusCode, 403, 'a link for an unknown user is refused');
+  } finally { await context.close(); }
+});
+test('Google Drive lecture notes open in Drive for students who can see the lesson, and folder links are refused', async () => {
+  const direct = 'https://drive.usercontent.google.com/download?id=1oQCAAd4MYQdDbLgcJFPonru1spRgwoah&export=download';
+  for (const shared of [
+    'https://drive.google.com/file/d/1oQCAAd4MYQdDbLgcJFPonru1spRgwoah/view?usp=sharing',
+    'https://drive.google.com/file/d/1oQCAAd4MYQdDbLgcJFPonru1spRgwoah/view',
+    'https://drive.google.com/open?id=1oQCAAd4MYQdDbLgcJFPonru1spRgwoah',
+    'https://drive.google.com/uc?export=download&id=1oQCAAd4MYQdDbLgcJFPonru1spRgwoah',
+  ]) assert.equal(directNotesUrl(shared), direct, shared);
+  assert.equal(directNotesUrl('https://media.example.test/intro.pdf'), 'https://media.example.test/intro.pdf', 'other hosts are untouched');
+  assert.equal(driveViewUrl('https://drive.google.com/uc?export=download&id=1oQCAAd4MYQdDbLgcJFPonru1spRgwoah'), 'https://drive.google.com/file/d/1oQCAAd4MYQdDbLgcJFPonru1spRgwoah/view');
+  assert.equal(driveViewUrl('https://res.cloudinary.com/demo/raw/upload/notes.pdf'), null);
+
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'drive-notes', title: 'Drive Notes', category: 'FCPS', price: 200 })).json();
+    const save = notesUrl => admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Intro', src: 'https://youtu.be/dQw4w9WgXcQ', notesUrl, scheduledAt: '2025-01-01T00:00:00Z', status: 'published' });
+    const folder = await save('https://drive.google.com/drive/folders/11oNJA0dcsP4abZzJBvTaTFPBLzg1faTU');
+    assert.equal(folder.statusCode, 400);
+    assert.match(folder.body, /not a Google Drive folder/);
+    const lesson = (await save('https://drive.google.com/open?id=1oQCAAd4MYQdDbLgcJFPonru1spRgwoah')).json();
+    assert.ok(lesson.id, 'a Drive file link is accepted');
+
+    // Students who can see the lesson are sent to the Drive file itself; others get nothing.
+    const student = await context.user();
+    const outsider = await context.user('student', '01812345678');
+    await admin.request('PATCH', `/admin/courses/${course.id}`, { isPublished: true });
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [student.id, course.id]);
+    assert.deepEqual((await student.request('GET', `/lessons/${lesson.id}/content-url?kind=notes`)).json(), { url: 'https://drive.google.com/file/d/1oQCAAd4MYQdDbLgcJFPonru1spRgwoah/view', expiresIn: null });
+    assert.equal((await outsider.request('GET', `/lessons/${lesson.id}/content-url?kind=notes`)).statusCode, 403);
+  } finally { await context.close(); }
+});
+test('an admin uploads a lecture PDF, and only enrolled students can open it through a signed link', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user();
+    const outsider = await context.user('student', '01812345678');
+    const pdf = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(2048, 7)]);
+    const upload = data => admin.request('POST', '/admin/uploads/pdf', { data });
+    assert.equal((await student.request('POST', '/admin/uploads/pdf', { data: `data:application/pdf;base64,${pdf.toString('base64')}` })).statusCode, 403, 'students cannot upload');
+    assert.equal((await upload(`data:application/pdf;base64,${Buffer.from('<html>not a pdf</html>').toString('base64')}`)).json().code, 'INVALID_PDF');
+    const uploaded = await upload(`data:application/pdf;base64,${pdf.toString('base64')}`);
+    assert.equal(uploaded.statusCode, 200, uploaded.body);
+    const { url } = uploaded.json();
+    assert.match(url, /^\/api\/media\/[0-9a-f-]{36}\.pdf$/);
+    assert.equal((await context.app.inject(url)).statusCode, 404, 'the stored file is never served publicly');
+
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'pdf-notes', title: 'PDF Notes', category: 'FCPS', price: 200, isPublished: true })).json();
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [student.id, course.id]);
+    const lesson = (await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Lesson 2: Shock', src: 'https://youtu.be/dQw4w9WgXcQ', notesUrl: url, scheduledAt: '2025-01-01T00:00:00Z', status: 'published' })).json();
+    assert.equal((await outsider.request('GET', `/lessons/${lesson.id}/content-url?kind=notes`)).statusCode, 403);
+    const link = (await student.request('GET', `/lessons/${lesson.id}/content-url?kind=notes`)).json().url;
+    const opened = await context.app.handle(new Request(new URL(link, 'http://localhost')));
+    assert.equal(opened.status, 200);
+    assert.equal(opened.headers.get('content-type'), 'application/pdf');
+    assert.equal(opened.headers.get('content-disposition'), 'inline; filename="Lesson 2 Shock.pdf"');
+    assert.deepEqual(Buffer.from(await opened.arrayBuffer()), pdf);
   } finally { await context.close(); }
 });

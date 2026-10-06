@@ -4,6 +4,7 @@ import { ensure, uuid, text, pageQuery, audit, ApiError } from '../http.js';
 import { signContentToken, verifyContentToken } from '../security.js';
 import { releasedSql } from './result-release.js';
 import { BlockedAddressError, isAllowedMediaUrl, safeFetch } from '../safe-fetch.js';
+import { localPdfPath, readLocalPdf } from '../uploads.js';
 
 export const money = z.number().min(0).max(1000000).refine(value => Math.abs(value * 100 - Math.round(value * 100)) < 0.000001, 'Use at most two decimal places');
 const timestamp = z.string().datetime({ offset: true });
@@ -42,7 +43,7 @@ const instructorReviewFields = z.object({
   feedback: z.string().trim().min(1).max(2000),
 }).strict();
 const videoFields = z.object({
-  courseId: uuid, title: text, src: z.union([mediaUrl, z.literal('')]).default(''), notesUrl: z.union([mediaUrl, z.literal('')]).default(''),
+  courseId: uuid, title: text, src: z.union([mediaUrl, z.literal('')]).default(''), notesUrl: z.union([mediaUrl.refine(value => !isDriveFolderUrl(value), 'Link to the PDF file itself, not a Google Drive folder.'), z.string().regex(localPdfPath), z.literal('')]).default(''),
   durationMinutes: z.number().int().min(0).max(1440).default(0), scheduledAt: timestamp,
   status: z.enum(['draft', 'published']).default('draft'), position: z.number().int().min(0).max(100000).default(0),
   chapterId: uuid.nullable().default(null),
@@ -108,6 +109,32 @@ export function isYouTubeUrl(url) {
   if (!url) return false;
   try { return YOUTUBE_HOSTS.has(new URL(url).hostname.replace(/^(www|m)\./, '')); }
   catch { return false; }
+}
+
+const isDriveFolderUrl = value => /^https:\/\/drive\.google\.com\/drive\/(u\/\d+\/)?folders\//.test(value);
+
+// A Google Drive "share" link opens Google's HTML viewer, not the file. Fetch the file itself instead.
+export function directNotesUrl(value) {
+  const id = driveFileId(value);
+  return id ? `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download` : value;
+}
+
+/** Google's own viewer page for a Drive file link, or null when the link is not a Drive file. */
+export function driveViewUrl(value) {
+  const id = driveFileId(value);
+  return id ? `https://drive.google.com/file/d/${encodeURIComponent(id)}/view` : null;
+}
+
+function driveFileId(value) {
+  let url;
+  try { url = new URL(value); } catch { return null; }
+  if (url.hostname !== 'drive.google.com') return null;
+  return url.pathname.match(/^\/file\/d\/([\w-]+)/)?.[1] ?? (/^\/(open|uc)$/.test(url.pathname) ? url.searchParams.get('id') : null);
+}
+
+/** "Lesson 3: Airway" -> "Lesson 3 Airway.pdf", safe inside a quoted Content-Disposition filename. */
+function notesFileName(title) {
+  return `${String(title ?? '').replace(/[^\w\s.-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 100) || 'lecture-notes'}.pdf`;
 }
 
 // The student-facing shape of a lesson. A YouTube link is inherently public (the
@@ -248,6 +275,10 @@ export function courseRoutes(route, database, config) {
   route('GET', '/lessons/:id/content-url', { auth: 'active', query: z.object({ kind: z.enum(['video', 'notes']) }) }, async request => {
     const { lesson, url } = await lessonContent(request.auth, request.params.id, request.query.kind);
     ensure(!isYouTubeUrl(url), 400, 'DIRECT_LINK_ONLY', 'This lesson plays directly; no signed link is issued for it.');
+    // Notes the academy keeps on Google Drive open in Drive itself. Enrolment was checked
+    // above, but the Drive link is permanent: whoever it is shared with can keep it.
+    const drive = request.query.kind === 'notes' ? driveViewUrl(url) : null;
+    if (drive) return { url: drive, expiresIn: null };
     // Notes are a single download, so a few minutes is plenty. A video's playback session can
     // run far longer than that, so its link outlives the lecture (with headroom for pausing).
     const ttlSeconds = request.query.kind === 'notes' ? 300 : Math.min(6 * 3600, Math.max(1800, (lesson.duration_minutes || 60) * 120));
@@ -262,15 +293,24 @@ export function courseRoutes(route, database, config) {
   route('GET', '/content/:token', { rateLimit: { max: 600, timeWindow: '1 minute' } }, async (request, reply) => {
     const payload = verifyContentToken(request.params.token, config.tokenSecret);
     ensure(payload?.userId, 403, 'LINK_EXPIRED', 'This link has expired. Reload the page and try again.');
-    const lesson = await one(database, 'SELECT src,notes_url,course_id,status,scheduled_at FROM lessons WHERE id=$1', [payload.lessonId]);
+    const lesson = await one(database, 'SELECT title,src,notes_url,course_id,status,scheduled_at FROM lessons WHERE id=$1', [payload.lessonId]);
     const holder = await one(database, 'SELECT role,status FROM users WHERE id=$1', [payload.userId]);
     ensure(lesson && holder?.status === 'active', 403, 'LINK_EXPIRED', 'This link has expired. Reload the page and try again.');
     if (holder.role !== 'admin') {
       ensure(lesson.status === 'published' && new Date(lesson.scheduled_at) <= new Date(), 403, 'LINK_EXPIRED', 'This link has expired. Reload the page and try again.');
       await requireCourseAccess(database, { role: holder.role, user_id: payload.userId }, lesson.course_id);
     }
-    const url = payload.kind === 'notes' ? lesson?.notes_url : lesson?.src;
+    const notes = payload.kind === 'notes';
+    const url = notes ? lesson?.notes_url && directNotesUrl(lesson.notes_url) : lesson?.src;
     ensure(url, 404, 'NOT_FOUND', 'This content is no longer available.');
+    const headers = { 'cache-control': 'private, no-store' };
+    if (notes) headers['content-disposition'] = `inline; filename="${notesFileName(lesson.title)}"`;
+    // An uploaded PDF kept on this server's disk (no Cloudinary configured).
+    if (notes && localPdfPath.test(url)) {
+      const bytes = await readLocalPdf(config, url);
+      ensure(bytes, 404, 'NOT_FOUND', 'This content is no longer available.');
+      return new Response(bytes, { headers: { ...headers, 'content-type': 'application/pdf', 'content-length': String(bytes.length) } });
+    }
     let upstream;
     try {
       upstream = await safeFetch(url, request.headers.range ? { headers: { range: request.headers.range } } : {});
@@ -278,12 +318,18 @@ export function courseRoutes(route, database, config) {
       if (error instanceof BlockedAddressError) request.log.warn({ lessonId: payload.lessonId }, 'Blocked a lecture URL that points at a non-public address');
       throw new ApiError(502, 'UPSTREAM_UNAVAILABLE', 'The content host could not be reached.');
     }
+    // A web page instead of a file means the link is wrong or not shared publicly (Drive answers a private file with a sign-in page).
+    if (notes && /^text\/html/i.test(upstream.headers['content-type'] ?? '')) {
+      upstream.body?.cancel?.().catch?.(() => {});
+      throw new ApiError(502, 'NOTES_NOT_A_FILE', "The lecture notes link doesn't lead to a PDF file. Ask the academy to check it is shared with \"Anyone with the link\".");
+    }
     reply.code(upstream.status);
-    const headers = { 'cache-control': 'private, no-store' };
     for (const name of ['content-type', 'content-length', 'accept-ranges', 'content-range']) {
       const value = upstream.headers[name];
       if (value) headers[name] = value;
     }
+    // Hosts like Drive label the PDF as a generic binary, which browsers will not display.
+    if (notes && (!headers['content-type'] || /octet-stream|binary/i.test(headers['content-type']))) headers['content-type'] = 'application/pdf';
     return new Response(upstream.body, { headers });
   });
 
