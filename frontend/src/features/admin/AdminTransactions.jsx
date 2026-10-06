@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FaCamera } from 'react-icons/fa6';
-import { confirmPayment, fetchAdminRevenue, rejectPayment } from './api/admin.api.js';
-import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
+import { confirmPayment, fetchAdminTransactions, rejectPayment } from './api/admin.api.js';
+import Card, { CardHeader } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -12,7 +12,7 @@ import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import Input, { Textarea } from '@/components/ui/Input.jsx';
 import { PAYMENT_METHODS, PAYMENT_STATUS } from '@/constants';
-import { cn, formatBDT, formatDateTime, formatNumber } from '@/lib/utils';
+import { cn, formatBDT, formatDateTime } from '@/lib/utils';
 
 const METHOD_LABELS = Object.fromEntries(PAYMENT_METHODS.map((method) => [method.id, method.label]));
 
@@ -185,41 +185,40 @@ export function ReconcileDialog({ payment, onClose, onDone }) {
   );
 }
 
-export default function AdminRevenue() {
+/**
+ * Every invoice with a status filter; pending manual payments get a Reconcile
+ * button that opens the approval dialog. Lives on the admin dashboard.
+ */
+export default function TransactionsPanel() {
   const [filter, setFilter] = useState(PAYMENT_STATUS.PENDING);
   const [reconciling, setReconciling] = useState(null);
   const queryClient = useQueryClient();
-  const { data, isLoading, isError, error, isFetching, refetch } = useQuery({ queryKey: ['admin', 'revenue'], queryFn: fetchAdminRevenue });
+  const { data, isLoading, isError, error, isFetching, refetch } = useQuery({ queryKey: ['admin', 'transactions'], queryFn: fetchAdminTransactions });
 
   const finishReconcile = () => {
     setReconciling(null);
     queryClient.invalidateQueries({ queryKey: ['admin'] });
   };
 
-  if (isLoading) {
-    return (
-      <ContentSkeleton variant="dashboard" label="Loading revenue" />
-    );
-  }
+  if (isLoading) return <ContentSkeleton variant="table" label="Loading transactions" />;
 
   if (isError || !data) {
     return (
-      <EmptyState
-        variant="error"
-        title="Couldn't load revenue"
-        description={error?.message || 'Something went wrong. Please try again.'}
-        onRetry={refetch}
-        isFetching={isFetching}
-      />
+      <Card>
+        <EmptyState
+          variant="error"
+          title="Couldn't load transactions"
+          description={error?.message || 'Something went wrong. Please try again.'}
+          onRetry={refetch}
+          isFetching={isFetching}
+        />
+      </Card>
     );
   }
 
-  const { summary, byMonth, byMethod, byCourse, transactions } = data;
-  const peak = Math.max(...byMonth.map((month) => month.amount), 1);
-  const monthChange = summary.lastMonth ? Math.round(((summary.thisMonth - summary.lastMonth) / summary.lastMonth) * 100) : 0;
-  const topCourse = byCourse[0]?.amount ?? 1;
-
+  const { transactions } = data;
   const rows = filter === 'ALL' ? transactions : transactions.filter((payment) => payment.status === filter);
+  const pendingCount = transactions.filter((payment) => payment.status === PAYMENT_STATUS.PENDING).length;
 
   const studentColumn = {
     key: 'studentName',
@@ -244,120 +243,35 @@ export default function AdminRevenue() {
         </Button>
       ) : null,
   }];
-  const pendingCount = transactions.filter((payment) => payment.status === PAYMENT_STATUS.PENDING).length;
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Revenue this month"
-          value={formatBDT(summary.thisMonth)}
-          hint={`${monthChange >= 0 ? '+' : ''}${monthChange}% vs last month`}
-        />
-        <StatCard label="Year to date" value={formatBDT(summary.yearToDate)} hint={`${formatNumber(summary.paidCount)} paid invoices`} />
-        <StatCard label="Awaiting payment" value={formatBDT(summary.pendingAmount)} hint={`${pendingCount} pending ${pendingCount === 1 ? 'invoice' : 'invoices'} to reconcile`} />
-        <StatCard label="Refunded" value={formatBDT(summary.refundedAmount)} hint="All time" />
+    <Card>
+      <CardHeader
+        title="Transaction approval"
+        description={`${pendingCount} pending ${pendingCount === 1 ? 'payment' : 'payments'}. Pending invoices are manual payments waiting for you to confirm the money arrived — confirming activates the student's access.`}
+      />
+      <div className="flex flex-wrap gap-2 px-5 pt-4">
+        {FILTERS.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => setFilter(option.id)}
+            className={cn(
+              'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+              filter === option.id
+                ? 'bg-brand-600 text-white'
+                : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
-
-      <div className="grid gap-6 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
-          <CardHeader title="Monthly revenue" description="Paid invoices, last six months." />
-          <CardBody>
-            {/* CSS bars — a charting library isn't warranted for six data points. */}
-            <div className="flex h-48 items-end justify-between gap-4">
-              {byMonth.map((month) => (
-                <div key={month.month} className="flex flex-1 flex-col items-center gap-2">
-                  <span className="text-xs font-medium text-stone-500 dark:text-brand-200">
-                    {Math.round(month.amount / 1000)}k
-                  </span>
-                  <div
-                    className="w-full rounded-t-lg bg-brand-500 dark:bg-brand-600"
-                    style={{ height: `${(month.amount / peak) * 100}%` }}
-                    title={formatBDT(month.amount)}
-                  />
-                  <span className="text-xs text-stone-500 dark:text-brand-200">{month.month}</span>
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader title="By payment method" description="All paid invoices." />
-          <CardBody className="space-y-4">
-            {byMethod.map((item) => (
-              <div key={item.method}>
-                <div className="mb-1.5 flex justify-between text-sm">
-                  <span className="font-medium text-stone-700 dark:text-brand-200">{METHOD_LABELS[item.method] ?? item.method}</span>
-                  <span className="text-stone-500 dark:text-brand-200">
-                    {formatBDT(item.amount)} · {item.share}%
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-surface-dark">
-                  <div className="h-full rounded-full bg-brand-600" style={{ width: `${item.share}%` }} />
-                </div>
-              </div>
-            ))}
-          </CardBody>
-        </Card>
+      <div className="mt-4">
+        <Table columns={columns} rows={rows} emptyTitle="No transactions" emptyDescription="Try a different filter." />
       </div>
-
-      <Card>
-        <CardHeader title="Revenue by course" description="Paid invoices in the transaction list below." />
-        <CardBody className="space-y-3">
-          {byCourse.length === 0 && <p className="text-sm text-stone-500 dark:text-brand-200">No paid invoices yet.</p>}
-          {byCourse.map((item) => (
-            <div key={item.courseId} className="grid items-center gap-3 sm:grid-cols-[1fr_auto]">
-              <div className="min-w-0">
-                <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
-                  <Link
-                    to={`/admin/courses/${item.courseId}`}
-                    className="truncate font-medium text-stone-800 hover:text-brand-700 dark:text-brand-200 dark:hover:text-brand-400"
-                  >
-                    {item.courseTitle}
-                  </Link>
-                  <span className="shrink-0 text-xs text-stone-500 dark:text-brand-200">
-                    {item.count} {item.count === 1 ? 'payment' : 'payments'}
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-surface-dark">
-                  <div className="h-full rounded-full bg-brand-600" style={{ width: `${Math.round((item.amount / topCourse) * 100)}%` }} />
-                </div>
-              </div>
-              <span className="text-right text-sm font-semibold text-stone-900 dark:text-white">{formatBDT(item.amount)}</span>
-            </div>
-          ))}
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader
-          title="Transactions"
-          description="Every invoice, newest first. Pending invoices are manual payments waiting for you to confirm the money arrived — confirming activates the student's access."
-        />
-        <div className="flex flex-wrap gap-2 px-5 pt-4">
-          {FILTERS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setFilter(option.id)}
-              className={cn(
-                'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-                filter === option.id
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <div className="mt-4">
-          <Table columns={columns} rows={rows} emptyTitle="No transactions" emptyDescription="Try a different filter." />
-        </div>
-      </Card>
 
       {reconciling && <ReconcileDialog payment={reconciling} onClose={() => setReconciling(null)} onDone={finishReconcile} />}
-    </div>
+    </Card>
   );
 }

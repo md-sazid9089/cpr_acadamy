@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { FaArrowLeftLong, FaEnvelope, FaIdCard, FaPhone, FaSchool } from 'react-icons/fa6';
 import { fetchStudent, fetchStudentPayments, updateStudentStatus } from './api/admin.api.js';
-import { PAYMENT_COLUMNS } from './AdminRevenue.jsx';
+import { PAYMENT_COLUMNS } from './AdminTransactions.jsx';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';

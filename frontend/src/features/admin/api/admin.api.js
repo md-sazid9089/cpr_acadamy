@@ -79,9 +79,10 @@ export async function fetchAdminReports() {
   return { ...data, revenueByMonth: data.revenueByMonth.map((row) => ({ ...row, month: monthLabel(row.month) })) };
 }
 
-export async function fetchAdminRevenue() {
+/** Recent invoices for the dashboard's approval panel (served by the revenue report endpoint). */
+export async function fetchAdminTransactions() {
   const { data } = await apiClient.get('/admin/revenue');
-  return { ...data, byMonth: data.byMonth.map((row) => ({ ...row, month: monthLabel(row.month) })) };
+  return { transactions: data.transactions };
 }
 
 // ─── Students ──────────────────────────────────────────────────────────────

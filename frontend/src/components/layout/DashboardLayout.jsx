@@ -97,7 +97,7 @@ export default function DashboardLayout({ variant = ROLES.STUDENT }) {
             <div className="mb-5">
               <h1 className="text-xl font-bold text-stone-900 dark:text-white">Admin panel</h1>
               <p className="text-sm text-stone-500 dark:text-brand-200">
-                Manage students, courses, revenue and reports.
+                Manage students, courses, payments and reports.
               </p>
             </div>
 
