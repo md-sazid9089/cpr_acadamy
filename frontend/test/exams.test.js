@@ -54,6 +54,7 @@ test('palette distinguishes blank, partial and complete MTF responses, including
   assert.equal(answerState(question, { a: false }), 'partial');
   assert.equal(answerState(question, { a: false, b: true, c: false, d: true, e: false }), 'answered');
   assert.equal(answerState({ ...question, type: 'sba' }, 'a'), 'answered');
+  assert.equal(answerState({ ...question, type: 'sba' }, null), 'unanswered', 'a cleared SBA pick counts as unanswered');
 });
 
 test('position API loads exams beyond the first hundred and forwards pagination and cancellation', async () => {

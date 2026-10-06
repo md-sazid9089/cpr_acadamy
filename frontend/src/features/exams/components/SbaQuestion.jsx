@@ -3,12 +3,14 @@ import { cn } from '@/lib/utils';
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
 /**
- * Single Best Answer: exactly one option may be selected.
+ * Single Best Answer: at most one option may be selected. Clicking the chosen
+ * option again, or "Clear answer", leaves the question blank — which matters
+ * when wrong answers carry negative marks.
  *
  * @param {Object} props
  * @param {import('@/types').Question} props.question
  * @param {string | undefined} props.value      Selected option id.
- * @param {(optionId: string) => void} props.onChange
+ * @param {(optionId: string | null) => void} props.onChange  null clears the answer.
  * @param {boolean} [props.readOnly]            Result review mode.
  * @param {string} [props.correctAnswer]        Shown only when readOnly.
  */
@@ -44,6 +46,8 @@ export default function SbaQuestion({ question, value, onChange, readOnly = fals
               checked={isSelected}
               disabled={readOnly}
               onChange={() => onChange?.(option.id)}
+              // A checked radio fires click but not change, so a second click is the unselect.
+              onClick={() => { if (isSelected) onChange?.(null); }}
               className="sr-only"
             />
 
@@ -66,6 +70,16 @@ export default function SbaQuestion({ question, value, onChange, readOnly = fals
           </label>
         );
       })}
+
+      {!readOnly && value != null && (
+        <button
+          type="button"
+          onClick={() => onChange?.(null)}
+          className="text-sm font-medium text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline disabled:pointer-events-none disabled:opacity-50 dark:text-brand-200 dark:hover:text-white"
+        >
+          Clear answer
+        </button>
+      )}
     </fieldset>
   );
 }
