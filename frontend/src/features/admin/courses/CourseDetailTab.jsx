@@ -114,6 +114,17 @@ export default function CourseDetailTab() {
     },
   });
 
+  // Saves only the price fields, so other unsaved edits on this page are left alone.
+  const removeOffer = useMutation({
+    mutationFn: () => updateCourse({ id: course.id, discountPrice: null, offer: null }),
+    onSuccess: (saved) => {
+      setForm((prev) => ({ ...prev, discountPrice: '', offerLabel: '', offerEndsAt: '' }));
+      queryClient.setQueryData(adminCourseKey(course.id), saved);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'courses'] });
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+    },
+  });
+
   const set = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
 
   const setHighlight = (index, value) =>
@@ -286,8 +297,22 @@ export default function CourseDetailTab() {
 
       {/* ── Fee & offer ── */}
       <Card>
-        <CardHeader title="Fee & offer" description="Regular fee, discounted fee and the label shown beside the discount." />
+        <CardHeader
+          title="Fee & offer"
+          description="Regular fee, discounted fee and the label shown beside the discount."
+          action={
+            (hasDiscount || course.discountPrice != null || course.offer) && (
+              <Button type="button" variant="danger" size="sm" onClick={() => removeOffer.mutate()} isLoading={removeOffer.isPending}>
+                <FaXmark aria-hidden="true" className="h-3.5 w-3.5" />
+                Remove offer
+              </Button>
+            )
+          }
+        />
         <CardBody className="space-y-4">
+          {removeOffer.isError && (
+            <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">{removeOffer.error.message}</p>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <Input label="Regular fee" type="number" required min={0} step={100} prefix="BDT" value={form.price} onChange={set('price')} />
             <Input

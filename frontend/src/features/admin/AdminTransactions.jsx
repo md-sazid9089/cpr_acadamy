@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
-import Input, { Textarea } from '@/components/ui/Input.jsx';
+import Input, { Select, Textarea } from '@/components/ui/Input.jsx';
 import { PAYMENT_METHODS, PAYMENT_STATUS } from '@/constants';
 import { cn, formatBDT, formatDateTime } from '@/lib/utils';
 
@@ -71,56 +71,36 @@ export const PAYMENT_COLUMNS = [
 ];
 
 /**
- * Confirm / reject dialog for one pending manual payment. Confirming is what
- * activates the student's enrolment, so it asks for the provider transaction
- * ID and a note on how it was verified; both are written to the audit log.
+ * Approval dialog for one pending manual payment. The admin picks the outcome
+ * from a dropdown and writes a comment: "Payment received" confirms it (which
+ * activates the student's enrolment, so it also needs the provider transaction
+ * ID); "Not received" rejects it. The comment goes to the audit log either way.
  */
 export function ReconcileDialog({ payment, onClose, onDone }) {
-  const [mode, setMode] = useState('confirm');
+  const [decision, setDecision] = useState('');
   const [transactionId, setTransactionId] = useState(payment?.transactionId ?? '');
-  const [evidence, setEvidence] = useState('');
-  const [reason, setReason] = useState('');
+  const [comment, setComment] = useState('');
 
   const confirm = useMutation({ mutationFn: confirmPayment, onSuccess: onDone });
   const reject = useMutation({ mutationFn: rejectPayment, onSuccess: onDone });
   const error = confirm.error ?? reject.error;
   const busy = confirm.isPending || reject.isPending;
+  const received = decision === 'received';
 
   const submit = (event) => {
     event.preventDefault();
-    if (mode === 'confirm') confirm.mutate({ id: payment.id, transactionId: transactionId.trim(), amount: payment.amount, evidence: evidence.trim() });
-    else reject.mutate({ id: payment.id, reason: reason.trim() });
+    if (received) confirm.mutate({ id: payment.id, transactionId: transactionId.trim(), amount: payment.amount, evidence: comment.trim() });
+    else reject.mutate({ id: payment.id, reason: comment.trim() });
   };
 
   return (
     <Modal
       open={Boolean(payment)}
       onClose={onClose}
-      title={mode === 'confirm' ? 'Confirm payment received' : 'Reject payment'}
+      title="Review payment"
       description={payment ? `${payment.invoiceNo} · ${payment.courseTitle} · ${formatBDT(payment.amount)}` : ''}
     >
       <form onSubmit={submit} className="space-y-4">
-        <div className="flex gap-2">
-          {[
-            { id: 'confirm', label: 'Payment received' },
-            { id: 'reject', label: 'Not received' },
-          ].map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setMode(option.id)}
-              className={cn(
-                'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-                mode === option.id
-                  ? option.id === 'confirm' ? 'bg-brand-600 text-white' : 'bg-red-600 text-white'
-                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
         {(payment?.payerMobile || payment?.screenshotUrl) && (
           <div className="rounded-lg border border-stone-200 bg-surface-subtle p-3 text-xs dark:border-stone-200 dark:bg-surface-dark">
             <p className="font-semibold text-stone-700 dark:text-brand-200">Submitted by the student</p>
@@ -139,45 +119,44 @@ export function ReconcileDialog({ payment, onClose, onDone }) {
           </p>
         )}
 
-        {mode === 'confirm' ? (
-          <>
-            <Input
-              label="Transaction ID"
-              required
-              minLength={3}
-              value={transactionId}
-              onChange={(event) => setTransactionId(event.target.value)}
-              placeholder="bKash / Nagad / bank reference"
-              hint={`Confirms exactly ${formatBDT(payment?.amount)} — the invoice amount cannot be changed here.`}
-            />
-            <Textarea
-              label="How was it verified?"
-              required
-              minLength={10}
-              rows={3}
-              value={evidence}
-              onChange={(event) => setEvidence(event.target.value)}
-              placeholder="e.g. Matched against the merchant statement on 12 Sep, sender 017…"
-            />
-          </>
-        ) : (
-          <Textarea
-            label="Reason"
+        <Select label="Payment status" required value={decision} onChange={(event) => setDecision(event.target.value)}>
+          <option value="" disabled>Select an option</option>
+          <option value="received">Payment received</option>
+          <option value="not-received">Not received</option>
+        </Select>
+
+        {received && (
+          <Input
+            label="Transaction ID"
             required
-            minLength={5}
-            rows={3}
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="e.g. No matching transfer found after 7 days."
+            minLength={3}
+            value={transactionId}
+            onChange={(event) => setTransactionId(event.target.value)}
+            placeholder="bKash / Nagad / bank reference"
+            hint={`Confirms exactly ${formatBDT(payment?.amount)} — the invoice amount cannot be changed here.`}
           />
         )}
+
+        <Textarea
+          label="Comment"
+          required
+          minLength={received ? 10 : 5}
+          rows={3}
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
+          placeholder={
+            decision === 'not-received'
+              ? 'e.g. No matching transfer found after 7 days.'
+              : 'e.g. Matched against the merchant statement on 12 Sep, sender 017…'
+          }
+        />
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" variant={mode === 'confirm' ? 'primary' : 'danger'} isLoading={busy}>
-            {mode === 'confirm' ? 'Confirm & activate access' : 'Reject payment'}
+          <Button type="submit" variant={decision === 'not-received' ? 'danger' : 'primary'} disabled={!decision} isLoading={busy}>
+            {decision === 'not-received' ? 'Reject payment' : 'Approve & activate access'}
           </Button>
         </div>
       </form>
