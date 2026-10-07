@@ -15,6 +15,11 @@ export function paymentDto(row) {
     payerMobile: row.payer_mobile ?? null, screenshotUrl: row.screenshot_url ?? null, proofSubmittedAt: row.proof_submitted_at ?? null };
 }
 
+function planDto(row) {
+  return { id: row.id, courseId: row.course_id, name: row.name, description: row.description, amount: row.price_minor / 100,
+    durationDays: row.duration_days, features: row.features, isActive: row.is_active };
+}
+
 const ownUpload = /^\/api\/media\/[0-9a-f-]{36}\.(?:jpg|png|webp)$/;
 
 /**
@@ -165,6 +170,21 @@ export function billingRoutes(route, database, config) {
     await audit(transaction, request.auth.user_id, 'subscription_plan.created', plan.id);
     return { ...input, id: plan.id };
   }));
+  // Every plan of one course — switched-off ones too, so an admin can bring a package back.
+  route('GET', '/admin/subscription-plans', { auth: 'admin', query: z.object({ courseId: uuid }) }, async request =>
+    (await database.query('SELECT * FROM subscription_plans WHERE course_id=$1 ORDER BY is_active DESC,name,id', [request.query.courseId])).rows.map(planDto));
+  // Plans are never deleted (subscriptions and invoices point at them); switching `isActive` off retires one.
+  route('PATCH', '/admin/subscription-plans/:id', { auth: 'admin', body: z.object({ name: text, description: z.string().max(2000), amount: money.refine(value => value > 0), durationDays: z.number().int().min(1).max(3650), features: z.array(text).max(20), isActive: z.boolean() })
+    .partial().strict().refine(body => Object.keys(body).length > 0, 'Send at least one field to change.') }, async request => database.transaction(async transaction => {
+    const input = request.body;
+    const plan = await one(transaction, 'SELECT * FROM subscription_plans WHERE id=$1 FOR UPDATE', [request.params.id]);
+    ensure(plan, 404, 'PLAN_NOT_FOUND', 'Subscription plan not found.');
+    const updated = await one(transaction, 'UPDATE subscription_plans SET name=$2,description=$3,price_minor=$4,duration_days=$5,features=$6,is_active=$7 WHERE id=$1 RETURNING *',
+      [plan.id, input.name ?? plan.name, input.description ?? plan.description, input.amount === undefined ? plan.price_minor : Math.round(input.amount * 100),
+        input.durationDays ?? plan.duration_days, JSON.stringify(input.features ?? plan.features), input.isActive ?? plan.is_active]);
+    await audit(transaction, request.auth.user_id, 'subscription_plan.updated', plan.id);
+    return planDto(updated);
+  }));
   route('GET', '/subscription-plans', { auth: 'active', query: z.object({ batchId: uuid }) }, async request => {
     const enrollment = await one(database, 'SELECT course_id FROM enrollments WHERE id=$1 AND user_id=$2', [request.query.batchId, request.auth.user_id]);
     ensure(enrollment, 404, 'NOT_FOUND', 'Batch not found.');
@@ -177,7 +197,9 @@ export function billingRoutes(route, database, config) {
     const rows = (await database.query(`SELECT s.*,p.name,p.description,p.price_minor FROM subscriptions s JOIN subscription_plans p ON p.id=s.plan_id WHERE s.user_id=$1 AND p.course_id=$2`, [request.auth.user_id, enrollment.course_id])).rows;
     const groups = { active: [], unpaid: [], previous: [] };
     for (const row of rows) groups[new Date(row.ends_at).getTime() > Date.now() ? 'active' : 'previous'].push({ id: row.id, name: row.name, description: row.description, amount: row.price_minor / 100, startsOn: row.starts_at, endsOn: row.ends_at });
-    groups.unpaid = (await database.query("SELECT * FROM payments WHERE user_id=$1 AND course_id=$2 AND plan_id IS NOT NULL AND status='pending'", [request.auth.user_id, enrollment.course_id])).rows.map(row => ({ id: row.id, name: row.description, amount: row.amount_minor / 100, dueOn: null }));
+    // `id` is the invoice to open; `awaitingApproval` means the student already sent proof and an admin has yet to confirm it.
+    groups.unpaid = (await database.query("SELECT * FROM payments WHERE user_id=$1 AND course_id=$2 AND plan_id IS NOT NULL AND status='pending' ORDER BY created_at DESC,id", [request.auth.user_id, enrollment.course_id])).rows
+      .map(row => ({ id: row.id, name: row.description, amount: row.amount_minor / 100, invoicedOn: row.created_at, awaitingApproval: Boolean(row.proof_submitted_at) }));
     return groups;
   });
 }

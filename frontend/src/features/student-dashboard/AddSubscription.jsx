@@ -4,6 +4,7 @@ import { useSubscriptionBatches, useSubscriptionPlans } from './api/dashboard.qu
 import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import DashboardPanel from './components/DashboardPanel.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import { formatBDT } from '@/lib/utils';
 
 /**
@@ -13,7 +14,7 @@ import { formatBDT } from '@/lib/utils';
  */
 export default function AddSubscription() {
   const { batchId } = useParams();
-  const { data: plans = [], isLoading } = useSubscriptionPlans(batchId);
+  const { data: plans = [], isLoading, isError, isFetching, refetch } = useSubscriptionPlans(batchId);
   const { data: batches = [] } = useSubscriptionBatches();
   const batch = batches.find((item) => item.id === batchId);
 
@@ -28,6 +29,14 @@ export default function AddSubscription() {
       <DashboardPanel title="Available Subscription Packages">
         {isLoading ? (
           <ContentSkeleton variant="cards" label="Loading packages" />
+        ) : isError ? (
+          <EmptyState
+            variant="error"
+            title="The packages could not be loaded"
+            description="Check your connection and try again."
+            onRetry={refetch}
+            isFetching={isFetching}
+          />
         ) : plans.length === 0 ? (
           <p className="py-10 text-center text-sm text-stone-500 dark:text-brand-200">
             No subscription packages are on offer for this batch right now.

@@ -5,3 +5,4 @@ export const adminChaptersKey = (courseId) => ['admin', 'chapters', courseId];
 export const adminExamsKey = (courseId) => ['admin', 'exams', courseId];
 export const adminExamKey = (examId) => ['admin', 'exam', examId];
 export const adminScheduleKey = (courseId) => ['admin', 'schedule', courseId];
+export const adminPlansKey = (courseId) => ['admin', 'subscription-plans', courseId];

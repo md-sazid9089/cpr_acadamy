@@ -6,6 +6,7 @@ import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import DashboardTabs from './components/DashboardTabs.jsx';
 import { SECONDARY_ACTION } from './Subscriptions.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
+import EmptyState from '@/components/ui/EmptyState.jsx';
 import { formatBDT, formatDate } from '@/lib/utils';
 
 const TABS = [
@@ -28,7 +29,7 @@ const EMPTY_TEXT = {
 export default function SubscriptionDetail() {
   const { batchId } = useParams();
   const [activeTab, setActiveTab] = useState('active');
-  const { data, isLoading } = useSubscriptions(batchId);
+  const { data, isLoading, isError, isFetching, refetch } = useSubscriptions(batchId);
 
   const items = data?.[activeTab] ?? [];
   const addHref = `/dashboard/subscriptions/${batchId}/add`;
@@ -46,6 +47,14 @@ export default function SubscriptionDetail() {
       <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-200 dark:bg-surface-dark-subtle">
         {isLoading ? (
           <ContentSkeleton label="Loading subscriptions" />
+        ) : isError ? (
+          <EmptyState
+            variant="error"
+            title="Your subscriptions could not be loaded"
+            description="Check your connection and try again."
+            onRetry={refetch}
+            isFetching={isFetching}
+          />
         ) : items.length === 0 ? (
           <div className="py-6 text-center">
             <p className="text-base italic text-stone-700 dark:text-brand-200">
@@ -71,18 +80,28 @@ export default function SubscriptionDetail() {
                   </span>
                 </div>
 
-                <p className="mt-1.5 text-xs text-stone-600 sm:text-sm dark:text-brand-200">
-                  {item.description}
-                </p>
+                {item.description && (
+                  <p className="mt-1.5 text-xs text-stone-600 sm:text-sm dark:text-brand-200">
+                    {item.description}
+                  </p>
+                )}
 
                 <dl className="mt-4 space-y-2 border-t border-stone-200 pt-3 text-xs dark:border-stone-200">
                   {activeTab === 'unpaid' ? (
-                    <div className="flex justify-between">
-                      <dt className="text-stone-500 dark:text-brand-200">Payment due</dt>
-                      <dd className="font-semibold text-brand-500 dark:text-brand-200">
-                        {formatDate(item.dueOn)}
-                      </dd>
-                    </div>
+                    <>
+                      <div className="flex justify-between">
+                        <dt className="text-stone-500 dark:text-brand-200">Invoiced on</dt>
+                        <dd className="font-semibold text-stone-800 dark:text-brand-200">
+                          {formatDate(item.invoicedOn)}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-stone-500 dark:text-brand-200">Status</dt>
+                        <dd className="font-semibold text-brand-500 dark:text-brand-200">
+                          {item.awaitingApproval ? 'Awaiting approval' : 'Payment pending'}
+                        </dd>
+                      </div>
+                    </>
                   ) : (
                     <>
                       <div className="flex justify-between">
@@ -103,12 +122,13 @@ export default function SubscriptionDetail() {
                   )}
                 </dl>
 
+                {/* An unpaid item's id is its invoice, which is where the transaction ID gets submitted. */}
                 {activeTab === 'unpaid' && (
                   <Link
-                    to={`/dashboard/checkout/${batchId}`}
+                    to={`/dashboard/invoices/${item.id}`}
                     className="mt-4 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white border border-stone-200 transition hover:bg-brand-700 sm:text-sm"
                   >
-                    Pay Now
+                    {item.awaitingApproval ? 'View Invoice' : 'Pay Now'}
                   </Link>
                 )}
               </li>

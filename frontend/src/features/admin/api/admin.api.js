@@ -141,6 +141,26 @@ export async function rejectPayment({ id, reason }) {
   return data;
 }
 
+// ─── Subscription plans ────────────────────────────────────────────────────
+
+/** Every plan of one course, retired ones included. */
+export async function fetchAdminSubscriptionPlans(courseId) {
+  const { data } = await apiClient.get('/admin/subscription-plans', { params: { courseId } });
+  return data;
+}
+
+/** @param {{ courseId: string, name: string, description?: string, amount: number, durationDays: number, features?: string[] }} plan */
+export async function createSubscriptionPlan(plan) {
+  const { data } = await apiClient.post('/admin/subscription-plans', plan);
+  return data;
+}
+
+/** Sends only the fields given; `isActive: false` retires a plan without deleting its history. */
+export async function updateSubscriptionPlan({ id, ...updates }) {
+  const { data } = await apiClient.patch(`/admin/subscription-plans/${id}`, updates);
+  return data;
+}
+
 // ─── Courses ───────────────────────────────────────────────────────────────
 
 function slugify(text) {

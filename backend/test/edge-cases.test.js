@@ -246,6 +246,32 @@ test('billing edge cases: idempotency conflicts, pending reuse, rejected invoice
     const plan = response.json();
     assert.equal((await other.request('POST', '/payments/initiate', { ...input, planId: plan.id }, { 'idempotency-key': 'other-plan-key' })).json().amount, 99.99);
     assert.equal((await other.request('POST', '/payments/initiate', { courseSlug: second.slug, method: 'manual', planId: plan.id }, { 'idempotency-key': 'wrong-course-plan-key' })).statusCode, 403, 'plans are scoped to their course');
+
+    // Admins can list, edit and retire plans; students cannot.
+    assert.equal((await other.request('GET', `/admin/subscription-plans?courseId=${course.id}`)).statusCode, 403);
+    response = await admin.request('GET', `/admin/subscription-plans?courseId=${course.id}`);
+    assert.deepEqual(response.json().map(item => [item.id, item.amount, item.durationDays, item.isActive]), [[plan.id, 99.99, 30, true]]);
+    assert.equal((await admin.request('PATCH', `/admin/subscription-plans/${plan.id}`, {})).statusCode, 400, 'an empty edit is refused');
+    assert.equal((await admin.request('PATCH', `/admin/subscription-plans/${plan.id}`, { amount: 0 })).statusCode, 400);
+    assert.equal((await admin.request('PATCH', `/admin/subscription-plans/${nil}`, { name: 'Ghost' })).statusCode, 404);
+    assert.equal((await other.request('PATCH', `/admin/subscription-plans/${plan.id}`, { name: 'Hijack' })).statusCode, 403);
+
+    // The student's unpaid list names the invoice to open and whether proof is already in.
+    const batchId = (await other.request('GET', '/me/subscriptions/batches')).json()[0].id;
+    let unpaid = (await other.request('GET', `/me/subscriptions?batchId=${batchId}`)).json().unpaid;
+    assert.deepEqual(unpaid.map(item => [item.amount, item.awaitingApproval]), [[99.99, false]]);
+    assert.ok(unpaid[0].invoicedOn);
+    assert.equal((await other.request('POST', `/payments/${unpaid[0].id}/proof`, { transactionId: 'PLAN-PROOF-1', payerMobile: '01812345678' })).statusCode, 200);
+    unpaid = (await other.request('GET', `/me/subscriptions?batchId=${batchId}`)).json().unpaid;
+    assert.equal(unpaid[0].awaitingApproval, true);
+
+    // Retiring a plan hides it from students but keeps its invoice, and an edit leaves untouched fields alone.
+    response = await admin.request('PATCH', `/admin/subscription-plans/${plan.id}`, { amount: 120.5, isActive: false });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.deepEqual([response.json().name, response.json().amount, response.json().durationDays, response.json().isActive], ['Monthly', 120.5, 30, false]);
+    assert.equal((await other.request('GET', `/subscription-plans?batchId=${batchId}`)).json().length, 0);
+    assert.equal((await other.request('GET', `/me/subscriptions?batchId=${batchId}`)).json().unpaid.length, 1);
+    assert.equal((await admin.request('GET', `/admin/subscription-plans?courseId=${course.id}`)).json()[0].isActive, false);
   } finally { await context.close(); }
 });
 

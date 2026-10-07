@@ -188,7 +188,11 @@ export default function Invoice() {
       {isPending && invoice.method === 'manual' && (
         <PaymentProofForm
           invoice={invoice}
-          onSubmitted={(updated) => queryClient.setQueryData(queryKey, (current) => ({ ...current, ...updated }))}
+          onSubmitted={(updated) => {
+            queryClient.setQueryData(queryKey, (current) => ({ ...current, ...updated }));
+            // My Courses and Subscriptions show "awaiting approval" off the same payment.
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+          }}
         />
       )}
 
