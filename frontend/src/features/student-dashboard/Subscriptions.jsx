@@ -142,7 +142,12 @@ export default function Subscriptions() {
 
                   <p className="mt-3 text-center text-xs text-stone-600 sm:text-sm dark:text-brand-200">{note}</p>
 
-                  <div className="mt-5 grid">{action}</div>
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    {action}
+                    <Link to={`/dashboard/subscriptions/${course.id}`} className={SECONDARY_ACTION}>
+                      View Subscriptions
+                    </Link>
+                  </div>
                 </div>
               );
             })}

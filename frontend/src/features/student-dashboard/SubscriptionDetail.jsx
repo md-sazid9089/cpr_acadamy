@@ -23,14 +23,20 @@ const EMPTY_TEXT = {
 };
 
 /**
- * /dashboard/subscriptions/:batchId — one batch's subscriptions, split across
- * the active / unpaid / previous tabs.
+ * /dashboard/subscriptions/:batchId — every course the student has, split
+ * across the active / unpaid / previous tabs: running courses, courses whose
+ * fee is still owed, and courses that have ended. Each course is followed by
+ * the packages bought on top of it. `batchId` only decides where the
+ * "Add Subscriptions" button leads. Until the student picks a tab, the first
+ * one that has anything in it opens, so a student with only an unpaid course
+ * lands on its pending fee rather than an empty "Active".
  */
 export default function SubscriptionDetail() {
   const { batchId } = useParams();
-  const [activeTab, setActiveTab] = useState('active');
-  const { data, isLoading, isError, isFetching, refetch } = useSubscriptions(batchId);
+  const [chosenTab, setChosenTab] = useState(null);
+  const { data, isLoading, isError, isFetching, refetch } = useSubscriptions();
 
+  const activeTab = chosenTab ?? TABS.find((tab) => data?.[tab.id]?.length)?.id ?? 'active';
   const items = data?.[activeTab] ?? [];
   const addHref = `/dashboard/subscriptions/${batchId}/add`;
 
@@ -42,7 +48,7 @@ export default function SubscriptionDetail() {
         showDashboardLink={false}
       />
 
-      <DashboardTabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
+      <DashboardTabs tabs={TABS} value={activeTab} onChange={setChosenTab} />
 
       <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white p-6 dark:border-stone-200 dark:bg-surface-dark-subtle">
         {isLoading ? (
@@ -72,12 +78,19 @@ export default function SubscriptionDetail() {
                 className="rounded-xl border border-stone-200 bg-white p-5 dark:border-stone-200 dark:bg-surface-dark"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-sm font-bold text-brand-600 sm:text-base dark:text-brand-300">
-                    {item.name}
-                  </h2>
-                  <span className="shrink-0 text-sm font-bold text-stone-900 dark:text-white">
-                    {formatBDT(item.amount)}
-                  </span>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-brand-200">
+                      {item.kind === 'course' ? 'Course enrolment' : `Subscription package · ${item.courseTitle}`}
+                    </p>
+                    <h2 className="mt-0.5 text-sm font-bold text-brand-600 sm:text-base dark:text-brand-300">
+                      {item.name}
+                    </h2>
+                  </div>
+                  {item.amount != null && (
+                    <span className="shrink-0 text-sm font-bold text-stone-900 dark:text-white">
+                      {formatBDT(item.amount)}
+                    </span>
+                  )}
                 </div>
 
                 {item.description && (
@@ -122,10 +135,10 @@ export default function SubscriptionDetail() {
                   )}
                 </dl>
 
-                {/* An unpaid item's id is its invoice, which is where the transaction ID gets submitted. */}
+                {/* The invoice is where the transaction ID gets submitted; with none yet, checkout creates it. */}
                 {activeTab === 'unpaid' && (
                   <Link
-                    to={`/dashboard/invoices/${item.id}`}
+                    to={item.invoiceId ? `/dashboard/invoices/${item.invoiceId}` : `/dashboard/checkout/${item.slug}`}
                     className="mt-4 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white border border-stone-200 transition hover:bg-brand-700 sm:text-sm"
                   >
                     {item.awaitingApproval ? 'View Invoice' : 'Pay Now'}

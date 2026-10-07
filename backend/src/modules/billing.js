@@ -191,15 +191,42 @@ export function billingRoutes(route, database, config) {
     return (await database.query('SELECT * FROM subscription_plans WHERE course_id=$1 AND is_active ORDER BY name,id', [enrollment.course_id])).rows.map(plan => ({ id: plan.id, name: plan.name, amount: plan.price_minor / 100, durationLabel: `${plan.duration_days} days`, features: plan.features }));
   });
   route('GET', '/me/subscriptions/batches', { auth: 'active' }, async request => (await database.query(`SELECT e.id,e.created_at,c.slug,c.title FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE e.user_id=$1 AND e.status='active' AND e.expires_at>now() ORDER BY c.title`, [request.auth.user_id])).rows.map(row => ({ id: row.id, slug: row.slug, title: row.title, regNo: registrationNumber(row.id, row.created_at) })));
-  route('GET', '/me/subscriptions', { auth: 'active', query: z.object({ batchId: uuid }) }, async request => {
-    const enrollment = await one(database, 'SELECT course_id FROM enrollments WHERE id=$1 AND user_id=$2', [request.query.batchId, request.auth.user_id]);
-    ensure(enrollment, 404, 'NOT_FOUND', 'Batch not found.');
-    const rows = (await database.query(`SELECT s.*,p.name,p.description,p.price_minor FROM subscriptions s JOIN subscription_plans p ON p.id=s.plan_id WHERE s.user_id=$1 AND p.course_id=$2`, [request.auth.user_id, enrollment.course_id])).rows;
+  // The student's subscriptions in three lists: active, unpaid and previous. Each course enrolment is listed in
+  // the one it belongs to (running, fee outstanding, lapsed) with the packages bought on top of it right after,
+  // so the page answers "which courses do I have, and what is the state of each". `batchId` narrows it to one
+  // enrolment. Every item carries `slug` and `invoiceId` so an unpaid one can open its invoice, or checkout when
+  // none exists yet.
+  route('GET', '/me/subscriptions', { auth: 'active', query: z.object({ batchId: uuid.optional() }) }, async request => {
+    const userId = request.auth.user_id;
+    const { batchId } = request.query;
+    const enrollments = (await database.query('SELECT e.*,c.slug,c.title,c.price_minor,c.discount_minor FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE e.user_id=$1 ORDER BY c.title,e.id', [userId])).rows
+      .filter(enrollment => !batchId || enrollment.id === batchId);
+    ensure(!batchId || enrollments.length, 404, 'NOT_FOUND', 'Batch not found.');
+    const packages = (await database.query('SELECT s.*,p.name,p.description,p.price_minor,p.course_id FROM subscriptions s JOIN subscription_plans p ON p.id=s.plan_id WHERE s.user_id=$1 ORDER BY s.ends_at DESC,s.id', [userId])).rows;
+    const payments = (await database.query("SELECT * FROM payments WHERE user_id=$1 AND status IN ('pending','paid') ORDER BY created_at DESC,id", [userId])).rows;
+
     const groups = { active: [], unpaid: [], previous: [] };
-    for (const row of rows) groups[new Date(row.ends_at).getTime() > Date.now() ? 'active' : 'previous'].push({ id: row.id, name: row.name, description: row.description, amount: row.price_minor / 100, startsOn: row.starts_at, endsOn: row.ends_at });
-    // `id` is the invoice to open; `awaitingApproval` means the student already sent proof and an admin has yet to confirm it.
-    groups.unpaid = (await database.query("SELECT * FROM payments WHERE user_id=$1 AND course_id=$2 AND plan_id IS NOT NULL AND status='pending' ORDER BY created_at DESC,id", [request.auth.user_id, enrollment.course_id])).rows
-      .map(row => ({ id: row.id, name: row.description, amount: row.amount_minor / 100, invoicedOn: row.created_at, awaitingApproval: Boolean(row.proof_submitted_at) }));
+    for (const enrollment of enrollments) {
+      const base = { slug: enrollment.slug, courseTitle: enrollment.title, invoiceId: null };
+      const mine = payments.filter(payment => payment.course_id === enrollment.course_id);
+      const course = { ...base, kind: 'course', name: enrollment.title, description: '' };
+      if (enrollment.status === 'active' || enrollment.status === 'expired') {
+        const running = enrollment.status === 'active' && new Date(enrollment.expires_at).getTime() > Date.now();
+        const paidFee = mine.find(payment => payment.plan_id === null && payment.status === 'paid');
+        groups[running ? 'active' : 'previous'].push({ ...course, id: enrollment.id, amount: paidFee ? paidFee.amount_minor / 100 : null, startsOn: enrollment.starts_at, endsOn: enrollment.expires_at });
+      }
+      for (const row of packages.filter(item => item.course_id === enrollment.course_id)) {
+        groups[new Date(row.ends_at).getTime() > Date.now() ? 'active' : 'previous'].push({ ...base, id: row.id, kind: 'plan', name: row.name, description: row.description, amount: row.price_minor / 100, startsOn: row.starts_at, endsOn: row.ends_at });
+      }
+      // `id` is the invoice to open; `awaitingApproval` means the student already sent proof and an admin has yet to confirm it.
+      const invoices = mine.filter(payment => payment.status === 'pending').map(payment => ({ ...base, id: payment.id, kind: payment.plan_id ? 'plan' : 'course', name: payment.description,
+        amount: payment.amount_minor / 100, invoicedOn: payment.created_at, awaitingApproval: Boolean(payment.proof_submitted_at), invoiceId: payment.id }));
+      // Enrolled but not invoiced yet: the fee is still owed, and checkout is where the invoice gets made.
+      if (enrollment.status === 'pending_payment' && !invoices.some(item => item.kind === 'course')) {
+        invoices.push({ ...course, id: enrollment.id, amount: (enrollment.discount_minor ?? enrollment.price_minor) / 100, invoicedOn: enrollment.created_at, awaitingApproval: false });
+      }
+      groups.unpaid.push(...invoices.sort((left, right) => (left.kind === 'course' ? 0 : 1) - (right.kind === 'course' ? 0 : 1)));
+    }
     return groups;
   });
 }

@@ -50,9 +50,9 @@ export async function fetchSubscriptionBatches() {
   return data;
 }
 
-/** `{ active, unpaid, previous }` for one enrolment. */
-export async function fetchSubscriptions(batchId) {
-  const { data } = await apiClient.get('/me/subscriptions', { params: { batchId } });
+/** `{ active, unpaid, previous }` across every course the student has, packages included. */
+export async function fetchSubscriptions() {
+  const { data } = await apiClient.get('/me/subscriptions');
   return data;
 }
 

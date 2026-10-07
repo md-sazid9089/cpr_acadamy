@@ -24,7 +24,7 @@ export const dashboardKeys = {
   notices: ['dashboard', 'notices'],
   payments: ['dashboard', 'payments'],
   subscriptionBatches: ['dashboard', 'subscription-batches'],
-  subscriptions: (batchId) => ['dashboard', 'subscriptions', batchId],
+  subscriptions: ['dashboard', 'subscriptions'],
   subscriptionPlans: (batchId) => ['dashboard', 'subscription-plans', batchId],
   accountProfile: ['dashboard', 'account-profile'],
   devices: ['dashboard', 'devices'],
@@ -55,12 +55,8 @@ export function useSubscriptionBatches() {
   });
 }
 
-export function useSubscriptions(batchId) {
-  return useQuery({
-    queryKey: dashboardKeys.subscriptions(batchId),
-    queryFn: () => fetchSubscriptions(batchId),
-    enabled: Boolean(batchId),
-  });
+export function useSubscriptions() {
+  return useQuery({ queryKey: dashboardKeys.subscriptions, queryFn: fetchSubscriptions });
 }
 
 export function useSubscriptionPlans(batchId) {

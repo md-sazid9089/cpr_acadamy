@@ -265,6 +265,13 @@ test('billing edge cases: idempotency conflicts, pending reuse, rejected invoice
     unpaid = (await other.request('GET', `/me/subscriptions?batchId=${batchId}`)).json().unpaid;
     assert.equal(unpaid[0].awaitingApproval, true);
 
+    // The course enrolment itself is listed too: running, with the fee paid, in the Active tab; nothing owed for it.
+    let listed = (await other.request('GET', `/me/subscriptions?batchId=${batchId}`)).json();
+    assert.deepEqual(listed.active.map(item => [item.kind, item.name, item.amount, item.invoiceId]), [['course', course.title, 1000, null]]);
+    assert.ok(listed.active[0].startsOn && listed.active[0].endsOn);
+    assert.deepEqual(listed.unpaid.map(item => item.kind), ['plan']);
+    assert.equal(listed.unpaid[0].invoiceId, unpaid[0].id);
+
     // Retiring a plan hides it from students but keeps its invoice, and an edit leaves untouched fields alone.
     response = await admin.request('PATCH', `/admin/subscription-plans/${plan.id}`, { amount: 120.5, isActive: false });
     assert.equal(response.statusCode, 200, response.body);
@@ -272,6 +279,31 @@ test('billing edge cases: idempotency conflicts, pending reuse, rejected invoice
     assert.equal((await other.request('GET', `/subscription-plans?batchId=${batchId}`)).json().length, 0);
     assert.equal((await other.request('GET', `/me/subscriptions?batchId=${batchId}`)).json().unpaid.length, 1);
     assert.equal((await admin.request('GET', `/admin/subscription-plans?courseId=${course.id}`)).json()[0].isActive, false);
+
+    // An enrolment nobody has paid for shows its fee under Unpaid (no invoice yet, so checkout), then the invoice once it exists.
+    const late = await context.user('student', '01912345678');
+    const lateEnrollment = await one(context.database, 'INSERT INTO enrollments(user_id,course_id) VALUES ($1,$2) RETURNING id', [late.id, course.id]);
+    listed = (await late.request('GET', `/me/subscriptions?batchId=${lateEnrollment.id}`)).json();
+    assert.deepEqual([listed.active.length, listed.previous.length], [0, 0]);
+    assert.deepEqual(listed.unpaid.map(item => [item.kind, item.amount, item.invoiceId, item.slug]), [['course', 1000, null, 'edge-course']]);
+    const lateInvoice = (await late.request('POST', '/payments/initiate', input, { 'idempotency-key': 'late-invoice-key' })).json();
+    listed = (await late.request('GET', `/me/subscriptions?batchId=${lateEnrollment.id}`)).json();
+    assert.deepEqual(listed.unpaid.map(item => [item.kind, item.invoiceId, item.awaitingApproval]), [['course', lateInvoice.id, false]]);
+
+    // A lapsed enrolment moves from Active to Previous.
+    await context.database.query("UPDATE enrollments SET starts_at=now()-interval '400 days',expires_at=now()-interval '10 days' WHERE id=$1", [batchId]);
+    listed = (await other.request('GET', `/me/subscriptions?batchId=${batchId}`)).json();
+    assert.deepEqual([listed.active.length, listed.previous.map(item => item.kind)], [0, ['course']]);
+
+    // Without a batch, every course is listed: running, lapsed and unpaid ones side by side.
+    const multi = await context.user('student', '01612345678');
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days'),($1,$3,'active',now()-interval '90 days',now()-interval '5 days')", [multi.id, course.id, second.id]);
+    await context.database.query('INSERT INTO enrollments(user_id,course_id) VALUES ($1,$2)', [multi.id, draft.id]);
+    listed = (await multi.request('GET', '/me/subscriptions')).json();
+    assert.deepEqual(listed.active.map(item => item.name), ['Edge Course']);
+    assert.deepEqual(listed.previous.map(item => item.name), ['Second Course']);
+    assert.deepEqual(listed.unpaid.map(item => [item.name, item.amount, item.invoiceId]), [['Draft Course', 500, null]]);
+    assert.equal((await multi.request('GET', `/me/subscriptions?batchId=${nil}`)).statusCode, 404);
   } finally { await context.close(); }
 });
 
