@@ -24,7 +24,8 @@ test('migrations are repeatable and the database enforces financial and identity
 test('production refuses embedded storage and missing secrets', () => {
   assert.throws(() => loadConfig({ NODE_ENV: 'production', DATABASE_MODE: 'pglite' }), /PostgreSQL/);
   assert.throws(() => loadConfig({ NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost/test' }), /TOKEN_SECRET/);
-  const production = { NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost/test', TOKEN_SECRET: 'x'.repeat(32), CORS_ORIGINS: 'https://app.example' };
+  assert.throws(() => loadConfig({ NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost/test', TOKEN_SECRET: 'x'.repeat(32), CORS_ORIGINS: 'https://app.example' }), /ADMIN_GATE_KEY/);
+  const production = { NODE_ENV: 'production', DATABASE_URL: 'postgres://localhost/test', TOKEN_SECRET: 'x'.repeat(32), CORS_ORIGINS: 'https://app.example', ADMIN_GATE_KEY: 'g'.repeat(16) };
   assert.throws(() => loadConfig(production), /TRUST_PROXY/);
   assert.throws(() => loadConfig({ ...production, TRUST_PROXY: 'yes' }), /TRUST_PROXY/);
   assert.equal(loadConfig({ ...production, TRUST_PROXY: 'true', WORKER_MODE: 'embedded' }).trustProxy, true);

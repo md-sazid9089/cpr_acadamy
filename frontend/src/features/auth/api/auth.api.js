@@ -7,9 +7,23 @@ import apiClient from '@/lib/api-client';
  * token issued to a different X-Device-Id (sent by the api-client).
  */
 
-/** @param {{ mobile: string, password: string, rememberMe?: boolean }} credentials */
-export async function login({ mobile, password, rememberMe }) {
-  const { data } = await apiClient.post('/auth/login', { mobile, password, rememberMe: Boolean(rememberMe) });
+/**
+ * Admins must also send the pass from the staff access page (`gatePass`).
+ *
+ * @param {{ mobile: string, password: string, rememberMe?: boolean, gatePass?: string }} credentials
+ */
+export async function login({ mobile, password, rememberMe, gatePass }) {
+  const { data } = await apiClient.post(
+    '/auth/login',
+    { mobile, password, rememberMe: Boolean(rememberMe) },
+    gatePass ? { headers: { 'X-Admin-Gate': gatePass } } : undefined,
+  );
+  return data;
+}
+
+/** Staff access page: trades the access key for a pass that lets this device sign in as an admin. */
+export async function openAdminGate(key) {
+  const { data } = await apiClient.post('/auth/admin-gate', { key });
   return data;
 }
 

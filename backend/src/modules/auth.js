@@ -1,8 +1,8 @@
-import { randomInt } from 'node:crypto';
+import { randomInt, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { one } from '../db.js';
-import { hashPassword, verifyPassword, newToken, digestToken, publicUser } from '../security.js';
-import { ApiError, ensure, mobile, password, text, throttle, failureThrottle, audit } from '../http.js';
+import { hashPassword, verifyPassword, newToken, digestToken, publicUser, signContentToken, verifyContentToken } from '../security.js';
+import { ApiError, ensure, mobile, password, text, throttle, failureThrottle, audit, SHARED_BUCKET_MULTIPLIER } from '../http.js';
 import { enqueueSms, requireSms } from '../sms.js';
 import { enqueueEmail, requireEmail } from '../email.js';
 
@@ -33,6 +33,11 @@ export function authRoutes(route, database, config) {
   const secret = config.tokenSecret;
   const dummyHashPromise = hashPassword(newToken());
   const device = request => z.string().min(8).max(200).parse(request.headers['x-device-id']);
+  // A gate pass is only good on the device that entered the access key.
+  const hasGatePass = (request, deviceId) => {
+    const pass = verifyContentToken(request.headers['x-admin-gate'] ?? '', secret);
+    return pass?.purpose === 'admin-gate' && pass.device === deviceId;
+  };
 
   async function issueSession(transaction, user, deviceId) {
     const accessToken = newToken();
@@ -106,6 +111,23 @@ export function authRoutes(route, database, config) {
     return { ok: true, mobile: data.mobile, otpSentAt: new Date().toISOString() };
   });
 
+  // First layer for admins: the staff page's access key. Comparing digests keeps the check constant-time
+  // whatever the length of the guess.
+  route('POST', '/auth/admin-gate', { body: z.object({ key: z.string().min(1).max(200) }).strict(), rateLimit: { max: 30, timeWindow: '15 minutes' } }, async request => {
+    ensure(config.adminGateKey, 404, 'NOT_FOUND', 'Not found.');
+    const deviceId = device(request);
+    // Per address only: a site-wide counter would let anyone lock the real admins out with wrong guesses.
+    const failures = failureThrottle(database, config, [['admin-gate-address', request.ip, request.ip === 'unknown' ? 5 * SHARED_BUCKET_MULTIPLIER : 5]]);
+    await failures.blocked();
+    const valid = timingSafeEqual(Buffer.from(digestToken(request.body.key, secret), 'hex'), Buffer.from(digestToken(config.adminGateKey, secret), 'hex'));
+    if (!valid) {
+      await failures.fail();
+      throw new ApiError(401, 'INVALID_GATE_KEY', 'That access key is not correct.');
+    }
+    await failures.succeed();
+    return { gatePass: signContentToken({ purpose: 'admin-gate', device: deviceId }, secret, config.adminGateSeconds), expiresAt: Date.now() + config.adminGateSeconds * 1000 };
+  });
+
   route('POST', '/auth/login', { body: z.object({ mobile, password: z.string().min(1).max(128), rememberMe: z.boolean().optional() }).strict(), rateLimit: { max: 120, timeWindow: '15 minutes' } }, async request => {
     const deviceId = device(request);
     // Only wrong passwords count. The tight limit is per account AND caller, so a stranger cannot lock the owner
@@ -120,6 +142,11 @@ export function authRoutes(route, database, config) {
     if (!valid || !user) {
       await failures.fail();
       throw new ApiError(401, 'INVALID_CREDENTIALS', 'No account matches that mobile number and password.');
+    }
+    // The right password is not enough for an admin: the device must also hold a pass from the staff page.
+    if (user.role === 'admin' && config.adminGateKey && !hasGatePass(request, deviceId)) {
+      await audit(database, user.id, 'auth.admin_gate_blocked', user.id, { ip: request.ip });
+      throw new ApiError(403, 'ADMIN_GATE_REQUIRED', 'Administrators sign in from the staff access page.');
     }
     await failures.succeed();
     return database.transaction(async transaction => {

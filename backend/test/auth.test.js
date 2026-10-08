@@ -169,3 +169,52 @@ test('wrong guesses lock out only the guesser, never the account owner, and good
     await database.close();
   }
 });
+
+test('admins need the staff access key before their password works; students do not', async () => {
+  const database = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });
+  await migrate(database);
+  const gateKey = 'staff-access-key-for-tests';
+  const app = await buildApp({ database, config: loadConfig({ NODE_ENV: 'test', SMS_MODE: 'test', TRUST_PROXY: 'true', ADMIN_GATE_KEY: gateKey, TOKEN_SECRET: 'test-secret-with-at-least-32-characters' }) });
+  const password = 'Synthetic-test-password';
+  for (const [mobile, role] of [['01711111111', 'admin'], ['01722222222', 'student']]) {
+    await database.query("INSERT INTO users(mobile,full_name,password_hash,role,status,mobile_verified_at) VALUES ($1,'User',$2,$3,'active',now())", [mobile, await hashPassword(password), role]);
+  }
+  const gate = (key, device = 'device-0001', address = '203.0.113.10') => app.inject({ method: 'POST', url: '/api/auth/admin-gate', headers: { 'x-device-id': device, 'x-forwarded-for': address }, payload: { key } });
+  const login = (mobile, extra = {}, device = 'device-0001') => app.inject({ method: 'POST', url: '/api/auth/login', headers: { 'x-device-id': device, 'x-forwarded-for': '203.0.113.10', ...extra }, payload: { mobile, password } });
+  try {
+    assert.equal((await login('01722222222')).statusCode, 200, 'students sign in as before');
+
+    const blocked = await login('01711111111');
+    assert.equal(blocked.statusCode, 403, 'the right admin password alone is refused');
+    assert.equal(blocked.json().code, 'ADMIN_GATE_REQUIRED');
+    assert.equal((await one(database, "SELECT count(*)::int AS n FROM audit_log WHERE action='auth.admin_gate_blocked'")).n, 1, 'the blocked attempt is audited');
+    assert.equal((await login('01711111111', { 'x-admin-gate': 'forged.pass' })).statusCode, 403);
+
+    assert.equal((await gate('wrong-key')).statusCode, 401);
+    const opened = await gate(gateKey);
+    assert.equal(opened.statusCode, 200);
+    const { gatePass } = opened.json();
+    assert.equal((await login('01711111111', { 'x-admin-gate': gatePass }, 'device-9999')).statusCode, 403, 'a pass only works on the device that earned it');
+    const signedIn = await login('01711111111', { 'x-admin-gate': gatePass });
+    assert.equal(signedIn.statusCode, 200);
+    assert.equal(signedIn.json().user.role, 'admin');
+
+    const guesses = [];
+    for (let attempt = 0; attempt < 6; attempt += 1) guesses.push((await gate(`guess-${attempt}`, 'device-0002', '198.51.100.7')).statusCode);
+    assert.deepEqual(guesses, [401, 401, 401, 401, 401, 429], 'key guessing is throttled per address');
+    assert.equal((await gate(gateKey, 'device-0003', '203.0.113.20')).statusCode, 200, 'other addresses are not locked out');
+  } finally {
+    await app.close();
+    await database.close();
+  }
+});
+
+test('the staff access endpoint does not exist when no key is configured', async () => {
+  const context = await fixture();
+  try {
+    const response = await context.app.inject({ method: 'POST', url: '/api/auth/admin-gate', headers: { 'x-device-id': 'device-0001' }, payload: { key: 'anything' } });
+    assert.equal(response.statusCode, 404);
+  } finally {
+    await context.close();
+  }
+});

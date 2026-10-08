@@ -58,7 +58,12 @@ export default function Login() {
       const fallback = session.user.role === ROLES.ADMIN ? '/admin' : '/dashboard';
       navigate(location.state?.from ?? fallback, { replace: true });
     } catch (error) {
-      setSubmitError(error.message ?? 'Sign in failed. Please try again.');
+      // Admins sign in from the staff access page; deliberately not linked from here.
+      setSubmitError(
+        error.code === 'ADMIN_GATE_REQUIRED'
+          ? 'This account signs in from the staff access page.'
+          : (error.message ?? 'Sign in failed. Please try again.'),
+      );
     }
   };
 

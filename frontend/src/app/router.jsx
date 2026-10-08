@@ -8,7 +8,7 @@ import ProtectedRoute from '@/features/auth/ProtectedRoute.jsx';
 // pulls every primitive it re-exports into whichever chunk does the importing,
 // and this file is the entry chunk.
 import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
-import { ROLES } from '@/constants';
+import { ADMIN_GATE_PATH, ROLES } from '@/constants';
 
 // Marketing pages stay in the entry chunk: they are what a first-time visitor
 // lands on, so splitting them would only add a round trip before first paint.
@@ -38,6 +38,7 @@ const VerifyOtp = lazy(() => import('@/features/auth/VerifyOtp.jsx'));
 const PendingApproval = lazy(() => import('@/features/auth/PendingApproval.jsx'));
 const ForgotPassword = lazy(() => import('@/features/auth/ForgotPassword.jsx'));
 const ResetPassword = lazy(() => import('@/features/auth/ResetPassword.jsx'));
+const AdminGate = lazy(() => import('@/features/auth/AdminGate.jsx'));
 
 // Student dashboard
 const Overview = lazy(() => import('@/features/student-dashboard/Overview.jsx'));
@@ -132,6 +133,7 @@ const router = createBrowserRouter([
       { path: '/pending-approval', element: suspend(<PendingApproval />, 'form') },
       { path: '/forgot-password', element: suspend(<ForgotPassword />, 'form') },
       { path: '/reset-password', element: suspend(<ResetPassword />, 'form') },
+      { path: ADMIN_GATE_PATH, element: suspend(<AdminGate />, 'form') },
     ],
   },
   { path: '*', element: <NotFound /> },

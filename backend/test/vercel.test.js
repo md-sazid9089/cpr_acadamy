@@ -6,7 +6,7 @@ import { loadConfig } from '../src/config.js';
 import { enqueueSms } from '../src/sms.js';
 import { isCronAuthorized, maintainAfterRequest } from '../src/worker.js';
 
-const production = { NODE_ENV: 'production', DATABASE_URL: 'postgres://db.example.test/app', TOKEN_SECRET: 'x'.repeat(40), CORS_ORIGINS: 'https://app.example.test', TRUST_PROXY: 'true' };
+const production = { NODE_ENV: 'production', DATABASE_URL: 'postgres://db.example.test/app', TOKEN_SECRET: 'x'.repeat(40), ADMIN_GATE_KEY: 'g'.repeat(24), CORS_ORIGINS: 'https://app.example.test', TRUST_PROXY: 'true' };
 
 test('on Vercel the worker runs serverless, which needs a cron secret, and the database pool stays small', () => {
   assert.throws(() => loadConfig({ ...production, VERCEL: '1' }), /CRON_SECRET/);

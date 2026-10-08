@@ -263,7 +263,14 @@ export const STORAGE_KEYS = Object.freeze({
   AUTH: 'cpr-auth',
   THEME: 'cpr-theme',
   DEVICE_ID: 'cpr-device-id',
+  ADMIN_GATE: 'cpr-admin-gate',
 });
+
+/**
+ * Where the staff access page lives. Set VITE_ADMIN_GATE_PATH to something
+ * hard to guess; the access key it asks for is what the backend actually checks.
+ */
+export const ADMIN_GATE_PATH = `/${(import.meta.env?.VITE_ADMIN_GATE_PATH || 'staff-access').replace(/^\/+/, '')}`;
 
 /** Custom DOM event the api-client dispatches when the backend kills a session. */
 export const FORCED_LOGOUT_EVENT = 'cpr:forced-logout';

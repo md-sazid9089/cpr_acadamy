@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const productionEnv = { PATH: process.env.PATH, NODE_ENV: 'production', DATABASE_URL: 'postgres://nobody:nothing@127.0.0.1:1/none', TOKEN_SECRET: 'x'.repeat(40), CORS_ORIGINS: 'https://app.example', TRUST_PROXY: 'true', WORKER_MODE: 'embedded' };
+const productionEnv = { PATH: process.env.PATH, NODE_ENV: 'production', DATABASE_URL: 'postgres://nobody:nothing@127.0.0.1:1/none', TOKEN_SECRET: 'x'.repeat(40), ADMIN_GATE_KEY: 'g'.repeat(24), CORS_ORIGINS: 'https://app.example', TRUST_PROXY: 'true', WORKER_MODE: 'embedded' };
 const run = (script, env) => spawnSync(process.execPath, [`scripts/${script}`], { env, encoding: 'utf8', timeout: 20000 });
 
 test('demo seeds and dev scripts refuse to touch a production or PostgreSQL database', () => {

@@ -13,6 +13,10 @@ export function loadConfig(env = process.env) {
   if (databaseMode === 'postgres' && !env.DATABASE_URL) throw new Error('DATABASE_URL is required');
   if (production && (env.TOKEN_SECRET?.length ?? 0) < 32) throw new Error('TOKEN_SECRET must contain at least 32 characters');
   if (production && !env.CORS_ORIGINS) throw new Error('CORS_ORIGINS is required');
+  // Admin accounts can only sign in after the staff page's access key is entered, so a leaked admin
+  // password alone is not enough. Outside production the gate is off unless a key is set.
+  if (production && (env.ADMIN_GATE_KEY?.length ?? 0) < 16) throw new Error('ADMIN_GATE_KEY must contain at least 16 characters');
+  if (env.ADMIN_GATE_KEY && env.ADMIN_GATE_KEY.length < 16) throw new Error('ADMIN_GATE_KEY must contain at least 16 characters');
   // Without a trusted proxy every client shares one rate-limit bucket, so production must opt in or out explicitly.
   if (production && !['true', 'false'].includes(env.TRUST_PROXY)) throw new Error('TRUST_PROXY must be set to true (behind a proxy that sets X-Forwarded-For) or false');
   // Who runs the background worker (OTP/email delivery, exam finalisation, cleanup). Production must choose
@@ -85,5 +89,8 @@ export function loadConfig(env = process.env) {
     refreshSeconds: 30 * 86400,
     // Admin sessions carry more blast radius (payments, scores, approvals), so they expire sooner and must reauthenticate more often.
     adminRefreshSeconds: 7 * 86400,
+    adminGateKey: env.ADMIN_GATE_KEY || null,
+    // How long one correct access key lets this device reach the admin sign-in form.
+    adminGateSeconds: 12 * 3600,
   };
 }
