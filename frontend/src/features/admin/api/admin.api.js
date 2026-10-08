@@ -257,6 +257,12 @@ export async function updateCourse({ id, ...updates }) {
   return data;
 }
 
+/** Deletes a course and its content. The API refuses (409) once students have enrolled, paid or sat its exams. */
+export async function deleteCourse(id) {
+  const { data } = await apiClient.delete(`/admin/courses/${id}`);
+  return data;
+}
+
 /** @param {{ id: string, status: 'draft' | 'published' }} args */
 export async function setCourseStatus({ id, status }) {
   const { data } = await apiClient.patch(`/admin/courses/${id}`, { isPublished: status === 'published' });

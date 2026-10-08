@@ -46,6 +46,38 @@ test('catalog publication, admin permissions, and enrollment-protected lessons',
   } finally { await context.close(); }
 });
 
+test('deleting a course removes its content, but a course students have used can only be unpublished', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user();
+    const create = async slug => (await admin.request('POST', '/admin/courses', { slug, title: slug, category: 'FCPS', price: 1000, isPublished: true })).json();
+    const unused = await create('unused-course');
+    const chapter = (await admin.request('POST', '/admin/chapters', { courseId: unused.id, title: 'Chapter' })).json();
+    const lesson = (await admin.request('POST', '/admin/videos', { courseId: unused.id, chapterId: chapter.id, title: 'Lecture', src: 'https://media.example.test/a.mp4', scheduledAt: '2025-01-01T00:00:00Z', status: 'published' })).json();
+    assert.equal((await admin.request('POST', '/admin/subscription-plans', { courseId: unused.id, name: 'Monthly', amount: 100, durationDays: 30 })).statusCode, 200);
+    const exam = await one(context.database, "INSERT INTO exams(course_id,title,duration_minutes,scheduled_at) VALUES ($1,'Paper',30,now()) RETURNING id", [unused.id]);
+    await context.database.query('INSERT INTO schedules(course_id,scheduled_at,exam_id,lecture_lesson_id) VALUES ($1,now(),$2,$3)', [unused.id, exam.id, lesson.id]);
+
+    assert.equal((await student.request('DELETE', `/admin/courses/${unused.id}`)).statusCode, 403);
+    assert.equal((await admin.request('DELETE', `/admin/courses/${unused.id}`)).statusCode, 200);
+    assert.equal((await admin.request('GET', `/admin/courses/${unused.id}`)).statusCode, 404);
+    assert.equal((await context.app.inject('/api/courses/unused-course')).statusCode, 404);
+    for (const table of ['lessons', 'chapters', 'exams', 'schedules', 'subscription_plans']) {
+      assert.equal((await one(context.database, `SELECT count(*)::int AS count FROM ${table} WHERE course_id=$1`, [unused.id])).count, 0, table);
+    }
+    assert.equal((await one(context.database, "SELECT count(*)::int AS count FROM audit_log WHERE action='course.deleted' AND entity_id=$1", [unused.id])).count, 1);
+    assert.equal((await admin.request('DELETE', `/admin/courses/${unused.id}`)).statusCode, 404);
+
+    const used = await create('used-course');
+    assert.equal((await student.request('POST', `/courses/${used.id}/enroll`)).statusCode, 200);
+    const refused = await admin.request('DELETE', `/admin/courses/${used.id}`);
+    assert.equal(refused.statusCode, 409);
+    assert.equal(refused.json().code, 'COURSE_HAS_STUDENT_DATA');
+    assert.equal((await admin.request('GET', `/admin/courses/${used.id}`)).statusCode, 200, 'a refused delete leaves the course untouched');
+  } finally { await context.close(); }
+});
+
 test('chapters group a course\'s lessons for admins and students', async () => {
   const context = await fixture();
   try {

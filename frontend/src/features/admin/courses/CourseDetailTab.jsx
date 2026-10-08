@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaCheck, FaPlus, FaXmark } from 'react-icons/fa6';
 import { updateCourse, uploadImage } from '../api/admin.api.js';
 import { adminCourseKey } from './keys.js';
+import DeleteCourse from './DeleteCourse.jsx';
 import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Input, { Select, Textarea } from '@/components/ui/Input.jsx';
@@ -215,6 +216,10 @@ export default function CourseDetailTab() {
                   {type.label}
                 </option>
               ))}
+              {/* A value saved outside this list (older data, the API) is shown as-is rather than as a blank. */}
+              {form.batchType && !BATCH_TYPES.some((type) => type.id === form.batchType) && (
+                <option value={form.batchType}>{form.batchType}</option>
+              )}
             </Select>
             <Select label="Session" value={form.session} onChange={set('session')}>
               <option value="">—</option>
@@ -223,6 +228,9 @@ export default function CourseDetailTab() {
                   {session.label}
                 </option>
               ))}
+              {form.session && !BATCH_SESSIONS.some((session) => session.id === form.session) && (
+                <option value={form.session}>{form.session}</option>
+              )}
             </Select>
             <Select label="Branch" value={form.branch} onChange={set('branch')}>
               {BATCH_BRANCHES.map((branch) => (
@@ -460,6 +468,8 @@ export default function CourseDetailTab() {
           </p>
         </CardBody>
       </Card>
+
+      <DeleteCourse course={course} />
 
       <div className="sticky bottom-4 z-10 flex items-center justify-end gap-3 rounded-xl border border-stone-200 bg-white/95 p-3 backdrop-blur dark:border-stone-200 dark:bg-surface-dark-subtle/95">
         {mutation.isSuccess && !mutation.isPending && (

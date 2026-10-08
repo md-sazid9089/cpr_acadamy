@@ -448,10 +448,25 @@ export function courseRoutes(route, database, config) {
   }
   route('POST', '/admin/courses', { auth: 'admin', body: courseFields }, request => saveCourse(request, true));
   route('PATCH', '/admin/courses/:id', { auth: 'admin', body: courseFields.partial() }, request => saveCourse(request, false));
+  // Deletes a course with everything inside it, but only while no student has touched it: enrolments,
+  // payments, attempts, reviews and notes are records the academy must keep, so such a course can only be unpublished.
   route('DELETE', '/admin/courses/:id', { auth: 'admin' }, async request => database.transaction(async transaction => {
-    const course = await one(transaction, 'UPDATE courses SET is_published=false WHERE id=$1 RETURNING id', [request.params.id]);
+    const course = await one(transaction, 'SELECT id,title FROM courses WHERE id=$1 FOR UPDATE', [request.params.id]);
     ensure(course, 404, 'NOT_FOUND', 'Course not found.');
-    await audit(transaction, request.auth.user_id, 'course.unpublished', course.id);
+    const studentData = await one(transaction, `SELECT
+      EXISTS (SELECT 1 FROM enrollments WHERE course_id=$1)
+      OR EXISTS (SELECT 1 FROM payments WHERE course_id=$1)
+      OR EXISTS (SELECT 1 FROM subscriptions s JOIN subscription_plans p ON p.id=s.plan_id WHERE p.course_id=$1)
+      OR EXISTS (SELECT 1 FROM exam_attempts a JOIN exams e ON e.id=a.exam_id WHERE e.course_id=$1)
+      OR EXISTS (SELECT 1 FROM instructor_reviews WHERE course_id=$1)
+      OR EXISTS (SELECT 1 FROM lesson_progress p JOIN lessons l ON l.id=p.lesson_id WHERE l.course_id=$1)
+      OR EXISTS (SELECT 1 FROM lesson_notes n JOIN lessons l ON l.id=n.lesson_id WHERE l.course_id=$1) AS present`, [course.id]);
+    ensure(!studentData.present, 409, 'COURSE_HAS_STUDENT_DATA', 'Students have enrolled in, paid for or used this course, so it cannot be deleted. Unpublish it instead.');
+    for (const table of ['schedules', 'lessons', 'chapters', 'exams', 'subscription_plans']) {
+      await transaction.query(`DELETE FROM ${table} WHERE course_id=$1`, [course.id]);
+    }
+    await transaction.query('DELETE FROM courses WHERE id=$1', [course.id]);
+    await audit(transaction, request.auth.user_id, 'course.deleted', course.id, { title: course.title });
     return { ok: true };
   }));
 

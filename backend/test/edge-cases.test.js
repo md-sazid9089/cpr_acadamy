@@ -466,7 +466,7 @@ test('content and profile edge cases: search escaping, lesson gating, routine re
     assert.equal((await context.app.inject('/api/courses/hidden-course')).statusCode, 404);
     assert.equal((await context.app.inject('/api/courses/hidden-course/schedule')).statusCode, 404);
     assert.equal((await admin.request('GET', `/admin/courses/${hidden.id}`)).json().status, 'draft');
-    assert.equal((await admin.request('DELETE', `/admin/courses/${percent.id}`)).statusCode, 200);
+    assert.equal((await admin.request('PATCH', `/admin/courses/${percent.id}`, { isPublished: false })).json().isPublished, false);
     assert.equal((await context.app.inject('/api/courses/percent-course')).statusCode, 404);
     assert.equal((await admin.request('PATCH', `/admin/courses/${percent.id}`, { isPublished: true })).json().isPublished, true);
 
