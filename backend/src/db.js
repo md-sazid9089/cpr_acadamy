@@ -46,15 +46,20 @@ export async function openDatabase(config) {
   };
 }
 
+const migrationChecksum = sql => createHash('sha256').update(sql).digest('hex');
+
 export async function migrate(database, directory = resolve(dirname(fileURLToPath(import.meta.url)), '../migrations')) {
   await database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())');
   await database.transaction(async transaction => {
     await transaction.exec('LOCK TABLE schema_migrations IN EXCLUSIVE MODE');
     for (const name of (await readdir(directory)).filter(name => /\.(sql|js)$/.test(name)).sort()) {
       const sql = await readFile(join(directory, name), 'utf8');
-      const checksum = createHash('sha256').update(sql).digest('hex');
+      // Git checks the same file out with CRLF on Windows and LF elsewhere, so the checksum covers the
+      // LF form. Databases migrated from a Windows checkout recorded the CRLF form; that still matches.
+      const lf = sql.replace(/\r\n/g, '\n');
+      const checksum = migrationChecksum(lf);
       const existing = (await transaction.query('SELECT checksum FROM schema_migrations WHERE name = $1', [name])).rows[0];
-      if (existing && existing.checksum !== checksum) throw new Error(`Applied migration was modified: ${name}`);
+      if (existing && ![checksum, migrationChecksum(lf.replace(/\n/g, '\r\n'))].includes(existing.checksum)) throw new Error(`Applied migration was modified: ${name}`);
       if (existing) continue;
       if (name.endsWith('.js')) {
         const up = migrationSteps.get(name);

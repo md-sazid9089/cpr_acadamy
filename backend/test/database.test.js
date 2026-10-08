@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase, migrate, one } from '../src/db.js';
@@ -18,6 +18,23 @@ test('migrations are repeatable and the database enforces financial and identity
     await assert.rejects(database.query("INSERT INTO courses(slug,title,category,price_minor) VALUES ('bad','Test','FCPS',-1)"), { code: '23514' });
   } finally {
     await database.close();
+  }
+});
+
+test('a migration applied from a CRLF checkout still matches the LF copy, but a real edit is refused', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'cpr-migrations-'));
+  const database = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });
+  try {
+    const file = join(directory, '001_example.sql');
+    await writeFile(file, 'CREATE TABLE example (id int);\r\nCREATE INDEX example_id ON example(id);\r\n');
+    await migrate(database, directory);
+    await writeFile(file, 'CREATE TABLE example (id int);\nCREATE INDEX example_id ON example(id);\n');
+    await migrate(database, directory);
+    await writeFile(file, 'CREATE TABLE example (id bigint);\nCREATE INDEX example_id ON example(id);\n');
+    await assert.rejects(migrate(database, directory), /Applied migration was modified: 001_example.sql/);
+  } finally {
+    await database.close();
+    await rm(directory, { recursive: true, force: true });
   }
 });
 
