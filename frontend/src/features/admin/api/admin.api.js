@@ -99,9 +99,15 @@ export async function fetchAdminReports() {
 }
 
 /** Recent invoices for the dashboard's approval panel (served by the revenue report endpoint). */
-export async function fetchAdminTransactions() {
-  const { data } = await apiClient.get('/admin/revenue');
-  return { transactions: data.transactions };
+/**
+ * One page of invoices for the dashboard's approval panel, filtered on the server.
+ * `{ items, total, pendingCount }`; status is 'pending' | 'paid' | 'failed' | 'refunded', or ALL.
+ */
+export async function fetchAdminTransactions({ status, offset = 0, limit = 50 } = {}) {
+  const { data } = await apiClient.get('/admin/transactions', {
+    params: { status: status && status !== 'ALL' ? status : undefined, offset, limit },
+  });
+  return data;
 }
 
 // ─── Students ──────────────────────────────────────────────────────────────

@@ -15,8 +15,10 @@ import { formatBDT } from '@/lib/utils';
 export default function AddSubscription() {
   const { batchId } = useParams();
   const { data: plans = [], isLoading, isError, isFetching, refetch } = useSubscriptionPlans(batchId);
-  const { data: batches = [] } = useSubscriptionBatches();
+  const { data: batches = [], isSuccess: batchesLoaded } = useSubscriptionBatches();
   const batch = batches.find((item) => item.id === batchId);
+  // Packages are add-ons to an active enrolment; until the course itself is paid for they cannot be bought.
+  const notActiveYet = batchesLoaded && !batch;
 
   return (
     <div className="space-y-6">
@@ -42,6 +44,13 @@ export default function AddSubscription() {
             No subscription packages are on offer for this batch right now.
           </p>
         ) : (
+          <>
+          {notActiveYet && (
+            <p role="status" className="mb-5 rounded-lg border border-stone-200 bg-surface-subtle p-3 text-sm text-stone-700 dark:bg-surface-dark dark:text-brand-200">
+              These packages can be bought once your enrolment in this course is active. Pay for the course first; it
+              shows under Unpaid until an administrator confirms the payment.
+            </p>
+          )}
           <ul className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {plans.map((plan) => (
               <li
@@ -74,16 +83,23 @@ export default function AddSubscription() {
                   ))}
                 </ul>
 
-                <Link
-                  to={batch ? `/dashboard/checkout/${batch.slug}?batchId=${batchId}&planId=${plan.id}` : '#'}
-                  aria-disabled={!batch}
-                  className="mt-5 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white border border-stone-200 transition hover:bg-brand-700 aria-disabled:pointer-events-none aria-disabled:opacity-50 sm:text-sm"
-                >
-                  Subscribe
-                </Link>
+                {notActiveYet ? (
+                  <span className="mt-5 flex items-center justify-center rounded-lg border border-stone-200 px-4 py-2.5 text-xs font-semibold text-stone-500 sm:text-sm dark:text-brand-200">
+                    Available once enrolled
+                  </span>
+                ) : (
+                  <Link
+                    to={batch ? `/dashboard/checkout/${batch.slug}?batchId=${batchId}&planId=${plan.id}` : '#'}
+                    aria-disabled={!batch}
+                    className="mt-5 flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-xs font-bold text-white border border-stone-200 transition hover:bg-brand-700 aria-disabled:pointer-events-none aria-disabled:opacity-50 sm:text-sm"
+                  >
+                    Subscribe
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
+          </>
         )}
       </DashboardPanel>
     </div>

@@ -27,6 +27,15 @@ export async function openAdminGate(key) {
   return data;
 }
 
+/**
+ * Whether this device's staff pass still holds (it expires, and changing the access key voids it).
+ * The login answer is the same for a wrong password and a missing pass, so the staff page asks here.
+ */
+export async function checkAdminGate(gatePass) {
+  const { data } = await apiClient.post('/auth/admin-gate/check', {}, { headers: { 'X-Admin-Gate': gatePass } });
+  return data.valid;
+}
+
 /** @param {Object} payload Registration form values. Sends an OTP by SMS. */
 export async function register(payload) {
   const { data } = await apiClient.post('/auth/register', {

@@ -2,7 +2,7 @@ import { randomInt, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { one } from '../db.js';
 import { hashPassword, verifyPassword, newToken, digestToken, publicUser, signContentToken, verifyContentToken } from '../security.js';
-import { ApiError, ensure, mobile, password, text, throttle, failureThrottle, audit, SHARED_BUCKET_MULTIPLIER } from '../http.js';
+import { ApiError, ensure, mobile, password, text, throttle, failureThrottle, audit, SHARED_BUCKET_MULTIPLIER, adminGateFingerprint } from '../http.js';
 import { enqueueSms, requireSms } from '../sms.js';
 import { enqueueEmail, requireEmail } from '../email.js';
 
@@ -34,9 +34,10 @@ export function authRoutes(route, database, config) {
   const dummyHashPromise = hashPassword(newToken());
   const device = request => z.string().min(8).max(200).parse(request.headers['x-device-id']);
   // A gate pass is only good on the device that entered the access key.
+  // It also names the key it was issued under, so changing ADMIN_GATE_KEY voids every outstanding pass.
   const hasGatePass = (request, deviceId) => {
     const pass = verifyContentToken(request.headers['x-admin-gate'] ?? '', secret);
-    return pass?.purpose === 'admin-gate' && pass.device === deviceId;
+    return pass?.purpose === 'admin-gate' && pass.device === deviceId && pass.key === adminGateFingerprint(config);
   };
 
   async function issueSession(transaction, user, deviceId) {
@@ -44,9 +45,10 @@ export function authRoutes(route, database, config) {
     const refreshToken = newToken();
     const refreshSeconds = user.role === 'admin' ? config.adminRefreshSeconds : config.refreshSeconds;
     await transaction.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [user.id]);
-    const session = await one(transaction, `INSERT INTO sessions(user_id,device_id,access_hash,refresh_hash,expires_at,refresh_expires_at)
-      VALUES ($1,$2,$3,$4,now()+$5*interval '1 second',now()+$6*interval '1 second') RETURNING expires_at`,
-    [user.id, deviceId, digestToken(accessToken, secret), digestToken(refreshToken, secret), config.accessSeconds, refreshSeconds]);
+    const session = await one(transaction, `INSERT INTO sessions(user_id,device_id,access_hash,refresh_hash,expires_at,refresh_expires_at,admin_gate)
+      VALUES ($1,$2,$3,$4,now()+$5*interval '1 second',now()+$6*interval '1 second',$7) RETURNING expires_at`,
+    [user.id, deviceId, digestToken(accessToken, secret), digestToken(refreshToken, secret), config.accessSeconds, refreshSeconds,
+      user.role === 'admin' ? adminGateFingerprint(config) : null]);
     return { user: publicUser(user), accessToken, refreshToken, deviceId, expiresAt: new Date(session.expires_at).getTime() };
   }
 
@@ -125,7 +127,14 @@ export function authRoutes(route, database, config) {
       throw new ApiError(401, 'INVALID_GATE_KEY', 'That access key is not correct.');
     }
     await failures.succeed();
-    return { gatePass: signContentToken({ purpose: 'admin-gate', device: deviceId }, secret, config.adminGateSeconds), expiresAt: Date.now() + config.adminGateSeconds * 1000 };
+    return { gatePass: signContentToken({ purpose: 'admin-gate', device: deviceId, key: adminGateFingerprint(config) }, secret, config.adminGateSeconds), expiresAt: Date.now() + config.adminGateSeconds * 1000 };
+  });
+
+  // Lets the staff page tell an expired or revoked pass from a wrong password, which the login
+  // answer deliberately does not distinguish. It says nothing about any account.
+  route('POST', '/auth/admin-gate/check', { body: z.object({}).strict(), rateLimit: { max: 60, timeWindow: '15 minutes' } }, async request => {
+    ensure(config.adminGateKey, 404, 'NOT_FOUND', 'Not found.');
+    return { valid: hasGatePass(request, device(request)) };
   });
 
   route('POST', '/auth/login', { body: z.object({ mobile, password: z.string().min(1).max(128), rememberMe: z.boolean().optional() }).strict(), rateLimit: { max: 120, timeWindow: '15 minutes' } }, async request => {
@@ -144,9 +153,12 @@ export function authRoutes(route, database, config) {
       throw new ApiError(401, 'INVALID_CREDENTIALS', 'No account matches that mobile number and password.');
     }
     // The right password is not enough for an admin: the device must also hold a pass from the staff page.
+    // Without one the answer is the same as for a wrong password, and it counts as a failure, so the login
+    // form cannot be used to test admin passwords or to find out which numbers belong to admins.
     if (user.role === 'admin' && config.adminGateKey && !hasGatePass(request, deviceId)) {
+      await failures.fail();
       await audit(database, user.id, 'auth.admin_gate_blocked', user.id, { ip: request.ip });
-      throw new ApiError(403, 'ADMIN_GATE_REQUIRED', 'Administrators sign in from the staff access page.');
+      throw new ApiError(401, 'INVALID_CREDENTIALS', 'No account matches that mobile number and password.');
     }
     await failures.succeed();
     return database.transaction(async transaction => {
@@ -222,6 +234,7 @@ export function authRoutes(route, database, config) {
       ensure(session && !session.revoked_at && new Date(session.refresh_expires_at).getTime() > Date.now(), 401, 'SESSION_REVOKED', 'Please sign in again.');
       ensure(session.device_id === deviceId, 401, 'DEVICE_MISMATCH', 'Please sign in on this device.');
       ensure(['active', 'awaiting_approval'].includes(user.status), 401, 'ACCOUNT_SUSPENDED', 'This account cannot sign in.');
+      if (user.role === 'admin' && config.adminGateKey) ensure(session.admin_gate === adminGateFingerprint(config), 401, 'SESSION_REVOKED', 'Sign in again from the staff access page.');
       return issueSession(transaction, user, deviceId);
     });
   });

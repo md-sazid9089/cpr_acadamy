@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FaCamera } from 'react-icons/fa6';
 import { confirmPayment, fetchAdminTransactions, rejectPayment } from './api/admin.api.js';
 import Card, { CardHeader } from '@/components/ui/Card.jsx';
@@ -172,7 +172,16 @@ export default function TransactionsPanel() {
   const [filter, setFilter] = useState(PAYMENT_STATUS.PENDING);
   const [reconciling, setReconciling] = useState(null);
   const queryClient = useQueryClient();
-  const { data, isLoading, isError, error, isFetching, refetch } = useQuery({ queryKey: ['admin', 'transactions'], queryFn: fetchAdminTransactions });
+  const { data, isLoading, isError, error, isFetching, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: ['admin', 'transactions', filter],
+    queryFn: ({ pageParam }) => fetchAdminTransactions({ status: filter, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (last, pages) => {
+      const loaded = pages.reduce((count, page) => count + page.items.length, 0);
+      return loaded < last.total ? loaded : undefined;
+    },
+    placeholderData: keepPreviousData,
+  });
 
   const finishReconcile = () => {
     setReconciling(null);
@@ -195,9 +204,8 @@ export default function TransactionsPanel() {
     );
   }
 
-  const { transactions } = data;
-  const rows = filter === 'ALL' ? transactions : transactions.filter((payment) => payment.status === filter);
-  const pendingCount = transactions.filter((payment) => payment.status === PAYMENT_STATUS.PENDING).length;
+  const rows = data.pages.flatMap((page) => page.items);
+  const { pendingCount, total } = data.pages[data.pages.length - 1];
 
   const studentColumn = {
     key: 'studentName',
@@ -249,6 +257,14 @@ export default function TransactionsPanel() {
       <div className="mt-4">
         <Table columns={columns} rows={rows} emptyTitle="No transactions" emptyDescription="Try a different filter." />
       </div>
+      {hasNextPage && (
+        <div className="flex items-center justify-between gap-3 border-t border-stone-200 px-5 py-3 text-xs text-stone-500 dark:text-brand-200">
+          <span>Showing {rows.length} of {total}</span>
+          <Button size="sm" variant="outline" onClick={() => fetchNextPage()} isLoading={isFetchingNextPage}>
+            Show more
+          </Button>
+        </div>
+      )}
 
       {reconciling && <ReconcileDialog payment={reconciling} onClose={() => setReconciling(null)} onDone={finishReconcile} />}
     </Card>

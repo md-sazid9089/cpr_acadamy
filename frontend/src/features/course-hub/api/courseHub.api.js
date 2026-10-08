@@ -40,19 +40,19 @@ export async function fetchLessonContentUrl(lessonId, kind) {
 }
 
 /**
- * Opens a lesson's lecture PDF in a new tab. The tab is opened before the
- * signed link is fetched, inside the click itself, so pop-up blockers allow it.
+ * Opens a lesson's lecture PDF in a new tab. Call it straight from the click handler: the tab is
+ * opened before the link is fetched, while the browser still counts it as the user's click, so
+ * pop-up blockers allow it. If the tab was blocked anyway, resolves to `{ opened: false, url }`
+ * so the page can offer the link instead of navigating away from the lesson.
  */
 export async function openLectureNotes(lessonId) {
   const tab = window.open('', '_blank');
   try {
     const { url } = await fetchLessonContentUrl(lessonId, 'notes');
-    if (!tab) {
-      window.location.assign(url);
-      return;
-    }
+    if (!tab) return { opened: false, url };
     tab.opener = null;
     tab.location.replace(url);
+    return { opened: true, url };
   } catch (error) {
     tab?.close();
     throw error;

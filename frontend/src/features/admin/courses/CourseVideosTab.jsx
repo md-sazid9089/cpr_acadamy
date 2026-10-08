@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FaFileLines, FaLink, FaPenToSquare, FaPlus, FaTrash } from 'react-icons/fa6';
@@ -101,7 +101,12 @@ export default function CourseVideosTab() {
     return [...byChapter.values()].filter((group) => group.id !== UNCATEGORIZED || group.videos.length > 0);
   }, [videos, filter, chapters]);
 
+  // Bumped whenever the form opens or closes, so an upload that finishes afterwards cannot
+  // attach its PDF to whichever lecture happens to be open by then.
+  const formSession = useRef(0);
   const openCreate = () => {
+    formSession.current += 1;
+    setPdfUploading(false);
     setForm({ ...EMPTY_FORM, scheduledDate: new Date().toISOString().slice(0, 10) });
     setNotesMode('upload');
     setPdfError('');
@@ -109,6 +114,8 @@ export default function CourseVideosTab() {
   };
 
   const openEdit = (video) => {
+    formSession.current += 1;
+    setPdfUploading(false);
     setForm({
       title: video.title,
       scheduledDate: video.scheduledDate,
@@ -124,7 +131,11 @@ export default function CourseVideosTab() {
     setEditing(video);
   };
 
-  const closeModal = () => setEditing(null);
+  const closeModal = () => {
+    formSession.current += 1;
+    setPdfUploading(false);
+    setEditing(null);
+  };
 
   const set = (field) => (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
 
@@ -135,21 +146,24 @@ export default function CourseVideosTab() {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
+    const session = formSession.current;
     setPdfError('');
     setPdfUploading(true);
     try {
       const notesUrl = await uploadPdf(file);
-      setForm((prev) => ({ ...prev, notesUrl }));
+      if (session === formSession.current) setForm((prev) => ({ ...prev, notesUrl }));
     } catch (error) {
-      setPdfError(error.message);
+      if (session === formSession.current) setPdfError(error.message);
     } finally {
-      setPdfUploading(false);
+      if (session === formSession.current) setPdfUploading(false);
     }
   };
   const [notesOpenError, setNotesOpenError] = useState('');
   const viewNotes = (lessonId) => {
     setNotesOpenError('');
-    openLectureNotes(lessonId).catch((error) => setNotesOpenError(error.message));
+    openLectureNotes(lessonId)
+      .then(({ opened }) => { if (!opened) setNotesOpenError('Your browser blocked the new tab. Allow pop-ups for this site, then try again.'); })
+      .catch((error) => setNotesOpenError(error.message));
   };
 
   const handleSubmit = (event) => {
@@ -484,7 +498,7 @@ export default function CourseVideosTab() {
             <Button type="button" variant="outline" onClick={closeModal}>
               Cancel
             </Button>
-            <Button type="submit" isLoading={createMutation.isPending || updateMutation.isPending}>
+            <Button type="submit" disabled={pdfUploading} title={pdfUploading ? 'Wait for the PDF to finish uploading' : undefined} isLoading={createMutation.isPending || updateMutation.isPending}>
               {editing === 'new' ? 'Add video' : 'Save changes'}
             </Button>
           </div>

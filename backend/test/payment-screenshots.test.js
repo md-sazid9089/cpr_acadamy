@@ -8,7 +8,8 @@ const local = '/api/media/0b3c8e5a-7a7e-4d40-9a2f-1b2c3d4e5f60.png';
 
 test('only images this app stored can be attached as payment screenshots', () => {
   assert.equal(isOwnScreenshotUrl(local, {}), true);
-  assert.equal(isOwnScreenshotUrl('https://res.cloudinary.com/democloud/image/upload/v1/cpr-academy/uploads/abc.png', cloudinary), true);
+  assert.equal(isOwnScreenshotUrl('https://res.cloudinary.com/democloud/image/upload/v1/cpr-academy/payments/abc.png', cloudinary), true);
+  assert.equal(isOwnScreenshotUrl('https://res.cloudinary.com/democloud/image/upload/v1/cpr-academy/uploads/abc.png', cloudinary), false, "the academy's own images are not screenshots");
   for (const value of ['javascript:alert(document.domain)', 'data:text/html,<script>alert(1)</script>', 'http://res.cloudinary.com/democloud/image/upload/a.png',
     'https://res.cloudinary.com/othercloud/image/upload/a.png', 'https://evil.example/pixel.gif', 'http://169.254.169.254/latest/meta-data/',
     'https://user@res.cloudinary.com/democloud/image/upload/a.png', '//evil.example/a.png', '/api/media/../../etc/passwd', '/api/media/not-a-uuid.png', 'https://res.cloudinary.com/democloud/raw/upload/a.html']) {

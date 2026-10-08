@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import AuthCard, { FormAlert } from './components/AuthCard.jsx';
 import { loginSchema } from './schemas/auth.schemas.js';
-import { login as loginRequest, openAdminGate } from './api/auth.api.js';
+import { checkAdminGate, login as loginRequest, openAdminGate } from './api/auth.api.js';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useAuthStore } from '@/lib/auth';
@@ -40,25 +40,29 @@ function storePass(pass) {
  */
 export default function AdminGate() {
   const [gatePass, setGatePass] = useState(readPass);
+  const [notice, setNotice] = useState(null);
   return gatePass ? (
     <AdminSignIn
       gatePass={gatePass}
       onPassRejected={() => {
         storePass(null);
         setGatePass(null);
+        setNotice('Your staff access has expired or the access key has changed. Enter the access key again.');
       }}
     />
   ) : (
     <AccessKey
+      notice={notice}
       onOpened={(pass) => {
         storePass(pass);
+        setNotice(null);
         setGatePass(pass.gatePass);
       }}
     />
   );
 }
 
-function AccessKey({ onOpened }) {
+function AccessKey({ notice, onOpened }) {
   const [submitError, setSubmitError] = useState(null);
   const {
     register,
@@ -77,7 +81,7 @@ function AccessKey({ onOpened }) {
 
   return (
     <AuthCard title="Staff access" description="Enter the access key to continue.">
-      <FormAlert>{submitError}</FormAlert>
+      <FormAlert>{submitError ?? notice}</FormAlert>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <Input
           label="Access key"
@@ -115,8 +119,9 @@ function AdminSignIn({ gatePass, onPassRejected }) {
       setSession(session);
       navigate(session.user.role === ROLES.ADMIN ? '/admin' : '/dashboard', { replace: true });
     } catch (error) {
-      // An expired pass, or one from before this device's ID changed: ask for the key again.
-      if (error.code === 'ADMIN_GATE_REQUIRED') onPassRejected();
+      // The server answers a missing pass exactly like a wrong password, so ask separately whether
+      // the pass has expired (or the key changed) before blaming the password.
+      if (error.code === 'INVALID_CREDENTIALS' && !(await checkAdminGate(gatePass).catch(() => true))) onPassRejected();
       else setSubmitError(error.message ?? 'Sign in failed. Please try again.');
     }
   };

@@ -70,6 +70,8 @@ test('uploads are signed for the browser to send straight to Cloudinary, and nev
     const screenshot = (await student.request('POST', '/uploads/payment-screenshot/signature', {})).json();
     assert.equal(screenshot.uploadUrl, 'https://api.cloudinary.com/v1_1/demo-cloud/image/upload');
     assert.equal(screenshot.fields.allowed_formats, 'jpg,png,webp');
+    assert.equal(screenshot.fields.folder, 'cpr-academy/payments', 'student screenshots are kept apart from admin images');
+    assert.equal(screenshot.fields.overwrite, 'false', 'a re-used signature cannot replace an uploaded file');
     assert.equal((await student.request('POST', '/admin/uploads/signature', { kind: 'pdf' })).statusCode, 403);
 
     context.config.cloudinaryUrl = null;

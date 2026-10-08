@@ -28,7 +28,7 @@ function configureCloudinary(cloudinaryUrl) {
 }
 
 /** Shared by every upload route: validate, then store to Cloudinary or local disk. */
-async function storeImage(config, dataUrlValue) {
+async function storeImage(config, dataUrlValue, folder = 'cpr-academy/uploads') {
   const [, type, encoded] = dataUrlValue.match(/^data:image\/(jpeg|png|webp);base64,(.+)$/) || [];
   const definition = imageTypes[type];
   const bytes = Buffer.from(encoded, 'base64');
@@ -38,7 +38,7 @@ async function storeImage(config, dataUrlValue) {
   if (config?.cloudinaryUrl) {
     configureCloudinary(config.cloudinaryUrl);
     const result = await cloudinary.uploader.upload(dataUrlValue, {
-      folder: 'cpr-academy/uploads',
+      folder,
       public_id: randomUUID(),
       resource_type: 'image',
     });
@@ -82,6 +82,9 @@ const uploadTargets = {
   image: { resourceType: 'image', folder: 'cpr-academy/uploads', extension: '', allowedFormats: 'jpg,png,webp' },
   // 'raw' keeps the PDF exactly as uploaded; Cloudinary would otherwise treat it as a multi-page image.
   pdf: { resourceType: 'raw', folder: 'cpr-academy/notes', extension: '.pdf', allowedFormats: null },
+  // Students' payment screenshots live apart from the academy's own images, so a screenshot URL can
+  // only ever point at something a student uploaded as a screenshot (see isOwnScreenshotUrl).
+  screenshot: { resourceType: 'image', folder: 'cpr-academy/payments', extension: '', allowedFormats: 'jpg,png,webp' },
 };
 
 /**
@@ -100,6 +103,9 @@ function signUpload(config, kind) {
     folder: target.folder,
     public_id: `${randomUUID()}${target.extension}`,
     timestamp: Math.floor(Date.now() / 1000),
+    // A signature stays valid for about an hour; without this, re-using it would replace the file
+    // behind a URL that has already been submitted or reviewed.
+    overwrite: 'false',
     ...(target.allowedFormats ? { allowed_formats: target.allowedFormats } : {}),
   };
   return {
@@ -111,7 +117,7 @@ function signUpload(config, kind) {
 
 export function mediaRoutes(route, config) {
   route('POST', '/admin/uploads/signature', { auth: 'admin', rateLimit: { max: 60, timeWindow: '1 minute' }, body: z.object({ kind: z.enum(['image', 'pdf']) }).strict() }, async request => signUpload(config, request.body.kind));
-  route('POST', '/uploads/payment-screenshot/signature', { auth: 'active', rateLimit: { max: 20, timeWindow: '15 minutes' }, body: z.object({}).strict() }, async () => signUpload(config, 'image'));
+  route('POST', '/uploads/payment-screenshot/signature', { auth: 'active', rateLimit: { max: 20, timeWindow: '15 minutes' }, body: z.object({}).strict() }, async () => signUpload(config, 'screenshot'));
 
   route('POST', '/admin/uploads/images', { auth: 'admin', bodyLimit: uploadBodyLimit, rateLimit: { max: 60, timeWindow: '1 minute' }, body: z.object({ data: dataUrl }).strict() }, async request => storeImage(config, request.body.data));
 
@@ -120,7 +126,7 @@ export function mediaRoutes(route, config) {
   // Same validation/storage as the admin uploader, but for a student attaching a
   // payment screenshot to their own invoice — a narrower, tighter-throttled route
   // rather than widening the admin one to another auth policy.
-  route('POST', '/uploads/payment-screenshot', { auth: 'active', bodyLimit: uploadBodyLimit, rateLimit: { max: 20, timeWindow: '15 minutes' }, body: z.object({ data: dataUrl }).strict() }, async request => storeImage(config, request.body.data));
+  route('POST', '/uploads/payment-screenshot', { auth: 'active', bodyLimit: uploadBodyLimit, rateLimit: { max: 20, timeWindow: '15 minutes' }, body: z.object({ data: dataUrl }).strict() }, async request => storeImage(config, request.body.data, 'cpr-academy/payments'));
 
   // Named ':filename', not ':id' — a bare param called "id" is auto-validated as a
   // UUID by the route framework, but this value is "<uuid>.<ext>", which isn't one.

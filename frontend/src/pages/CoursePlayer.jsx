@@ -130,7 +130,14 @@ function NotesPanel({ courseSlug, lessonId }) {
 function LectureSheetPanel({ lesson }) {
   // The permanent PDF URL is never sent to the client — a fresh signed link is
   // fetched (and re-checks enrollment) only when the student actually asks for it.
-  const open = useMutation({ mutationFn: () => openLectureNotes(lesson.id) });
+  const [state, setState] = useState({ busy: false, error: '', blockedUrl: '' });
+  // Called synchronously from the click (not via a mutation), so the new tab opens inside the click.
+  const view = () => {
+    setState({ busy: true, error: '', blockedUrl: '' });
+    openLectureNotes(lesson.id)
+      .then(({ opened, url }) => setState({ busy: false, error: '', blockedUrl: opened ? '' : url }))
+      .catch((error) => setState({ busy: false, error: error.message, blockedUrl: '' }));
+  };
 
   return (
     <div>
@@ -150,8 +157,8 @@ function LectureSheetPanel({ lesson }) {
           type="button"
           size="sm"
           variant="outline"
-          onClick={() => open.mutate()}
-          isLoading={open.isPending}
+          onClick={view}
+          isLoading={state.busy}
           disabled={!lesson.hasNotes}
           title={lesson.hasNotes ? 'Opens in a new tab' : 'Sheet will be available once uploaded'}
         >
@@ -159,7 +166,15 @@ function LectureSheetPanel({ lesson }) {
           View PDF
         </Button>
       </div>
-      {open.isError && <p role="alert" className="mt-2 text-xs font-medium text-red-600">{open.error.message}</p>}
+      {state.error && <p role="alert" className="mt-2 text-xs font-medium text-red-600">{state.error}</p>}
+      {state.blockedUrl && (
+        <p role="status" className="mt-2 text-xs text-stone-600">
+          Your browser blocked the new tab.{' '}
+          <a href={state.blockedUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-600 underline">
+            Open the lecture sheet
+          </a>
+        </p>
+      )}
     </div>
   );
 }

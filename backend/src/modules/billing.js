@@ -33,7 +33,9 @@ export function isOwnScreenshotUrl(value, config) {
   try {
     const url = new URL(value);
     const cloud = new URL(config.cloudinaryUrl).hostname;
-    return url.protocol === 'https:' && url.hostname === 'res.cloudinary.com' && !url.username && url.pathname.startsWith(`/${cloud}/image/upload/`);
+    // Only the students' screenshot folder: never the academy's own images or lecture files.
+    return url.protocol === 'https:' && url.hostname === 'res.cloudinary.com' && !url.username && url.pathname.startsWith(`/${cloud}/image/upload/`)
+      && /^\/[^/]+\/image\/upload\/(?:v\d+\/)?cpr-academy\/payments\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)$/.test(url.pathname);
   } catch {
     return false;
   }
@@ -130,6 +132,17 @@ export function billingRoutes(route, database, config) {
       paid: Number(totals.paid) / 100, pending: Number(totals.pending) / 100,
       refunded: Number(totals.refunded) / 100, failed: Number(totals.failed) / 100,
     } };
+  });
+  // The dashboard's Transaction approval panel. Filtering and paging happen here, so an old pending
+  // invoice can never fall outside a fixed window of recent rows and go unreviewed.
+  route('GET', '/admin/transactions', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => {
+    const status = request.query.status || null;
+    const [rows, counts] = await Promise.all([
+      database.query(`SELECT p.*,u.full_name FROM payments p JOIN users u ON u.id=p.user_id WHERE ($1::text IS NULL OR p.status=$1)
+        ORDER BY (p.status='pending') DESC, p.created_at DESC, p.id LIMIT $2 OFFSET $3`, [status, request.query.limit, request.query.offset]),
+      one(database, `SELECT count(*) FILTER (WHERE $1::text IS NULL OR status=$1)::int AS total, count(*) FILTER (WHERE status='pending')::int AS pending FROM payments`, [status]),
+    ]);
+    return { items: rows.rows.map(row => ({ ...paymentDto(row), userId: row.user_id, studentId: row.user_id, studentName: row.full_name })), total: counts.total, pendingCount: counts.pending };
   });
   route('GET', '/admin/payments', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => (await database.query('SELECT * FROM payments WHERE ($1::text IS NULL OR status=$1) ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.query.status || null, request.query.limit, request.query.offset])).rows.map(row => ({ ...paymentDto(row), userId: row.user_id })));
 

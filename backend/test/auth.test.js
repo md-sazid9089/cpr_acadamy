@@ -185,16 +185,22 @@ test('admins need the staff access key before their password works; students do 
     assert.equal((await login('01722222222')).statusCode, 200, 'students sign in as before');
 
     const blocked = await login('01711111111');
-    assert.equal(blocked.statusCode, 403, 'the right admin password alone is refused');
-    assert.equal(blocked.json().code, 'ADMIN_GATE_REQUIRED');
+    assert.equal(blocked.statusCode, 401, 'the right admin password alone is refused');
+    const wrongPassword = await app.inject({ method: 'POST', url: '/api/auth/login', headers: { 'x-device-id': 'device-0001', 'x-forwarded-for': '203.0.113.10' }, payload: { mobile: '01711111111', password: 'Not-the-password-1' } });
+    const { requestId: _a, ...blockedBody } = blocked.json();
+    const { requestId: _b, ...wrongBody } = wrongPassword.json();
+    assert.deepEqual(blockedBody, wrongBody, 'without the staff pass, a right admin password looks exactly like a wrong one');
     assert.equal((await one(database, "SELECT count(*)::int AS n FROM audit_log WHERE action='auth.admin_gate_blocked'")).n, 1, 'the blocked attempt is audited');
-    assert.equal((await login('01711111111', { 'x-admin-gate': 'forged.pass' })).statusCode, 403);
+    assert.equal((await login('01711111111', { 'x-admin-gate': 'forged.pass' })).statusCode, 401);
 
     assert.equal((await gate('wrong-key')).statusCode, 401);
     const opened = await gate(gateKey);
     assert.equal(opened.statusCode, 200);
     const { gatePass } = opened.json();
-    assert.equal((await login('01711111111', { 'x-admin-gate': gatePass }, 'device-9999')).statusCode, 403, 'a pass only works on the device that earned it');
+    assert.equal((await login('01711111111', { 'x-admin-gate': gatePass }, 'device-9999')).statusCode, 401, 'a pass only works on the device that earned it');
+    const check = (pass, device = 'device-0001') => app.inject({ method: 'POST', url: '/api/auth/admin-gate/check', headers: { 'x-device-id': device, 'x-admin-gate': pass }, payload: {} });
+    assert.deepEqual((await check(gatePass)).json(), { valid: true }, 'the staff page can ask whether its pass still holds');
+    assert.deepEqual((await check('forged.pass')).json(), { valid: false });
     const signedIn = await login('01711111111', { 'x-admin-gate': gatePass });
     assert.equal(signedIn.statusCode, 200);
     assert.equal(signedIn.json().user.role, 'admin');
@@ -216,5 +222,35 @@ test('the staff access endpoint does not exist when no key is configured', async
     assert.equal(response.statusCode, 404);
   } finally {
     await context.close();
+  }
+});
+
+test('changing the staff access key voids outstanding passes and ends admin sessions at once', async () => {
+  const database = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });
+  await migrate(database);
+  const base = { NODE_ENV: 'test', SMS_MODE: 'test', TRUST_PROXY: 'true', TOKEN_SECRET: 'test-secret-with-at-least-32-characters' };
+  const before = await buildApp({ database, config: loadConfig({ ...base, ADMIN_GATE_KEY: 'first-staff-access-key' }) });
+  const after = await buildApp({ database, config: loadConfig({ ...base, ADMIN_GATE_KEY: 'second-staff-access-key' }) });
+  const password = 'Synthetic-test-password';
+  await database.query("INSERT INTO users(mobile,full_name,password_hash,role,status,mobile_verified_at) VALUES ('01711111111','Admin',$1,'admin','active',now())", [await hashPassword(password)]);
+  const headers = { 'x-device-id': 'device-0001', 'x-forwarded-for': '203.0.113.10' };
+  try {
+    const { gatePass } = (await before.inject({ method: 'POST', url: '/api/auth/admin-gate', headers, payload: { key: 'first-staff-access-key' } })).json();
+    const session = (await before.inject({ method: 'POST', url: '/api/auth/login', headers: { ...headers, 'x-admin-gate': gatePass }, payload: { mobile: '01711111111', password } })).json();
+    const asAdmin = { ...headers, authorization: `Bearer ${session.accessToken}` };
+    assert.equal((await before.inject({ method: 'GET', url: '/api/admin/stats', headers: asAdmin })).statusCode, 200);
+
+    // The key is changed (the "after" app runs with the new one).
+    assert.equal((await after.inject({ method: 'GET', url: '/api/admin/stats', headers: asAdmin })).statusCode, 401, 'the open admin session ends');
+    assert.equal((await after.inject({ method: 'POST', url: '/api/auth/refresh', headers, payload: { refreshToken: session.refreshToken } })).statusCode, 401, 'and cannot be renewed');
+    assert.equal((await after.inject({ method: 'POST', url: '/api/auth/login', headers: { ...headers, 'x-admin-gate': gatePass }, payload: { mobile: '01711111111', password } })).statusCode, 401, 'a pass from the old key no longer opens the login');
+    assert.deepEqual((await after.inject({ method: 'POST', url: '/api/auth/admin-gate/check', headers: { ...headers, 'x-admin-gate': gatePass }, payload: {} })).json(), { valid: false });
+
+    const fresh = (await after.inject({ method: 'POST', url: '/api/auth/admin-gate', headers, payload: { key: 'second-staff-access-key' } })).json();
+    assert.equal((await after.inject({ method: 'POST', url: '/api/auth/login', headers: { ...headers, 'x-admin-gate': fresh.gatePass }, payload: { mobile: '01711111111', password } })).statusCode, 200, 'the new key works');
+  } finally {
+    await before.close();
+    await after.close();
+    await database.close();
   }
 });

@@ -21,6 +21,14 @@ export const mobile = z.string().regex(/^01[3-9]\d{8}$/, 'Enter a valid Banglade
 export const password = z.string().min(10).max(128);
 export const pageQuery = z.object({ limit: z.coerce.number().int().min(1).max(100).default(50), offset: z.coerce.number().int().min(0).max(100000).default(0) });
 
+/**
+ * Fingerprint of the current staff access key, stamped on gate passes and admin sessions so that
+ * changing ADMIN_GATE_KEY invalidates both at once. Null when no key is configured.
+ */
+export function adminGateFingerprint(config) {
+  return config.adminGateKey ? digestToken(`admin-gate:${config.adminGateKey}`, config.tokenSecret) : null;
+}
+
 export function installRoutes(app, database, config, contract) {
   async function authenticate(request, policy) {
     const token = request.headers.authorization?.match(/^Bearer ([A-Za-z0-9_-]{43})$/)?.[1];
@@ -32,6 +40,8 @@ export function installRoutes(app, database, config, contract) {
     ensure(session.status !== 'suspended', 401, 'ACCOUNT_SUSPENDED', 'This account is suspended.');
     if (policy !== 'pending') ensure(session.status === 'active', 403, 'ACCOUNT_NOT_ACTIVE', 'Administrator approval is required.');
     if (policy === 'admin') ensure(session.role === 'admin', 403, 'FORBIDDEN', 'Administrator access is required.');
+    // An admin session opened under a different (or no) staff access key ends as soon as the key changes.
+    if (session.role === 'admin' && config.adminGateKey) ensure(session.admin_gate === adminGateFingerprint(config), 401, 'SESSION_REVOKED', 'Sign in again from the staff access page.');
     request.auth = session;
   }
 
