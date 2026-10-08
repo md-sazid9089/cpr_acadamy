@@ -12,6 +12,26 @@ An online learning platform for postgraduate medical exam preparation (FCPS, MRC
 
 ---
 
+## Live demo
+
+| | Link |
+|---|---|
+| **Website (frontend)** | <https://cpr-academy-frontend.vercel.app> |
+| **API (backend)** | <https://cpr-academy-backend.vercel.app/api> · health check: [/api/ready](https://cpr-academy-backend.vercel.app/api/ready) |
+
+Sign in with the **mobile number** and password:
+
+| Role | Mobile | Password | Where to sign in |
+|---|---|---|---|
+| Student | `01722222222` | `StudentPassword123!` | [/login](https://cpr-academy-frontend.vercel.app/login) |
+| Admin | `01711111111` | `AdminPassword123!` | The staff access page (its link and access key are shared privately) |
+
+The demo student is enrolled in **FCPS Part-1 Medicine Foundation Batch** and can open its lessons and take the *Cardiology & Pulmonology Mock Exam 01*. Administrators cannot sign in from `/login`: the staff access page asks for an access key first.
+
+Both sites deploy automatically from `main` on Vercel; see [DEPLOY-VERCEL.md](DEPLOY-VERCEL.md).
+
+---
+
 ## Features
 
 **Students**
@@ -131,7 +151,7 @@ Check the API: <http://127.0.0.1:3001/api/health> and <http://127.0.0.1:3001/api
 
 ## Demo credentials
 
-> These accounts exist **only after running the seed scripts** on a local development database. The scripts refuse to run in production, and no default administrator exists anywhere else.
+> For the live site, see [Live demo](#live-demo). Locally, these accounts exist **only after running the seed scripts**. The scripts refuse to run with `NODE_ENV=production`, and against any PostgreSQL database unless `ALLOW_DEMO_SEED=true` is set.
 
 Sign in with the **mobile number** and password.
 
