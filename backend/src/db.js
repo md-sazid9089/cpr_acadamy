@@ -23,7 +23,7 @@ export async function openDatabase(config) {
     };
   }
   const { default: pg } = await import('pg');
-  const pool = new pg.Pool({ connectionString: config.databaseUrl, max: 10, connectionTimeoutMillis: 5000, statement_timeout: 15000 });
+  const pool = new pg.Pool({ connectionString: config.databaseUrl, max: config.databasePoolMax ?? 10, connectionTimeoutMillis: 5000, statement_timeout: 15000 });
   pool.on('error', () => console.error('Idle PostgreSQL connection failed'));
   return {
     query: (text, values) => pool.query(text, values),

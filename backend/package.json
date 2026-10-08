@@ -10,6 +10,7 @@
     "dev": "next dev --webpack --hostname 127.0.0.1 --port 3001",
     "build": "next build --webpack",
     "postbuild": "node scripts/prepare-standalone.js",
+    "vercel-build": "node scripts/vercel-build.js",
     "start": "node --env-file-if-exists=.env scripts/start.js",
     "test": "node --test --test-concurrency=1 test/*.test.js",
     "worker": "node --env-file-if-exists=.env scripts/worker.js",

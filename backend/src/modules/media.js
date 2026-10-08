@@ -46,6 +46,7 @@ async function storeImage(config, dataUrlValue) {
   }
 
   // No Cloudinary account configured (local dev/test) — same validated bytes, kept on disk instead.
+  ensure(!config?.vercel, 503, 'UPLOADS_NOT_CONFIGURED', 'File uploads need Cloudinary on this server. Set CLOUDINARY_URL.');
   await mkdir(uploadsPath(config), { recursive: true });
   const filename = `${randomUUID()}.${definition.extension}`;
   await writeFile(resolve(uploadsPath(config), filename), bytes, { flag: 'wx' });
@@ -69,13 +70,49 @@ async function storePdf(config, dataUrlValue) {
     return { url: result.secure_url };
   }
 
+  ensure(!config?.vercel, 503, 'UPLOADS_NOT_CONFIGURED', 'File uploads need Cloudinary on this server. Set CLOUDINARY_URL.');
   await mkdir(uploadsPath(config), { recursive: true });
   const filename = `${randomUUID()}.pdf`;
   await writeFile(resolve(uploadsPath(config), filename), bytes, { flag: 'wx' });
   return { url: `/api/media/${filename}` };
 }
 
+const uploadTargets = {
+  // Cloudinary checks the bytes are really one of these image formats before accepting the file.
+  image: { resourceType: 'image', folder: 'cpr-academy/uploads', extension: '', allowedFormats: 'jpg,png,webp' },
+  // 'raw' keeps the PDF exactly as uploaded; Cloudinary would otherwise treat it as a multi-page image.
+  pdf: { resourceType: 'raw', folder: 'cpr-academy/notes', extension: '.pdf', allowedFormats: null },
+};
+
+/**
+ * Lets the browser send a file straight to Cloudinary. A serverless function cannot take a
+ * request body over 4.5 MB, so large images and lecture PDFs never pass through this API.
+ * The signature fixes the folder, file name and (for images) the allowed formats, so the
+ * browser can only upload what this call allowed. Without Cloudinary, the browser falls
+ * back to the upload routes below.
+ */
+function signUpload(config, kind) {
+  if (!config?.cloudinaryUrl) return { mode: 'server' };
+  configureCloudinary(config.cloudinaryUrl);
+  const target = uploadTargets[kind];
+  const { cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret } = cloudinary.config();
+  const params = {
+    folder: target.folder,
+    public_id: `${randomUUID()}${target.extension}`,
+    timestamp: Math.floor(Date.now() / 1000),
+    ...(target.allowedFormats ? { allowed_formats: target.allowedFormats } : {}),
+  };
+  return {
+    mode: 'cloudinary',
+    uploadUrl: `https://api.cloudinary.com/v1_1/${cloudName}/${target.resourceType}/upload`,
+    fields: { ...params, api_key: apiKey, signature: cloudinary.utils.api_sign_request(params, apiSecret) },
+  };
+}
+
 export function mediaRoutes(route, config) {
+  route('POST', '/admin/uploads/signature', { auth: 'admin', rateLimit: { max: 60, timeWindow: '1 minute' }, body: z.object({ kind: z.enum(['image', 'pdf']) }).strict() }, async request => signUpload(config, request.body.kind));
+  route('POST', '/uploads/payment-screenshot/signature', { auth: 'active', rateLimit: { max: 20, timeWindow: '15 minutes' }, body: z.object({}).strict() }, async () => signUpload(config, 'image'));
+
   route('POST', '/admin/uploads/images', { auth: 'admin', bodyLimit: uploadBodyLimit, rateLimit: { max: 60, timeWindow: '1 minute' }, body: z.object({ data: dataUrl }).strict() }, async request => storeImage(config, request.body.data));
 
   route('POST', '/admin/uploads/pdf', { auth: 'admin', bodyLimit: pdfBodyLimit, rateLimit: { max: 30, timeWindow: '1 minute' }, body: z.object({ data: pdfDataUrl }).strict() }, async request => storePdf(config, request.body.data));

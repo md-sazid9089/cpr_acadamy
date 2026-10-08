@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { loadConfig } from './config.js';
 import { openDatabase, migrate } from './db.js';
 import { buildApp } from './app.js';
-import { startWorker } from './worker.js';
+import { isCronAuthorized, maintainAfterRequest, runMaintenance, startWorker } from './worker.js';
 
 const runtimeKey = Symbol.for('cpr-academy.runtime');
 let application;
@@ -36,12 +36,42 @@ async function initialize() {
   }
 }
 
+function runtime() {
+  globalThis[runtimeKey] ??= initialize().catch(error => {
+    delete globalThis[runtimeKey];
+    throw error;
+  });
+  return globalThis[runtimeKey];
+}
+
+/** WORKER_MODE=serverless: called after each response has been sent (see maintainAfterRequest). */
+export async function runAfterRequest(method) {
+  try {
+    const { database, config } = await runtime();
+    if (config.workerMode === 'serverless') await maintainAfterRequest(database, config, method);
+  } catch (error) {
+    logger.error({ code: error.code, errorType: error.name }, 'Maintenance after request failed');
+  }
+}
+
+/** The scheduled (cron) maintenance call; only a caller holding CRON_SECRET gets through. */
+export async function handleCron(request) {
+  try {
+    const { database, config } = await runtime();
+    if (!isCronAuthorized(config, request.headers.get('authorization'))) {
+      return Response.json({ code: 'UNAUTHORIZED', message: 'Not allowed.' }, { status: 401, headers: { 'cache-control': 'no-store' } });
+    }
+    await runMaintenance(database, config);
+    return Response.json({ ok: true }, { headers: { 'cache-control': 'no-store' } });
+  } catch (error) {
+    logger.error({ code: error.code, errorType: error.name }, 'Scheduled maintenance failed');
+    return Response.json({ code: 'MAINTENANCE_FAILED', message: 'Maintenance failed.' }, { status: 500, headers: { 'cache-control': 'no-store' } });
+  }
+}
+
 export async function handleRequest(request) {
   try {
-    globalThis[runtimeKey] ??= initialize().catch(error => {
-      delete globalThis[runtimeKey];
-      throw error;
-    });
+    runtime();
     application ??= globalThis[runtimeKey].then(runtime => buildApp({ ...runtime, logger })).catch(error => {
       application = undefined;
       throw error;

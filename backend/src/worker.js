@@ -1,5 +1,6 @@
 import { deliverSms } from './sms.js';
 import { deliverEmail } from './email.js';
+import { timingSafeEqual } from 'node:crypto';
 import { finalizeExpiredAttempts } from './modules/exams.js';
 
 export async function runMaintenance(database, config, testSink, emailTestSink) {
@@ -26,4 +27,27 @@ export function startWorker(database, config, logger, { persistent = false } = {
   if (!persistent) timer.unref();
   tick();
   return async () => { clearInterval(timer); await current; };
+}
+/**
+ * WORKER_MODE=serverless, after a response has been sent. Messages a write may have queued (an OTP,
+ * a password-reset email) go out straight away; the rest of the maintenance runs at most once a
+ * minute across every instance, claimed atomically through the heartbeat row.
+ */
+export async function maintainAfterRequest(database, config, method, testSink, emailTestSink) {
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    await deliverSms(database, config, testSink);
+    await deliverEmail(database, config, emailTestSink);
+  }
+  const claimed = await database.query("UPDATE worker_heartbeat SET beat_at=now() WHERE id=1 AND beat_at<now()-interval '60 seconds' RETURNING id");
+  if (claimed.rows.length === 0 && (await database.query('SELECT 1 FROM worker_heartbeat WHERE id=1')).rows.length > 0) return false;
+  await runMaintenance(database, config, testSink, emailTestSink);
+  return true;
+}
+
+/** Vercel Cron sends "Authorization: Bearer <CRON_SECRET>"; with no secret configured nothing gets in. */
+export function isCronAuthorized(config, header) {
+  if (!config.cronSecret || typeof header !== 'string') return false;
+  const expected = Buffer.from(`Bearer ${config.cronSecret}`);
+  const given = Buffer.from(header);
+  return given.length === expected.length && timingSafeEqual(given, expected);
 }

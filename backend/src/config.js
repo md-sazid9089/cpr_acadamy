@@ -17,10 +17,20 @@ export function loadConfig(env = process.env) {
   if (production && !['true', 'false'].includes(env.TRUST_PROXY)) throw new Error('TRUST_PROXY must be set to true (behind a proxy that sets X-Forwarded-For) or false');
   // Who runs the background worker (OTP/email delivery, exam finalisation, cleanup). Production must choose
   // explicitly: nothing delivers SMS or finalises abandoned exams unless one of the two actually runs.
-  const workerMode = env.WORKER_MODE || (production ? '' : 'embedded');
-  if (!['embedded', 'external'].includes(workerMode)) {
-    throw new Error(production ? 'WORKER_MODE must be set to embedded (the web process runs the worker) or external (a separate `npm run worker` service)' : 'Invalid WORKER_MODE');
+  // On Vercel there is no long-lived process for a timer to run in, so the work runs after requests
+  // and from a scheduled cron call instead ('serverless').
+  const vercel = Boolean(env.VERCEL);
+  const workerMode = env.WORKER_MODE || (vercel ? 'serverless' : production ? '' : 'embedded');
+  if (!['embedded', 'external', 'serverless'].includes(workerMode)) {
+    throw new Error(production ? 'WORKER_MODE must be set to embedded (the web process runs the worker), external (a separate `npm run worker` service) or serverless (Vercel)' : 'Invalid WORKER_MODE');
   }
+  if (vercel && production && workerMode === 'embedded') throw new Error('WORKER_MODE=embedded does not work on Vercel: use serverless');
+  if (workerMode === 'serverless' && production && (env.CRON_SECRET?.length ?? 0) < 16) {
+    throw new Error('WORKER_MODE=serverless needs CRON_SECRET (at least 16 characters) so only the scheduled job can run maintenance');
+  }
+  // Each serverless instance opens its own pool, so keep it small and point DATABASE_URL at a pooled endpoint.
+  const databasePoolMax = Number(env.DATABASE_POOL_MAX || (vercel ? 3 : 10));
+  if (!Number.isInteger(databasePoolMax) || databasePoolMax < 1 || databasePoolMax > 50) throw new Error('DATABASE_POOL_MAX must be a whole number from 1 to 50');
   // Skipping the OTP step means nobody proves they own the number they sign up with: anyone can register
   // someone else's number, and a repeat registration reveals that a number is already taken.
   // Production only allows it when the operator acknowledges that explicitly.
@@ -47,6 +57,9 @@ export function loadConfig(env = process.env) {
     port,
     databaseMode,
     databaseUrl: env.DATABASE_URL,
+    databasePoolMax,
+    vercel,
+    cronSecret: env.CRON_SECRET || null,
     pglitePath: env.PGLITE_PATH || '.local/database',
     tokenSecret: env.TOKEN_SECRET || randomBytes(32).toString('hex'),
     ephemeralSecret: !env.TOKEN_SECRET,

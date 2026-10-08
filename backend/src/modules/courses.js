@@ -132,6 +132,10 @@ function driveFileId(value) {
   return url.pathname.match(/^\/file\/d\/([\w-]+)/)?.[1] ?? (/^\/(open|uc)$/.test(url.pathname) ? url.searchParams.get('id') : null);
 }
 
+function isCloudinaryUrl(value) {
+  try { return new URL(value).hostname === 'res.cloudinary.com'; } catch { return false; }
+}
+
 /** "Lesson 3: Airway" -> "Lesson 3 Airway.pdf", safe inside a quoted Content-Disposition filename. */
 function notesFileName(title) {
   return `${String(title ?? '').replace(/[^\w\s.-]/g, '').replace(/\s+/g, ' ').trim().slice(0, 100) || 'lecture-notes'}.pdf`;
@@ -279,6 +283,9 @@ export function courseRoutes(route, database, config) {
     // above, but the Drive link is permanent: whoever it is shared with can keep it.
     const drive = request.query.kind === 'notes' ? driveViewUrl(url) : null;
     if (drive) return { url: drive, expiresIn: null };
+    // Uploaded PDFs on Cloudinary open there directly: a serverless function cannot send a response over
+    // 4.5 MB, so it must not relay them. The address is unguessable but, like a Drive link, it does not expire.
+    if (request.query.kind === 'notes' && isCloudinaryUrl(url)) return { url, expiresIn: null };
     // Notes are a single download, so a few minutes is plenty. A video's playback session can
     // run far longer than that, so its link outlives the lecture (with headroom for pausing).
     const ttlSeconds = request.query.kind === 'notes' ? 300 : Math.min(6 * 3600, Math.max(1800, (lesson.duration_minutes || 60) * 120));

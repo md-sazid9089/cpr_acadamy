@@ -1,4 +1,5 @@
 import apiClient from '@/lib/api-client';
+import { readAsDataUrl, uploadFile } from '@/lib/uploads';
 
 /** Upload an admin-selected image and return the API-delivered URL. */
 export async function uploadImage(file) {
@@ -6,14 +7,15 @@ export async function uploadImage(file) {
     throw new Error('Choose a JPEG, PNG, or WebP image.');
   }
   if (file.size > 5 * 1024 * 1024) throw new Error('Images must be 5 MB or smaller.');
-  const data = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('The image could not be read.'));
-    reader.readAsDataURL(file);
+  return uploadFile({
+    file,
+    signaturePath: '/admin/uploads/signature',
+    signatureBody: { kind: 'image' },
+    serverUpload: async () => {
+      const data = await readAsDataUrl(file, 'The image could not be read.');
+      return (await apiClient.post('/admin/uploads/images', { data })).data.url;
+    },
   });
-  const response = await apiClient.post('/admin/uploads/images', { data });
-  return response.data.url;
 }
 import { QUESTION_TYPES } from '@/constants';
 
@@ -21,16 +23,17 @@ import { QUESTION_TYPES } from '@/constants';
 export async function uploadPdf(file) {
   if (file?.type !== 'application/pdf' && !/\.pdf$/i.test(file?.name ?? '')) throw new Error('Choose a PDF file.');
   if (file.size > 10 * 1024 * 1024) throw new Error('PDFs must be 10 MB or smaller.');
-  const encoded = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('The PDF could not be read.'));
-    reader.readAsDataURL(file);
+  return uploadFile({
+    file,
+    signaturePath: '/admin/uploads/signature',
+    signatureBody: { kind: 'pdf' },
+    serverUpload: async () => {
+      const encoded = await readAsDataUrl(file, 'The PDF could not be read.');
+      // Some systems report a PDF with a blank or generic type; the server checks the bytes either way.
+      const data = `data:application/pdf;base64,${encoded.slice(encoded.indexOf(',') + 1)}`;
+      return (await apiClient.post('/admin/uploads/pdf', { data })).data.url;
+    },
   });
-  // Some systems report a PDF with a blank or generic type; the server checks the bytes either way.
-  const data = `data:application/pdf;base64,${encoded.slice(encoded.indexOf(',') + 1)}`;
-  const response = await apiClient.post('/admin/uploads/pdf', { data });
-  return response.data.url;
 }
 
 /**

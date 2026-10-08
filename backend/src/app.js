@@ -21,7 +21,9 @@ export async function buildApp({ database, config, logger = false }) {
       // The worker beats every 10 seconds. A stale beat does not take the web service down, but monitoring
       // should alert on worker !== 'ok': without it no SMS/email is delivered and abandoned exams stay open.
       const beat = await database.query("SELECT extract(epoch FROM now()-beat_at) AS age FROM worker_heartbeat WHERE id=1");
-      const worker = beat.rows.length === 0 ? 'unknown' : Number(beat.rows[0].age) <= 60 ? 'ok' : 'stale';
+      // Serverless maintenance only runs after requests and from the daily cron, so a quiet site legitimately goes a day without a beat.
+      const staleAfter = config.workerMode === 'serverless' ? 26 * 3600 : 60;
+      const worker = beat.rows.length === 0 ? 'unknown' : Number(beat.rows[0].age) <= staleAfter ? 'ok' : 'stale';
       return { status: 'ready', worker };
     } catch {
       return reply.code(503).send({ status: 'not_ready' });

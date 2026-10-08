@@ -1,4 +1,5 @@
 import apiClient from '@/lib/api-client';
+import { readAsDataUrl, uploadFile } from '@/lib/uploads';
 
 /**
  * Payments. Online gateways are not configured yet, so every purchase is a
@@ -48,12 +49,13 @@ export async function uploadPaymentScreenshot(file) {
     throw new Error('Choose a JPEG, PNG, or WebP image.');
   }
   if (file.size > 5 * 1024 * 1024) throw new Error('Images must be 5 MB or smaller.');
-  const data = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('The image could not be read.'));
-    reader.readAsDataURL(file);
+  return uploadFile({
+    file,
+    signaturePath: '/uploads/payment-screenshot/signature',
+    signatureBody: {},
+    serverUpload: async () => {
+      const data = await readAsDataUrl(file, 'The image could not be read.');
+      return (await apiClient.post('/uploads/payment-screenshot', { data })).data.url;
+    },
   });
-  const response = await apiClient.post('/uploads/payment-screenshot', { data });
-  return response.data.url;
 }
