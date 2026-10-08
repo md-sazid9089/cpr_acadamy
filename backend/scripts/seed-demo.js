@@ -57,13 +57,15 @@ try {
       JSON.stringify(courseMetadata)
     ]);
 
-  await one(database, `INSERT INTO lessons(course_id, title, src, duration_minutes, scheduled_at, status, position)
-    VALUES ($1, $2, $3, $4, now() - interval '2 days', 'published', 1)
-    RETURNING id`, [course.id, 'Cardiology: Ischemic Heart Disease & ECG Interpretation', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', 90]);
+  // Lessons, the exam and the notice have no natural unique key, so each is skipped when a row with
+  // the same title already exists: the script can be re-run without duplicating them.
+  await database.query(`INSERT INTO lessons(course_id, title, src, duration_minutes, scheduled_at, status, position)
+    SELECT $1, $2, $3, $4, now() - interval '2 days', 'published', 1
+    WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE course_id=$1 AND title=$2)`, [course.id, 'Cardiology: Ischemic Heart Disease & ECG Interpretation', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', 90]);
 
-  await one(database, `INSERT INTO lessons(course_id, title, src, duration_minutes, scheduled_at, status, position)
-    VALUES ($1, $2, $3, $4, now() - interval '1 day', 'published', 2)
-    RETURNING id`, [course.id, 'Pulmonology: COPD, Asthma & Arterial Blood Gas Analysis', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', 85]);
+  await database.query(`INSERT INTO lessons(course_id, title, src, duration_minutes, scheduled_at, status, position)
+    SELECT $1, $2, $3, $4, now() - interval '1 day', 'published', 2
+    WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE course_id=$1 AND title=$2)`, [course.id, 'Pulmonology: COPD, Asthma & Arterial Blood Gas Analysis', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', 85]);
 
   const questions = [
     {
@@ -105,9 +107,11 @@ try {
     }
   ];
 
-  await one(database, `INSERT INTO exams(course_id, title, type, question_type, duration_minutes, negative_marking, pass_mark, target_question_count, marks_per_question, scheduled_at, closes_at, results_at, is_published, questions)
-    VALUES ($1, $2, 'practice', 'mixed', 30, 0, 70, 2, 2, now() - interval '1 day', now() + interval '30 days', now() - interval '1 day', true, $3)
-    RETURNING id`, [course.id, 'Cardiology & Pulmonology Mock Exam 01', JSON.stringify(questions)]);
+  // An open-ended practice paper (no closing or release time) shows each result as soon as it is submitted.
+  // Results may never be released before an exam closes, so a release time in the past needs no close either.
+  await database.query(`INSERT INTO exams(course_id, title, type, question_type, duration_minutes, negative_marking, pass_mark, target_question_count, marks_per_question, scheduled_at, closes_at, results_at, is_published, questions)
+    SELECT $1, $2, 'practice', 'mixed', 30, 0, 70, 2, 2, now() - interval '1 day', NULL, NULL, true, $3
+    WHERE NOT EXISTS (SELECT 1 FROM exams WHERE course_id=$1 AND title=$2)`, [course.id, 'Cardiology & Pulmonology Mock Exam 01', JSON.stringify(questions)]);
 
   await database.query(`INSERT INTO enrollments(user_id, course_id, status, starts_at, expires_at)
     VALUES ($1, $2, 'active', now(), now() + interval '180 days')
@@ -115,7 +119,8 @@ try {
     [student.id, course.id]);
 
   await database.query(`INSERT INTO announcements(title, body, category, pinned, is_published, published_at)
-    VALUES ($1, $2, 'General', true, true, now())`,
+    SELECT $1, $2, 'General', true, true, now()
+    WHERE NOT EXISTS (SELECT 1 FROM announcements WHERE title=$1)`,
     ['Welcome to CPR Medical Academy', 'Welcome to the academy portal! Check your Course Hub for recorded classes and weekly mock exams.']);
 
   console.log('Demo seed completed successfully!');
