@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { FaCheck } from 'react-icons/fa6';
 import AuthCard from './components/AuthCard.jsx';
 import { fetchApprovalStatus } from './api/auth.api.js';
@@ -44,8 +44,11 @@ export default function PendingApproval() {
     refetchInterval: 30_000,
   });
 
+  // Approved (by the poll, "Check status", or before arriving here): nothing left to wait for.
+  if (user && status === ACCOUNT_STATUS.ACTIVE) return <Navigate to="/dashboard" replace />;
+
   // How far along the four-step strip we are.
-  const reachedIndex = isRejected ? 1 : status === ACCOUNT_STATUS.ACTIVE ? 3 : 2;
+  const reachedIndex = isRejected ? 1 : 2;
 
   return (
     <AuthCard
