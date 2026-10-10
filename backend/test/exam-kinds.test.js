@@ -116,3 +116,52 @@ test('after students start, an admin can still move the closing and result times
     assert.equal((await admin.request('PATCH', `/admin/exams/${fresh.id}`, { title: 'Renamed freely', closesAt: iso(minutes(30)) })).statusCode, 200);
   } finally { await context.close(); }
 });
+
+test('marks are set once per question type and written onto every question of that type', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user('student', '01712345678');
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'type-marks', title: 'Type marks', category: 'FCPS', price: 100, isPublished: true })).json();
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [student.id, course.id]);
+    const options = ['a', 'b', 'c', 'd', 'e'].map(id => ({ id, text: id.toUpperCase() }));
+    const sba = (id, marks) => ({ id, type: 'sba', stem: 'Pick one.', options, correctAnswer: 'b', explanation: '', marks });
+    const mtf = (id, marks) => ({ id, type: 'mtf', stem: 'True or false?', options, correctAnswer: { a: true, b: false, c: true, d: false, e: true }, explanation: '', marks });
+
+    // The questions arrive with assorted marks; the exam's per-type values win.
+    let response = await admin.request('POST', '/admin/exams', {
+      courseId: course.id, title: 'Mixed', type: 'practice', questionType: 'mixed', durationMinutes: 30, scheduledAt: new Date(Date.now() - 60000).toISOString(),
+      targetQuestionCount: 4, sbaMarks: 3, mtfMarks: 0.5, questions: [sba('s1', 1), sba('s2', 7), mtf('m1', 0.2), mtf('m2', 0.9)],
+    });
+    assert.equal(response.statusCode, 200, response.body);
+    let exam = response.json();
+    assert.deepEqual([exam.sbaMarks, exam.mtfMarks], [3, 0.5]);
+    assert.deepEqual(exam.questions.map(question => question.marks), [3, 3, 0.5, 0.5]);
+    assert.equal(exam.totalMarks, 3 * 2 + 0.5 * 5 * 2);
+
+    // Changing one type's marks rewrites every question of that type, and only that type.
+    response = await admin.request('PATCH', `/admin/exams/${exam.id}`, { sbaMarks: 4 });
+    assert.equal(response.statusCode, 200, response.body);
+    exam = response.json();
+    assert.deepEqual(exam.questions.map(question => question.marks), [4, 4, 0.5, 0.5]);
+    assert.equal(exam.totalMarks, 4 * 2 + 0.5 * 5 * 2);
+
+    // A question added later takes its type's marks, whatever the client put on it.
+    response = await admin.request('PATCH', `/admin/exams/${exam.id}`, { targetQuestionCount: 5, questions: [...exam.questions, sba('s3', 9)] });
+    assert.deepEqual(response.json().questions.map(question => question.marks), [4, 4, 0.5, 0.5, 4]);
+
+    // A single-type paper mirrors its marks into marksPerQuestion.
+    const single = (await admin.request('POST', '/admin/exams', { courseId: course.id, title: 'SBA only', questionType: 'sba', durationMinutes: 30, scheduledAt: new Date(Date.now() - 60000).toISOString(), targetQuestionCount: 1, sbaMarks: 2.5, questions: [sba('only', 1)] })).json();
+    assert.deepEqual([single.sbaMarks, single.marksPerQuestion, single.questions[0].marks], [2.5, 2.5, 2.5]);
+
+    // Grading reads those marks, and once a student starts, the marks are frozen with the paper.
+    response = await admin.request('PATCH', `/admin/exams/${exam.id}`, { isPublished: true });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal((await student.request('POST', `/exams/${exam.id}/start`)).statusCode, 200);
+    response = await student.request('POST', `/exams/${exam.id}/submit`, { answers: { s1: 'b', s2: 'c', m1: { a: true, b: false, c: true, d: false, e: true } } });
+    assert.equal(response.json().score, 4 + 0.5 * 5, 'a right SBA earns its type marks, a right MCQ earns its statements');
+    response = await admin.request('PATCH', `/admin/exams/${exam.id}`, { sbaMarks: 1 });
+    assert.equal(response.statusCode, 409);
+    assert.equal(response.json().code, 'EXAM_LOCKED');
+  } finally { await context.close(); }
+});

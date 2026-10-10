@@ -26,6 +26,7 @@ export default function QuestionCard({
   index,
   marksLabel,
   allowTypeChange = false,
+  typeMarks,
   onChange,
   onBlur,
   onDuplicate,
@@ -84,15 +85,15 @@ export default function QuestionCard({
       </header>
 
       <div className="mt-4 space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {allowTypeChange && (
-            <Select label="Question type" value={question.type} onChange={(event) => onChange({ type: event.target.value, correctOptionId: '', correctAnswer: {}, marks: event.target.value === QUESTION_TYPES.MTF ? 0.4 : 2 })}>
+        {/* Marks are set per question type under the exam's Marking settings, so a question has no marks field of its own. */}
+        {allowTypeChange && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select label="Question type" value={question.type} onChange={(event) => onChange({ type: event.target.value, correctOptionId: '', correctAnswer: {}, marks: typeMarks?.[event.target.value] || (event.target.value === QUESTION_TYPES.MTF ? 0.4 : 2) })}>
               <option value={QUESTION_TYPES.MTF}>MCQ (True / False)</option>
               <option value={QUESTION_TYPES.SBA}>SBA</option>
             </Select>
-          )}
-          <Input label={isSba ? 'Question marks' : 'Marks per statement'} type="number" required min={0.05} max={100} step={0.05} value={question.marks} onChange={(event) => onChange({ marks: Number(event.target.value) })} />
-        </div>
+          </div>
+        )}
         <Textarea
           label="Question"
           rows={3}

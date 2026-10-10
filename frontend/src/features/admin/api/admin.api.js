@@ -397,6 +397,8 @@ function toEditorExam(exam) {
     writtenCount: exam.questionCount ?? 0,
     incompleteCount: (exam.questionCount ?? 0) - (exam.completeQuestionCount ?? 0),
     marksPerQuestion,
+    sbaMarks: Number(exam.sbaMarks ?? 2),
+    mtfMarks: Number(exam.mtfMarks ?? 0.4),
     deductionPercent,
     passMark: Number(exam.passMark ?? 70),
     totalMarks: exam.totalMarks ?? 0,
@@ -418,6 +420,8 @@ function toExamPayload(exam) {
   if (exam.durationMinutes !== undefined) payload.durationMinutes = Math.max(1, Number(exam.durationMinutes) || 1);
   if (exam.questionCount !== undefined) payload.targetQuestionCount = Math.max(0, Number(exam.questionCount) || 0);
   if (exam.marksPerQuestion !== undefined) payload.marksPerQuestion = round3(Number(exam.marksPerQuestion) || 0);
+  if (exam.sbaMarks !== undefined) payload.sbaMarks = round3(Number(exam.sbaMarks));
+  if (exam.mtfMarks !== undefined) payload.mtfMarks = round3(Number(exam.mtfMarks));
   if (exam.deductionPercent !== undefined) payload.negativeMarking = round3(Number(exam.deductionPercent));
   if (exam.passMark !== undefined) payload.passMark = round3(Number(exam.passMark));
   if (exam.questions !== undefined) {

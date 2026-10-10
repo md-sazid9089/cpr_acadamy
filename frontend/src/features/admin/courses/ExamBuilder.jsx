@@ -113,7 +113,8 @@ function ExamEditor({ exam, course }) {
     resultsAt: toLocalInput(exam.resultsAt),
     durationMinutes: exam.durationMinutes,
     questionCount: exam.questionCount,
-    marksPerQuestion: exam.marksPerQuestion ?? 1,
+    sbaMarks: exam.sbaMarks ?? 2,
+    mtfMarks: exam.mtfMarks ?? 0.4,
     deductionPercent: exam.deductionPercent ?? 0,
     passMark: exam.passMark ?? 70,
   });
@@ -173,7 +174,8 @@ function ExamEditor({ exam, course }) {
       resultsAt: settings.resultsAt ? fromLocalInput(settings.resultsAt) : null,
       durationMinutes: Number(settings.durationMinutes) || 0,
       questionCount: Number(settings.questionCount) || 0,
-      marksPerQuestion: Number(settings.marksPerQuestion) || 0,
+      sbaMarks: typeMarks.sba,
+      mtfMarks: typeMarks.mtf,
       deductionPercent: Number(settings.deductionPercent),
       passMark: Number(settings.passMark),
       questions,
@@ -184,6 +186,15 @@ function ExamEditor({ exam, course }) {
     ...prev,
     [field]: event.target.value,
   }));
+
+  // Marks belong to a question type, not to single questions: changing them updates every question of that type.
+  const typeMarks = { sba: Number(settings.sbaMarks) || 0, mtf: Number(settings.mtfMarks) || 0 };
+  const setTypeMarks = (type) => (event) => {
+    const { value } = event.target;
+    setSettings((prev) => ({ ...prev, [type === QUESTION_TYPES.MTF ? 'mtfMarks' : 'sbaMarks']: value }));
+    const marks = Number(value);
+    if (marks > 0) setQuestions((prev) => prev.map((q) => (q.type === type ? { ...q, marks } : q)));
+  };
 
   // ── Questions ──
   // The whole paper is one document server-side, so every structural change
@@ -253,7 +264,7 @@ function ExamEditor({ exam, course }) {
   const addQuestion = (requestedType) => {
     if (targetReached()) return;
     const type = settings.type === 'mixed' ? (requestedType === QUESTION_TYPES.SBA ? QUESTION_TYPES.SBA : QUESTION_TYPES.MTF) : settings.type;
-    const next = [...questions, settings.type === 'mixed' ? blankQuestion(type) : blankQuestion(type, Number(settings.marksPerQuestion))];
+    const next = [...questions, blankQuestion(type, typeMarks[type] || undefined)];
     setQuestions(next);
     persist(next);
   };
@@ -312,7 +323,6 @@ function ExamEditor({ exam, course }) {
   const marking = {
     type: settings.type,
     questionCount: Number(settings.questionCount) || 0,
-    marksPerQuestion: Number(settings.marksPerQuestion) || 0,
     deductionPercent: Number(settings.deductionPercent) || 0,
   };
   const totalMarks = Math.round(questions.reduce((total, question) => total + Number(question.marks) * (question.type === QUESTION_TYPES.MTF ? question.options.length : 1), 0) * 1000) / 1000;
@@ -349,7 +359,9 @@ function ExamEditor({ exam, course }) {
 
   const round3 = (n) => Math.round(n * 1000) / 1000;
   const passNeeded = round3(totalMarks * (Number(settings.passMark) || 0) / 100);
-  const wrongPenalty = isMixed ? null : round3(marking.marksPerQuestion * marking.deductionPercent / 100);
+  const penalty = (type) => round3(typeMarks[type] * marking.deductionPercent / 100);
+  const showSbaMarks = settings.type !== QUESTION_TYPES.MTF;
+  const showMtfMarks = settings.type !== QUESTION_TYPES.SBA;
   const writtenPercent = target > 0 ? Math.min(100, Math.round((written / target) * 100)) : 0;
   const scrollToQuestions = () => document.getElementById('exam-questions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   const optional = (text) => (
@@ -360,7 +372,9 @@ function ExamEditor({ exam, course }) {
   const totals = [
     ['Total marks', totalMarks, written < target ? `From ${written} of ${target} questions` : null],
     ['Needed to pass', passNeeded, null],
-    ['Wrong answer', isMixed ? `−${marking.deductionPercent}%` : `−${wrongPenalty}`, isMixed ? 'of the marks per answer' : isMtf ? 'per statement' : 'per question'],
+    isMixed
+      ? ['Wrong answer', `−${penalty(QUESTION_TYPES.SBA)} / −${penalty(QUESTION_TYPES.MTF)}`, 'per SBA / per MCQ statement']
+      : ['Wrong answer', `−${penalty(settings.type)}`, isMtf ? 'per statement' : 'per question'],
     ['Blank answer', 0, null],
   ];
 
@@ -509,7 +523,7 @@ function ExamEditor({ exam, course }) {
         </Section>
 
         <Section title="Marking" description="Totals are calculated from these values.">
-          <fieldset disabled={locked} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <fieldset disabled={locked} className={cn('grid gap-4 sm:grid-cols-2', isMixed ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}>
             <Input
               label="Questions"
               type="number"
@@ -520,16 +534,32 @@ function ExamEditor({ exam, course }) {
               onChange={setField('questionCount')}
               hint={written > 0 ? `How many the paper should have. At least the ${written} already written.` : 'How many the paper should have.'}
             />
-            <Input
-              label={isMtf ? 'Marks per statement' : 'Marks per question'}
-              type="number"
-              required
-              min={0.05}
-              step={0.05}
-              value={settings.marksPerQuestion}
-              onChange={setField('marksPerQuestion')}
-              hint={isMtf ? 'Given to each new statement you add.' : 'Given to each new question you add.'}
-            />
+            {showSbaMarks && (
+              <Input
+                label="SBA marks"
+                type="number"
+                required
+                min={0.05}
+                max={100}
+                step={0.05}
+                value={settings.sbaMarks}
+                onChange={setTypeMarks(QUESTION_TYPES.SBA)}
+                hint="Every SBA question in this paper carries these marks."
+              />
+            )}
+            {showMtfMarks && (
+              <Input
+                label="MCQ marks per statement"
+                type="number"
+                required
+                min={0.05}
+                max={100}
+                step={0.05}
+                value={settings.mtfMarks}
+                onChange={setTypeMarks(QUESTION_TYPES.MTF)}
+                hint={`Every true/false statement carries these, so each MCQ is worth ${round3(typeMarks.mtf * 5)}.`}
+              />
+            )}
             <Input
               label="Wrong-answer penalty"
               type="number"
@@ -630,6 +660,7 @@ function ExamEditor({ exam, course }) {
               index={index}
               marksLabel={`${Math.round(question.marks * (question.type === QUESTION_TYPES.MTF ? question.options.length : 1) * 1000) / 1000} marks`}
               allowTypeChange={isMixed}
+              typeMarks={typeMarks}
               onChange={(patch) => patchQuestion(question.id, patch)}
               onBlur={flushQuestion(question.id)}
               onDuplicate={() => duplicateQuestion(question.id)}

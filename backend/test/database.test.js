@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase, migrate, one } from '../src/db.js';
@@ -73,6 +73,31 @@ test('local database creates missing parent directories and persists data across
     assert.equal((await one(database, 'SELECT count(*)::int AS count FROM schema_migrations')).count, migrationCount);
   } finally {
     if (database) await database.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+test('migration 021 gives existing exams per-type marks from their first question of each type', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'cpr-type-marks-'));
+  const database = await openDatabase({ databaseMode: 'pglite', pglitePath: 'memory://' });
+  try {
+    const source = new URL('../migrations/', import.meta.url);
+    const names = (await readdir(source)).filter(name => /\.(sql|js)$/.test(name));
+    for (const name of names.filter(name => name < '021')) await writeFile(join(directory, name), await readFile(new URL(name, source)));
+    await migrate(database, directory);
+    const course = await one(database, "INSERT INTO courses(slug,title,category,price_minor) VALUES ('m','M','FCPS',0) RETURNING id");
+    const insert = (title, questionType, marksPerQuestion, questions) => database.query(
+      "INSERT INTO exams(course_id,title,question_type,duration_minutes,scheduled_at,marks_per_question,questions) VALUES ($1,$2,$3,30,now(),$4,$5)",
+      [course.id, title, questionType, marksPerQuestion, JSON.stringify(questions)]);
+    await insert('mixed', 'mixed', 1, [{ id: 'a', type: 'mtf', marks: 0.25 }, { id: 'b', type: 'sba', marks: 3 }, { id: 'c', type: 'sba', marks: 5 }]);
+    await insert('empty sba', 'sba', 1.5, []);
+    await insert('empty mtf', 'mtf', 0, []);
+    for (const name of names.filter(name => name >= '021')) await writeFile(join(directory, name), await readFile(new URL(name, source)));
+    await migrate(database, directory);
+    const rows = (await database.query('SELECT title,sba_marks::float AS sba,mtf_marks::float AS mtf,questions FROM exams ORDER BY title')).rows;
+    assert.deepEqual(rows.map(({ title, sba, mtf }) => [title, sba, mtf]), [['empty mtf', 2, 0.4], ['empty sba', 1.5, 0.4], ['mixed', 3, 0.25]]);
+    assert.deepEqual(rows.find(row => row.title === 'mixed').questions.map(question => question.marks), [0.25, 3, 5], 'question marks are left as graded');
+  } finally {
+    await database.close();
     await rm(directory, { recursive: true, force: true });
   }
 });

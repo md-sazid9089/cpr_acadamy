@@ -38,13 +38,37 @@ const examFields = z.object({
   questionType: z.enum(['sba', 'mtf', 'mixed']).default('sba'),
   durationMinutes: z.number().int().min(1).max(600), negativeMarking: z.number().min(0).max(1000).multipleOf(0.001).default(0),
   passMark: z.number().min(0).max(100).multipleOf(0.001).default(70),
-  targetQuestionCount: z.number().int().min(0).max(500).default(0), marksPerQuestion: z.number().min(0).max(100).multipleOf(0.001).default(1),
+  targetQuestionCount: z.number().int().min(0).max(500).default(0), marksPerQuestion: z.number().min(0).max(100).multipleOf(0.001).optional(),
   scheduledAt: z.string().datetime({ offset: true }), closesAt: z.string().datetime({ offset: true }).nullable().default(null),
   resultsAt: z.string().datetime({ offset: true }).nullable().default(null), isPublished: z.boolean().default(false),
+  // One marks value per question type: every SBA question carries sbaMarks, every MCQ statement mtfMarks.
+  sbaMarks: z.number().positive().max(100).multipleOf(0.001).optional(), mtfMarks: z.number().positive().max(100).multipleOf(0.001).optional(),
+  // Group penalty per question type: every full group of `size` wrong answers cuts `penalty`% of the total marks. Size 0 = off.
+  sbaGroupSize: z.number().int().min(0).max(500).default(0), sbaGroupPenalty: z.number().min(0).max(100).multipleOf(0.001).default(0),
+  mtfGroupSize: z.number().int().min(0).max(500).default(0), mtfGroupPenalty: z.number().min(0).max(100).multipleOf(0.001).default(0),
   questions: z.array(questionSchema).max(500).default([]),
 }).strict();
 /** The only exam settings an admin may still change after a student has started the exam. */
 const RESCHEDULE_FIELDS = ['closesAt', 'resultsAt'];
+const DEFAULT_TYPE_MARKS = { sba: 2, mtf: 0.4 };
+
+/**
+ * Marks are set once per question type, not per question. Each type's value comes from the request when it
+ * names one (or, for the exam's own type, an exam-wide marksPerQuestion), else from the first question of that
+ * type it sends (a client still writing marks on questions), else from what the exam already has; it is then
+ * written onto every question of that type, so grading, which reads each question's marks, always agrees with
+ * the exam's settings. marks_per_question mirrors the value for the exam's own question type.
+ */
+function applyTypeMarks(input, body) {
+  for (const [type, field] of [['sba', 'sbaMarks'], ['mtf', 'mtfMarks']]) {
+    const examWide = input.questionType === type && body.marksPerQuestion > 0 ? body.marksPerQuestion : undefined;
+    const sent = body.questions?.find(question => question.type === type)?.marks;
+    input[field] = body[field] ?? examWide ?? sent ?? input[field] ?? DEFAULT_TYPE_MARKS[type];
+  }
+  input.questions = input.questions.map(question => ({ ...question, marks: question.type === 'mtf' ? input.mtfMarks : input.sbaMarks }));
+  if (input.questionType !== 'mixed') input.marksPerQuestion = input.questionType === 'mtf' ? input.mtfMarks : input.sbaMarks;
+  else input.marksPerQuestion ??= 1;
+}
 
 function totalMarks(questions) {
   return Math.round(questions.reduce((total, question) => total + question.marks * (question.type === 'mtf' ? question.options.length : 1), 0) * 1000) / 1000;
@@ -107,28 +131,40 @@ export function validateAnswers(questions, answers) {
   }
 }
 
+/** Marks cut by the group rules: per type, every full group of `size` wrong answers costs `penalty`% of the total marks. */
+function groupDeduction(paper, wrongByType, maximum) {
+  let cut = 0;
+  for (const type of ['sba', 'mtf']) {
+    const rule = paper.groupPenalty?.[type];
+    if (rule?.size > 0 && rule.penalty > 0) cut += Math.floor(wrongByType[type] / rule.size) * maximum * rule.penalty / 100;
+  }
+  return Math.round(cut * 1000) / 1000;
+}
+
 export function gradePaper(paper, answers) {
   let score = 0;
   let correctCount = 0;
   let wrongCount = 0;
   let skippedCount = 0;
+  const wrongByType = { sba: 0, mtf: 0 };
   for (const question of paper.questions) {
     const response = answers[question.id];
     const units = question.type === 'sba' ? [[response, question.correctAnswer]] : question.options.map(option => [response?.[option.id], question.correctAnswer[option.id]]);
     for (const [selected, correct] of units) {
       if (selected === undefined || selected === null) skippedCount += 1;
       else if (selected === correct) { correctCount += 1; score += question.marks; }
-      else { wrongCount += 1; score -= question.marks * (paper.negativeMarking ?? 0) / 100; }
+      else { wrongCount += 1; wrongByType[question.type] += 1; score -= question.marks * (paper.negativeMarking ?? 0) / 100; }
     }
   }
-  score = Math.max(0, Math.round(score * 1000) / 1000);
   const maximum = totalMarks(paper.questions);
+  const groupPenalty = groupDeduction(paper, wrongByType, maximum);
+  score = Math.max(0, Math.round((score - groupPenalty) * 1000) / 1000);
   const passMark = paper.passMark ?? 70;
-  return { score, totalMarks: maximum, correctCount, wrongCount, skippedCount, passMark, passed: maximum > 0 && score * 100 >= maximum * passMark };
+  return { score, totalMarks: maximum, correctCount, wrongCount, skippedCount, groupPenalty, passMark, passed: maximum > 0 && score * 100 >= maximum * passMark };
 }
 
 // Everything about an exam except its (large) question list, for the hot paths that never look at questions.
-const EXAM_LIGHT_COLUMNS = 'id,course_id,title,type,question_type,duration_minutes,negative_marking,scheduled_at,closes_at,results_at,is_published,created_at,target_question_count,marks_per_question,pass_mark';
+const EXAM_LIGHT_COLUMNS = 'id,course_id,title,type,question_type,duration_minutes,negative_marking,scheduled_at,closes_at,results_at,is_published,created_at,target_question_count,marks_per_question,sba_marks,mtf_marks,sba_group_size,sba_group_penalty,mtf_group_size,mtf_group_penalty,pass_mark';
 // Likewise for an attempt: `paper` is a full copy of the exam and is only fetched when a question is actually needed.
 const ATTEMPT_LIGHT_COLUMNS = 'id,user_id,exam_id,answers,started_at,ends_at,submitted_at,result,version,auto_finalized,last_client';
 
@@ -169,7 +205,10 @@ function examDto(row) {
   return { id: row.id, courseId: row.course_id, courseTitle: row.course_title, courseName: row.course_title,
     title: row.title, type: row.type, questionType: row.question_type, status, isPublished: row.is_published,
     durationMinutes: row.duration_minutes, negativeMarking: Number(row.negative_marking), passMark: Number(row.pass_mark),
-    marksPerQuestion: Number(row.marks_per_question ?? 1), targetQuestionCount: row.target_question_count ?? 0,
+    marksPerQuestion: Number(row.marks_per_question ?? 1), sbaMarks: Number(row.sba_marks ?? 2), mtfMarks: Number(row.mtf_marks ?? 0.4),
+    sbaGroupSize: row.sba_group_size ?? 0, sbaGroupPenalty: Number(row.sba_group_penalty ?? 0),
+    mtfGroupSize: row.mtf_group_size ?? 0, mtfGroupPenalty: Number(row.mtf_group_penalty ?? 0),
+    targetQuestionCount: row.target_question_count ?? 0,
     scheduledAt: row.scheduled_at, closesAt: row.closes_at, resultsAt: row.results_at, resultsReleaseAt: resultsReleaseAt(row),
     questionCount: summary.count, completeQuestionCount: summary.complete, totalMarks: summary.total };
 }
@@ -264,7 +303,8 @@ export function examRoutes(route, database) {
     const sharedEnd = liveEnd(exam);
     ensure(sharedEnd > Date.now(), 409, 'EXAM_CLOSED', 'This live exam has already ended.');
     const deadline = new Date(Math.min(sharedEnd === Infinity ? Date.now() + exam.duration_minutes * 60000 : sharedEnd, exam.closes_at ? new Date(exam.closes_at).getTime() : Infinity));
-    const paper = { questions: arrangePaper(exam.questions, exam.question_type), negativeMarking: Number(exam.negative_marking), passMark: Number(exam.pass_mark), durationMinutes: exam.duration_minutes };
+    const paper = { questions: arrangePaper(exam.questions, exam.question_type), negativeMarking: Number(exam.negative_marking), passMark: Number(exam.pass_mark), durationMinutes: exam.duration_minutes,
+      groupPenalty: { sba: { size: exam.sba_group_size ?? 0, penalty: Number(exam.sba_group_penalty ?? 0) }, mtf: { size: exam.mtf_group_size ?? 0, penalty: Number(exam.mtf_group_penalty ?? 0) } } };
     const attempt = await one(transaction, 'INSERT INTO exam_attempts(user_id,exam_id,paper,ends_at) VALUES ($1,$2,$3,$4) RETURNING *', [request.auth.user_id, exam.id, JSON.stringify(paper), deadline]);
     return publicPaper(attempt, exam);
   }));
@@ -373,18 +413,24 @@ export function examRoutes(route, database) {
       const previous = existing ? { courseId: existing.course_id, title: existing.title, type: existing.type, questionType: existing.question_type,
         durationMinutes: existing.duration_minutes, negativeMarking: Number(existing.negative_marking), passMark: Number(existing.pass_mark),
         targetQuestionCount: existing.target_question_count, marksPerQuestion: Number(existing.marks_per_question),
+        sbaMarks: Number(existing.sba_marks), mtfMarks: Number(existing.mtf_marks),
+        sbaGroupSize: existing.sba_group_size, sbaGroupPenalty: Number(existing.sba_group_penalty),
+        mtfGroupSize: existing.mtf_group_size, mtfGroupPenalty: Number(existing.mtf_group_penalty),
         scheduledAt: new Date(existing.scheduled_at).toISOString(), closesAt: existing.closes_at ? new Date(existing.closes_at).toISOString() : null,
         resultsAt: existing.results_at ? new Date(existing.results_at).toISOString() : null, isPublished: existing.is_published, questions: existing.questions } : {};
       const input = examFields.parse({ ...previous, ...request.body });
       if (attempted) await validateReschedule(transaction, existing, input);
-      else await validatePaper(transaction, input);
+      else {
+        applyTypeMarks(input, request.body);
+        await validatePaper(transaction, input);
+      }
       ensure(!input.closesAt || new Date(input.closesAt) > new Date(input.scheduledAt), 400, 'INVALID_SCHEDULE', 'Closing time must follow the start.');
       ensure(input.type === 'practice' || input.closesAt, 400, 'CLOSING_TIME_REQUIRED', 'Timed exams require a closing time.');
       ensure(!input.resultsAt || !input.closesAt || new Date(input.resultsAt) >= new Date(input.closesAt), 400, 'INVALID_RESULTS_RELEASE', 'Results cannot be released before the exam closes.');
       // Without a closing time (practice papers) the opening time is the earliest results can appear.
       ensure(!input.resultsAt || new Date(input.resultsAt) >= new Date(input.scheduledAt), 400, 'INVALID_RESULTS_RELEASE', 'Results cannot be released before the exam starts.');
-      const values = [input.courseId, input.title, input.type, input.questionType, input.durationMinutes, input.negativeMarking, input.scheduledAt, input.closesAt, input.resultsAt, input.isPublished, JSON.stringify(input.questions), input.targetQuestionCount, input.marksPerQuestion, input.passMark];
-      const columns = ['course_id', 'title', 'type', 'question_type', 'duration_minutes', 'negative_marking', 'scheduled_at', 'closes_at', 'results_at', 'is_published', 'questions', 'target_question_count', 'marks_per_question', 'pass_mark'];
+      const values = [input.courseId, input.title, input.type, input.questionType, input.durationMinutes, input.negativeMarking, input.scheduledAt, input.closesAt, input.resultsAt, input.isPublished, JSON.stringify(input.questions), input.targetQuestionCount, input.marksPerQuestion, input.passMark, input.sbaMarks, input.mtfMarks, input.sbaGroupSize, input.sbaGroupPenalty, input.mtfGroupSize, input.mtfGroupPenalty];
+      const columns = ['course_id', 'title', 'type', 'question_type', 'duration_minutes', 'negative_marking', 'scheduled_at', 'closes_at', 'results_at', 'is_published', 'questions', 'target_question_count', 'marks_per_question', 'pass_mark', 'sba_marks', 'mtf_marks', 'sba_group_size', 'sba_group_penalty', 'mtf_group_size', 'mtf_group_penalty'];
       const exam = creating
         ? await one(transaction, `INSERT INTO exams(${columns.join(',')}) VALUES (${values.map((value, index) => `$${index + 1}`).join(',')}) RETURNING *`, values)
         : await one(transaction, `UPDATE exams SET ${columns.map((column, index) => `${column}=$${index + 1}`).join(',')} WHERE id=$${values.length + 1} RETURNING *`, [...values, existing.id]);
@@ -395,6 +441,10 @@ export function examRoutes(route, database) {
   }
 
   async function validatePaper(transaction, input) {
+    for (const [label, size, penalty] of [['SBA', input.sbaGroupSize, input.sbaGroupPenalty], ['MCQ', input.mtfGroupSize, input.mtfGroupPenalty]]) {
+      ensure((size > 0) === (penalty > 0), 400, 'INVALID_GROUP_PENALTY',
+        `${label} group penalty needs both a group size and a percentage, or neither.`);
+    }
     ensure(new Set(input.questions.map(question => question.id)).size === input.questions.length, 400, 'DUPLICATE_QUESTION', 'Question IDs must be unique.');
     ensure(!input.targetQuestionCount || input.questions.length <= input.targetQuestionCount, 400, 'TOO_MANY_QUESTIONS',
       `This paper has ${input.questions.length} questions but the target is ${input.targetQuestionCount}. Delete the extra questions or raise the target.`);
