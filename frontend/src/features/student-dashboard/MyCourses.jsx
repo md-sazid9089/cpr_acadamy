@@ -69,6 +69,7 @@ function AccessNote({ course }) {
 function CourseCard({ course }) {
   const categorySlug = CATEGORY_SLUGS[course.category] || 'fcps';
   const hubUrl = `/dashboard/course/${course.slug}`;
+  const scheduleUrl = `/courses/${categorySlug}/${course.slug}/schedule`;
   const isCompleted = course.lessonCount > 0 && course.completedLessons === course.lessonCount && !course.nextLesson;
   // Read the record, not the tab: a card is only resumable when
   // the enrolment itself is running.
@@ -124,7 +125,7 @@ function CourseCard({ course }) {
             <FaClockRotateLeft aria-hidden="true" /> Waiting for Approval
           </span>
         ) : (
-          <Link to={isActive ? hubUrl : `/dashboard/checkout/${course.slug}`} className="course-primary-action">
+          <Link to={isActive ? `/dashboard/course/${course.slug}` : `/dashboard/checkout/${course.slug}`} className="course-primary-action">
             {isCompleted && isActive ? <FaBookOpen aria-hidden="true" /> : isActive ? <FaPlay aria-hidden="true" /> : null}
             {isActive
               ? isCompleted ? 'Review materials' : next ? 'Continue lesson' : 'Open course'
@@ -136,7 +137,7 @@ function CourseCard({ course }) {
       </div>
 
       <nav aria-label={`${course.title} links`} className="course-actions">
-        <Link to={`/courses/${categorySlug}/${course.slug}/schedule`}>
+        <Link to={scheduleUrl}>
           <FaRegCalendar aria-hidden="true" />
           Schedule
         </Link>

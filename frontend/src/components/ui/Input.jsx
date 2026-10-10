@@ -7,10 +7,10 @@ const fieldStyles =
   'transition-colors focus:border-stone-200 disabled:cursor-not-allowed disabled:bg-stone-50 ' +
   'dark:bg-surface-dark-subtle dark:text-brand-200 dark:placeholder:text-brand-200 dark:disabled:bg-surface-dark';
 
-/** Text input with label, hint, prefix and error slot. Forwards refs for RHF.
+/** Text input with label, hint, prefix/suffix and error slot. Forwards refs for RHF.
  * A `type="password"` field always gets a show/hide toggle — permanent, not opt-in. */
 const Input = forwardRef(function Input(
-  { label, hint, error, prefix, type, className, containerClassName, id, required, maxLength, ...props },
+  { label, hint, error, prefix, suffix, type, className, containerClassName, id, required, maxLength, ...props },
   ref,
 ) {
   const autoId = useId();
@@ -43,6 +43,7 @@ const Input = forwardRef(function Input(
           className={cn(
             fieldStyles,
             prefix && 'pl-14',
+            suffix && 'pr-12',
             isPassword && 'pr-11',
             error
               ? 'border-stone-200 focus:border-stone-200 dark:border-stone-200'
@@ -52,6 +53,11 @@ const Input = forwardRef(function Input(
           maxLength={maxLength ?? (isPassword ? 128 : type === 'email' ? 254 : type === 'tel' || type === 'number' ? 20 : 255)}
           {...props}
         />
+        {suffix && (
+          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-stone-500 dark:text-brand-200">
+            {suffix}
+          </span>
+        )}
         {isPassword && (
           <button
             type="button"

@@ -6,7 +6,7 @@ import { blankQuestion, fetchAdminExam, updateExam } from '../api/admin.api.js';
 import { adminExamKey, adminExamsKey } from './keys.js';
 import { TYPE_LABELS } from './CourseExamsTab.jsx';
 import QuestionCard, { isQuestionComplete } from './QuestionCard.jsx';
-import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
+import Card from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -14,6 +14,7 @@ import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import Input, { Select } from '@/components/ui/Input.jsx';
 import { EXAM_KIND_INFO, EXAM_TYPES, QUESTION_TYPES } from '@/constants';
+import { cn } from '@/lib/utils';
 
 const KIND_LABELS = {
   [EXAM_TYPES.PRACTICE]: EXAM_KIND_INFO.practice.label,
@@ -26,6 +27,22 @@ const CLOSING_HINTS = {
   [EXAM_TYPES.MOCK]: 'Required. Last moment a student may start; papers still running are cut off here.',
   [EXAM_TYPES.LIVE]: 'Required. End of the live window; the shared clock still stops at start time + duration.',
 };
+
+/** One titled block of the editor: heading and description on the left, an optional action on the right. */
+function Section({ id, title, description, action, children }) {
+  return (
+    <Card id={id} className="scroll-mt-6 p-5 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-stone-900 dark:text-white">{title}</h3>
+          {description && <p className="mt-0.5 text-sm text-stone-500 dark:text-brand-200">{description}</p>}
+        </div>
+        {action}
+      </div>
+      <div className="mt-5 space-y-4">{children}</div>
+    </Card>
+  );
+}
 
 /** ISO -> value for <input type="datetime-local"> in the admin's own zone. */
 function toLocalInput(iso) {
@@ -330,15 +347,53 @@ function ExamEditor({ exam, course }) {
           ? `${incomplete} ${incomplete === 1 ? 'question still needs' : 'questions still need'} a stem, every option and an answer key.`
           : null;
 
+  const round3 = (n) => Math.round(n * 1000) / 1000;
+  const passNeeded = round3(totalMarks * (Number(settings.passMark) || 0) / 100);
+  const wrongPenalty = isMixed ? null : round3(marking.marksPerQuestion * marking.deductionPercent / 100);
+  const writtenPercent = target > 0 ? Math.min(100, Math.round((written / target) * 100)) : 0;
+  const scrollToQuestions = () => document.getElementById('exam-questions')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const optional = (text) => (
+    <>
+      {text} <span className="font-normal text-stone-400 dark:text-brand-200">(optional)</span>
+    </>
+  );
+  const totals = [
+    ['Total marks', totalMarks, written < target ? `From ${written} of ${target} questions` : null],
+    ['Needed to pass', passNeeded, null],
+    ['Wrong answer', isMixed ? `−${marking.deductionPercent}%` : `−${wrongPenalty}`, isMixed ? 'of the marks per answer' : isMtf ? 'per statement' : 'per question'],
+    ['Blank answer', 0, null],
+  ];
+
   return (
     <div className="space-y-5">
-      <Link
-        to={`/admin/courses/${course.id}/exams`}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-brand-600 dark:text-brand-200 dark:hover:text-brand-400"
-      >
-        <FaArrowLeftLong aria-hidden="true" className="h-3 w-3" />
-        All exams
-      </Link>
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-stone-500 dark:text-brand-200">
+        <Link to={`/admin/courses/${course.id}/exams`} className="inline-flex items-center gap-1.5 hover:text-brand-600 dark:hover:text-brand-400">
+          <FaArrowLeftLong aria-hidden="true" className="h-3 w-3" />
+          Exams
+        </Link>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page" className="font-semibold text-stone-900 dark:text-white">{settings.title || 'Untitled exam'}</span>
+      </nav>
+
+      {settings.isPublished === 'draft' && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-900 dark:border-brand-800 dark:bg-brand-950/40 dark:text-brand-200"
+        >
+          <p className="flex items-start gap-2">
+            <FaTriangleExclamation aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              <strong>Draft:</strong> students can’t see this exam yet.{' '}
+              {publishBlocker ?? 'Everything is in place: set Visibility to Published and save to open it to students.'}
+            </span>
+          </p>
+          {!locked && written < target && (
+            <button type="button" onClick={scrollToQuestions} className="font-semibold underline underline-offset-4 hover:text-brand-700 dark:hover:text-white">
+              Add questions
+            </button>
+          )}
+        </div>
+      )}
 
       {locked && (
         <p className="flex items-start gap-2 rounded-xl border border-stone-200 bg-brand-50 p-3 text-sm text-brand-900 dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-200">
@@ -366,213 +421,207 @@ function ExamEditor({ exam, course }) {
       )}
 
       {/* ── Settings ── */}
-      <Card>
-        <form id="exam-settings-form" onSubmit={saveSettings}>
-          <CardHeader
-            title="Exam settings"
-            description="Type, schedule, duration and marking. Total marks are worked out from these — they are never typed."
-            action={
-              <div className="flex items-center gap-3">
-                {savedAt && !saving && !saveError && (
-                  <span className="flex items-center gap-1.5 text-sm font-medium text-brand-700 dark:text-brand-400">
-                    <FaCheck aria-hidden="true" className="h-3.5 w-3.5" />
-                    Saved
-                  </span>
-                )}
-                {saving && (
-                  <span className="text-sm font-medium text-stone-500">Saving...</span>
-                )}
-                {/* Saves in place: the admin stays on this exam. */}
-                <Button type="submit" size="sm" isLoading={settingsMutation.isPending} disabled={resultsOut}>
-                  Save settings
-                </Button>
-              </div>
-            }
-          />
-          <CardBody className="space-y-4">
-            {settings.isPublished === 'draft' && (
-              <p
-                role="status"
-                className="flex items-start gap-2 rounded-xl border border-stone-200 bg-brand-50 p-3 text-sm text-brand-900 dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-200"
-              >
-                <FaTriangleExclamation aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
-                  <strong>This exam is a draft</strong> — students cannot see it.{' '}
-                  {publishBlocker ?? 'Everything is in place: set Visibility to Published and save to open it to students.'}
-                </span>
-              </p>
-            )}
-            <Input label="Exam title" required value={settings.title} onChange={setField('title')} disabled={locked} />
+      <form id="exam-settings-form" onSubmit={saveSettings} className="space-y-5">
+        <Section title="Basics" description="What the exam is called and how it behaves.">
+          <Input label="Exam title" required value={settings.title} onChange={setField('title')} disabled={locked} />
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Select label="Question type" value={settings.type} onChange={setField('type')} disabled={typeLocked}>
-                <option value={QUESTION_TYPES.SBA}>SBA</option>
-                <option value={QUESTION_TYPES.MTF}>MCQ</option>
-                <option value="mixed">Mixed</option>
-              </Select>
-              <Select label="Exam kind" value={settings.kind} onChange={setField('kind')} disabled={locked}>
-                {Object.entries(KIND_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-              <Select
-                label="Visibility"
-                disabled={locked}
-                value={settings.isPublished}
-                onChange={setField('isPublished')}
-                hint={publishBlocker ?? undefined}
-              >
-                <option value="draft">Draft — hidden from students</option>
-                <option value="published" disabled={Boolean(publishBlocker)}>
-                  Published — students can sit it
-                </option>
-              </Select>
-            </div>
-            {typeLocked && (
-              <p className="-mt-2 text-xs text-stone-500 dark:text-brand-200">
-                Question type is locked while the paper has questions — delete them to change it.
-              </p>
-            )}
-            <p className="-mt-2 text-xs text-stone-500 dark:text-brand-200">
-              <strong>{EXAM_KIND_INFO[settings.kind]?.label}:</strong> {EXAM_KIND_INFO[settings.kind]?.summary}
-            </p>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Input label="Opens at" type="datetime-local" required value={settings.scheduledAt} onChange={setField('scheduledAt')} disabled={locked} />
-              <Input
-                label="Closes at"
-                type="datetime-local"
-                required={isTimed}
-                min={settings.scheduledAt || undefined}
-                value={settings.closesAt}
-                onChange={setField('closesAt')}
-                disabled={closingLocked}
-                hint={locked && !closingLocked ? 'Later only. Students who have not sat it yet can start until this time.' : CLOSING_HINTS[settings.kind]}
-              />
-              <Input
-                label="Results released"
-                type="datetime-local"
-                min={settings.closesAt || settings.scheduledAt || undefined}
-                value={settings.resultsAt}
-                onChange={setField('resultsAt')}
-                disabled={resultsOut}
-                hint={settings.closesAt
-                  ? 'Optional. Blank releases results when the exam closes; otherwise at this time (not before closing).'
-                  : 'Optional. Blank shows results as soon as a student submits; otherwise at this time (not before the exam opens).'}
-              />
-            </div>
-
-            <fieldset disabled={locked} className="grid gap-4 sm:grid-cols-4">
-              <Input
-                label="Duration (min)"
-                type="number"
-                required
-                min={1}
-                max={600}
-                value={settings.durationMinutes}
-                onChange={setField('durationMinutes')}
-              />
-              <Input
-                label="Target questions"
-                type="number"
-                required
-                min={Math.max(1, written)}
-                max={500}
-                value={settings.questionCount}
-                onChange={setField('questionCount')}
-                hint={written > 0 ? `How many the paper should have. Cannot go below the ${written} already written.` : 'How many the paper should have.'}
-              />
-              <Input
-                label={isMtf ? 'New statement marks' : 'New question marks'}
-                type="number"
-                required
-                min={0.05}
-                step={0.05}
-                value={settings.marksPerQuestion}
-                onChange={setField('marksPerQuestion')}
-              />
-              <Input
-                label="Deduction (%)"
-                type="number"
-                required
-                min={deductionRange.min}
-                max={deductionRange.max}
-                step={0.001}
-                value={settings.deductionPercent}
-                onChange={setField('deductionPercent')}
-                hint={isMixed
-                  ? `Mixed policy for this course: ${deductionRange.min}% to ${deductionRange.max}%.`
-                  : 'Of the marks per answer, taken for a wrong one.'}
-              />
-              <Input
-                label="Pass mark (%)"
-                type="number"
-                min={passRange.min}
-                max={passRange.max}
-                step={0.001}
-                required
-                value={settings.passMark}
-                onChange={setField('passMark')}
-                hint={isMixed ? `Mixed policy for this course: ${passRange.min}% to ${passRange.max}%.` : undefined}
-              />
-            </fieldset>
-
-            <p
-              className="rounded-xl bg-brand-50 px-4 py-3 text-sm font-medium text-brand-900 dark:bg-brand-950/60 dark:text-brand-200"
-              aria-live="polite"
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select
+              label="Question type"
+              required
+              value={settings.type}
+              onChange={setField('type')}
+              disabled={typeLocked}
+              hint={typeLocked ? 'Locked while the paper has questions. Delete them to change it.' : undefined}
             >
-              {written} / {target} questions ·{' '}
-              <strong>{totalMarks} marks</strong>
-              {' · '}
-              {marking.deductionPercent > 0 ? (
-                <>
-                  wrong answer deduction <strong>{marking.deductionPercent}%</strong>
-                </>
-              ) : (
-                'no negative marking'
-              )}
-              {' · '}blank scores 0
-            </p>
-          </CardBody>
-        </form>
-      </Card>
+              <option value={QUESTION_TYPES.SBA}>SBA (single best answer)</option>
+              <option value={QUESTION_TYPES.MTF}>MCQ (multiple true/false)</option>
+              <option value="mixed">Mixed (MCQ and SBA)</option>
+            </Select>
+            <Select
+              label="Exam kind"
+              required
+              value={settings.kind}
+              onChange={setField('kind')}
+              disabled={locked}
+              hint={EXAM_KIND_INFO[settings.kind]?.summary}
+            >
+              {Object.entries(KIND_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-      {/* ── Paper status ── */}
-      <Card className="p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-stone-900 dark:text-white">
-              {written} of {target} questions written
-            </p>
-            <p className="mt-0.5 text-xs text-stone-500 dark:text-brand-200">
-              {incomplete > 0
-                ? `${incomplete} ${incomplete === 1 ? 'question is' : 'questions are'} missing a stem, an option or the answer key.`
-                : complete
-                  ? 'Paper is complete.'
-                  : 'Add questions below. Each one saves when you move on from it.'}
-            </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select
+              label="Visibility"
+              disabled={locked}
+              value={settings.isPublished}
+              onChange={setField('isPublished')}
+              hint={publishBlocker ?? undefined}
+            >
+              <option value="draft">Draft (hidden from students)</option>
+              <option value="published" disabled={Boolean(publishBlocker)}>
+                Published (students can sit it)
+              </option>
+            </Select>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge tone={isMtf ? 'info' : 'brand'}>{TYPE_LABELS[settings.type]}</Badge>
-            {questionsMutation.isPending && <Badge tone="neutral">Saving…</Badge>}
-            {incomplete > 0 && <Badge tone="warning">{incomplete} incomplete</Badge>}
-            {complete && <Badge tone="success">Complete</Badge>}
+        </Section>
+
+        <Section title="Timing" description="When students can take it and when they see results.">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_9rem]">
+            <Input label="Opens" type="datetime-local" required value={settings.scheduledAt} onChange={setField('scheduledAt')} disabled={locked} />
+            <Input
+              label={isTimed ? 'Closes' : optional('Closes')}
+              type="datetime-local"
+              required={isTimed}
+              min={settings.scheduledAt || undefined}
+              value={settings.closesAt}
+              onChange={setField('closesAt')}
+              disabled={closingLocked}
+              hint={locked && !closingLocked ? 'Later only. Students who have not sat it yet can start until this time.' : CLOSING_HINTS[settings.kind]}
+            />
+            <Input
+              label={optional('Results released')}
+              type="datetime-local"
+              min={settings.closesAt || settings.scheduledAt || undefined}
+              value={settings.resultsAt}
+              onChange={setField('resultsAt')}
+              disabled={resultsOut}
+              hint={settings.closesAt
+                ? 'Leave blank to release when the exam closes. Can’t be before closing.'
+                : 'Leave blank to show results as soon as a student submits. Can’t be before the exam opens.'}
+            />
+            <Input
+              label="Duration"
+              type="number"
+              required
+              min={1}
+              max={600}
+              suffix="min"
+              value={settings.durationMinutes}
+              onChange={setField('durationMinutes')}
+              disabled={locked}
+            />
           </div>
+        </Section>
+
+        <Section title="Marking" description="Totals are calculated from these values.">
+          <fieldset disabled={locked} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Input
+              label="Questions"
+              type="number"
+              required
+              min={Math.max(1, written)}
+              max={500}
+              value={settings.questionCount}
+              onChange={setField('questionCount')}
+              hint={written > 0 ? `How many the paper should have. At least the ${written} already written.` : 'How many the paper should have.'}
+            />
+            <Input
+              label={isMtf ? 'Marks per statement' : 'Marks per question'}
+              type="number"
+              required
+              min={0.05}
+              step={0.05}
+              value={settings.marksPerQuestion}
+              onChange={setField('marksPerQuestion')}
+              hint={isMtf ? 'Given to each new statement you add.' : 'Given to each new question you add.'}
+            />
+            <Input
+              label="Wrong-answer penalty"
+              type="number"
+              required
+              min={deductionRange.min}
+              max={deductionRange.max}
+              step={0.001}
+              suffix="%"
+              value={settings.deductionPercent}
+              onChange={setField('deductionPercent')}
+              hint={isMixed
+                ? `Mixed policy for this course: ${deductionRange.min}% to ${deductionRange.max}%.`
+                : `Share of a ${isMtf ? 'statement' : 'question'}’s marks lost when wrong.`}
+            />
+            <Input
+              label="Pass mark"
+              type="number"
+              min={passRange.min}
+              max={passRange.max}
+              step={0.001}
+              required
+              suffix="%"
+              value={settings.passMark}
+              onChange={setField('passMark')}
+              hint={isMixed ? `Mixed policy for this course: ${passRange.min}% to ${passRange.max}%.` : undefined}
+            />
+          </fieldset>
+
+          <dl className="grid grid-cols-2 overflow-hidden rounded-xl bg-brand-50 sm:grid-cols-4 dark:bg-brand-950/60" aria-live="polite">
+            {totals.map(([term, value, note], index) => (
+              <div
+                key={term}
+                className={cn(
+                  'border-brand-100 px-4 py-3 dark:border-brand-900',
+                  index % 2 === 1 && 'border-l',
+                  index > 1 && 'border-t sm:border-t-0',
+                  index === 2 && 'sm:border-l',
+                )}
+              >
+                <dt className="text-xs text-stone-500 dark:text-brand-200">{term}</dt>
+                <dd className="mt-0.5 text-lg font-bold text-stone-900 dark:text-white">{value}</dd>
+                {note && <dd className="text-xs text-stone-500 dark:text-brand-200">{note}</dd>}
+              </div>
+            ))}
+          </dl>
+        </Section>
+
+        {/* Saves in place: the admin stays on this exam. */}
+        <div className="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-3 rounded-card border border-stone-200 bg-white/95 px-5 py-3 backdrop-blur dark:border-stone-200 dark:bg-surface-dark-subtle/95">
+          {savedAt && !saving && !saveError && (
+            <span className="flex items-center gap-1.5 text-sm font-medium text-brand-700 dark:text-brand-400">
+              <FaCheck aria-hidden="true" className="h-3.5 w-3.5" />
+              Saved
+            </span>
+          )}
+          {saving && <span className="text-sm font-medium text-stone-500">Saving...</span>}
+          <Button type="submit" isLoading={settingsMutation.isPending} disabled={resultsOut}>
+            Save settings
+          </Button>
         </div>
-      </Card>
+      </form>
 
       {/* ── Questions ── */}
-      {questions.length === 0 ? (
-        <Card>
-          <EmptyState
-            title="No questions yet"
-            description={`Add the first ${TYPE_LABELS[settings.type]} question. The target for this paper is ${target}.`}
-            action={addButtons({ variant: 'primary', disabled: locked })}
-          />
-        </Card>
-      ) : (
+      <Section
+        id="exam-questions"
+        title="Questions"
+        description={incomplete > 0
+          ? `${written} of ${target} written. ${incomplete} ${incomplete === 1 ? 'question is' : 'questions are'} missing a stem, an option or the answer key.`
+          : complete
+            ? `${written} of ${target} written. The paper is complete.`
+            : `${written} of ${target} written. Each question saves when you move to the next.`}
+        action={locked ? null : addButtons({ variant: 'primary', disabled: atTarget })}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={isMtf ? 'info' : 'brand'}>{TYPE_LABELS[settings.type]}</Badge>
+          {questionsMutation.isPending && <Badge tone="neutral">Saving…</Badge>}
+          {incomplete > 0 && <Badge tone="warning">{incomplete} incomplete</Badge>}
+          {complete && <Badge tone="success">Complete</Badge>}
+        </div>
+        <div
+          className="h-2 overflow-hidden rounded-full bg-stone-100 dark:bg-surface-dark"
+          role="progressbar"
+          aria-label="Questions written"
+          aria-valuenow={writtenPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <span className="block h-full rounded-full bg-brand-500 transition-[width]" style={{ width: `${writtenPercent}%` }} />
+        </div>
+      </Section>
+
+      {questions.length > 0 && (
         <fieldset disabled={locked} className="space-y-4 disabled:opacity-80">
           {questions.map((question, index) => (
             <QuestionCard

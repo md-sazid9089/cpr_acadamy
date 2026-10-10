@@ -37,12 +37,12 @@ test('completion uses exact lesson counts rather than a rounded percentage', () 
   assert.equal(isCompleted({ lessonCount: 201, completedLessons: 200, nextLesson: { title: 'Remaining lesson' } }), false);
   assert.equal(isCompleted({ lessonCount: 0, completedLessons: 0, nextLesson: null }), false);
   assert.equal(isCompleted({}), false);
-  assert.ok(source.includes('Review Materials'));
-  assert.ok(source.includes('course-completed'));
+  assert.ok(source.includes('Review materials'));
+  assert.ok(source.includes('All {course.lessonCount} lessons done'));
 });
 
 test('cards retain their routes with one primary action and account-level subscriptions outside the list', () => {
-  const cards = source.slice(source.indexOf('filteredCourses.map'));
+  const cards = source.slice(source.indexOf('function CourseCard'), source.indexOf('export default function MyCourses'));
   assert.equal((cards.match(/className="course-primary-action"/g) || []).length, 1);
   assert.equal(cards.includes('/dashboard/subscriptions'), false);
   for (const destination of ['to={scheduleUrl}', '/dashboard/course/${course.slug}', '/dashboard/checkout/${course.slug}', '/dashboard/exams']) assert.ok(cards.includes(destination));
