@@ -61,11 +61,11 @@ try {
   // the same title already exists: the script can be re-run without duplicating them.
   await database.query(`INSERT INTO lessons(course_id, title, src, duration_minutes, scheduled_at, status, position)
     SELECT $1, $2, $3, $4, now() - interval '2 days', 'published', 1
-    WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE course_id=$1 AND title=$2)`, [course.id, 'Cardiology: Ischemic Heart Disease & ECG Interpretation', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', 90]);
+    WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE course_id=$1 AND title=$2)`, [course.id, 'Cardiology: Ischemic Heart Disease & ECG Interpretation', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', 90]);
 
   await database.query(`INSERT INTO lessons(course_id, title, src, duration_minutes, scheduled_at, status, position)
     SELECT $1, $2, $3, $4, now() - interval '1 day', 'published', 2
-    WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE course_id=$1 AND title=$2)`, [course.id, 'Pulmonology: COPD, Asthma & Arterial Blood Gas Analysis', 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', 85]);
+    WHERE NOT EXISTS (SELECT 1 FROM lessons WHERE course_id=$1 AND title=$2)`, [course.id, 'Pulmonology: COPD, Asthma & Arterial Blood Gas Analysis', 'https://www.youtube.com/watch?v=TLkA0RELQ1g', 85]);
 
   const questions = [
     {
