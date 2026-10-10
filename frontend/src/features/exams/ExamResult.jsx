@@ -62,6 +62,11 @@ export default function ExamResult() {
         <p className="mt-1 text-sm text-stone-500 dark:text-brand-200">
           {percentage}% · submitted {formatDateTime(result.submittedAt)}
         </p>
+        {result.groupPenalty > 0 && (
+          <p className="mt-1 text-sm text-stone-500 dark:text-brand-200">
+            Includes {result.groupPenalty} marks cut for groups of wrong answers.
+          </p>
+        )}
         <p className="mt-3"><Badge tone={result.passed ? 'success' : 'danger'}>{result.passed ? 'Passed' : 'Not passed'}</Badge> <span className="text-sm text-stone-600 dark:text-brand-200">Pass mark: {result.passMark}%</span></p>
         {result.isEdited && <p className="mt-3"><Badge tone="warning">Result revised</Badge>{result.resultRevision?.revisedAt && <span className="ml-2 text-xs text-stone-500 dark:text-brand-200">Updated {formatDateTime(result.resultRevision.revisedAt)}</span>}</p>}
       </Card>

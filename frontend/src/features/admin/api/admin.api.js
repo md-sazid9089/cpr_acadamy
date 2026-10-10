@@ -399,6 +399,10 @@ function toEditorExam(exam) {
     marksPerQuestion,
     sbaMarks: Number(exam.sbaMarks ?? 2),
     mtfMarks: Number(exam.mtfMarks ?? 0.4),
+    sbaGroupSize: Number(exam.sbaGroupSize ?? 0),
+    sbaGroupPenalty: Number(exam.sbaGroupPenalty ?? 0),
+    mtfGroupSize: Number(exam.mtfGroupSize ?? 0),
+    mtfGroupPenalty: Number(exam.mtfGroupPenalty ?? 0),
     deductionPercent,
     passMark: Number(exam.passMark ?? 70),
     totalMarks: exam.totalMarks ?? 0,
@@ -422,6 +426,12 @@ function toExamPayload(exam) {
   if (exam.marksPerQuestion !== undefined) payload.marksPerQuestion = round3(Number(exam.marksPerQuestion) || 0);
   if (exam.sbaMarks !== undefined) payload.sbaMarks = round3(Number(exam.sbaMarks));
   if (exam.mtfMarks !== undefined) payload.mtfMarks = round3(Number(exam.mtfMarks));
+  for (const field of ['sbaGroupSize', 'mtfGroupSize']) {
+    if (exam[field] !== undefined) payload[field] = Math.max(0, Math.floor(Number(exam[field]) || 0));
+  }
+  for (const field of ['sbaGroupPenalty', 'mtfGroupPenalty']) {
+    if (exam[field] !== undefined) payload[field] = round3(Number(exam[field]) || 0);
+  }
   if (exam.deductionPercent !== undefined) payload.negativeMarking = round3(Number(exam.deductionPercent));
   if (exam.passMark !== undefined) payload.passMark = round3(Number(exam.passMark));
   if (exam.questions !== undefined) {

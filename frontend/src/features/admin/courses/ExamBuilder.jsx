@@ -44,6 +44,60 @@ function Section({ id, title, description, action, children }) {
   );
 }
 
+/**
+ * One question type's group rule: "every N wrong answers, cut X% of the total marks". Off when N is 0;
+ * ticking the box starts from 5 wrong / 5%, which the admin then adjusts.
+ */
+function GroupPenaltyRow({ label, unit, size, penalty, totalMarks, onChange }) {
+  const enabled = Number(size) > 0;
+  const groupCut = Math.round(totalMarks * (Number(penalty) || 0) * 10) / 1000;
+  return (
+    <div className="space-y-3 rounded-lg bg-stone-50 p-3 dark:bg-surface-dark">
+      <label className="flex items-center gap-2 text-sm font-medium text-stone-800 dark:text-brand-200">
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-brand-600"
+          checked={enabled}
+          onChange={(event) => onChange(event.target.checked ? { size: 5, penalty: 5 } : { size: 0, penalty: 0 })}
+        />
+        Cut extra marks for groups of wrong {label} answers
+      </label>
+      {enabled && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              label={`Every how many ${unit}`}
+              type="number"
+              required
+              min={1}
+              max={500}
+              step={1}
+              value={size}
+              onChange={(event) => onChange({ size: event.target.value })}
+            />
+            <Input
+              label="Cut per group"
+              type="number"
+              required
+              min={0.001}
+              max={100}
+              step={0.001}
+              suffix="%"
+              value={penalty}
+              onChange={(event) => onChange({ penalty: event.target.value })}
+              hint="Of the exam’s total marks."
+            />
+          </div>
+          <p className="text-xs text-stone-500 dark:text-brand-200">
+            Each full group of {Number(size) || 0} {unit} cuts <strong>{groupCut}</strong> of {totalMarks} marks
+            {Number(size) > 0 && <> (e.g. {Number(size) * 2} wrong = 2 groups = {Math.round(groupCut * 2000) / 1000} marks)</>}.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** ISO -> value for <input type="datetime-local"> in the admin's own zone. */
 function toLocalInput(iso) {
   if (!iso) return '';
@@ -115,6 +169,10 @@ function ExamEditor({ exam, course }) {
     questionCount: exam.questionCount,
     sbaMarks: exam.sbaMarks ?? 2,
     mtfMarks: exam.mtfMarks ?? 0.4,
+    sbaGroupSize: exam.sbaGroupSize ?? 0,
+    sbaGroupPenalty: exam.sbaGroupPenalty ?? 0,
+    mtfGroupSize: exam.mtfGroupSize ?? 0,
+    mtfGroupPenalty: exam.mtfGroupPenalty ?? 0,
     deductionPercent: exam.deductionPercent ?? 0,
     passMark: exam.passMark ?? 70,
   });
@@ -176,10 +234,20 @@ function ExamEditor({ exam, course }) {
       questionCount: Number(settings.questionCount) || 0,
       sbaMarks: typeMarks.sba,
       mtfMarks: typeMarks.mtf,
+      // A rule for a question type the paper doesn't use is switched off rather than kept hidden.
+      ...groupRuleFor(QUESTION_TYPES.SBA),
+      ...groupRuleFor(QUESTION_TYPES.MTF),
       deductionPercent: Number(settings.deductionPercent),
       passMark: Number(settings.passMark),
       questions,
     });
+  };
+
+  const groupRuleFor = (type) => {
+    const [sizeField, penaltyField] = type === QUESTION_TYPES.MTF ? ['mtfGroupSize', 'mtfGroupPenalty'] : ['sbaGroupSize', 'sbaGroupPenalty'];
+    const used = type === QUESTION_TYPES.MTF ? settings.type !== QUESTION_TYPES.SBA : settings.type !== QUESTION_TYPES.MTF;
+    const size = used ? Math.floor(Number(settings[sizeField]) || 0) : 0;
+    return { [sizeField]: size, [penaltyField]: size > 0 ? Number(settings[penaltyField]) || 0 : 0 };
   };
 
   const setField = (field) => (event) => setSettings((prev) => ({
@@ -586,6 +654,34 @@ function ExamEditor({ exam, course }) {
               onChange={setField('passMark')}
               hint={isMixed ? `Mixed policy for this course: ${passRange.min}% to ${passRange.max}%.` : undefined}
             />
+          </fieldset>
+
+          <fieldset disabled={locked} className="space-y-3 rounded-xl border border-stone-200 p-4 dark:border-stone-200">
+            <legend className="px-1 text-sm font-semibold text-stone-900 dark:text-white">Group penalty</legend>
+            <p className="text-xs text-stone-500 dark:text-brand-200">
+              An extra cut for every full group of wrong answers, on top of the wrong-answer penalty. Blank answers don’t count,
+              and the score never goes below 0.
+            </p>
+            {showSbaMarks && (
+              <GroupPenaltyRow
+                label="SBA"
+                unit="wrong SBA answers"
+                size={settings.sbaGroupSize}
+                penalty={settings.sbaGroupPenalty}
+                totalMarks={totalMarks}
+                onChange={(patch) => setSettings((prev) => ({ ...prev, ...('size' in patch ? { sbaGroupSize: patch.size } : {}), ...('penalty' in patch ? { sbaGroupPenalty: patch.penalty } : {}) }))}
+              />
+            )}
+            {showMtfMarks && (
+              <GroupPenaltyRow
+                label="MCQ"
+                unit="wrong MCQ statements"
+                size={settings.mtfGroupSize}
+                penalty={settings.mtfGroupPenalty}
+                totalMarks={totalMarks}
+                onChange={(patch) => setSettings((prev) => ({ ...prev, ...('size' in patch ? { mtfGroupSize: patch.size } : {}), ...('penalty' in patch ? { mtfGroupPenalty: patch.penalty } : {}) }))}
+              />
+            )}
           </fieldset>
 
           <dl className="grid grid-cols-2 overflow-hidden rounded-xl bg-brand-50 sm:grid-cols-4 dark:bg-brand-950/60" aria-live="polite">

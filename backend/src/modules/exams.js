@@ -160,7 +160,8 @@ export function gradePaper(paper, answers) {
   const groupPenalty = groupDeduction(paper, wrongByType, maximum);
   score = Math.max(0, Math.round((score - groupPenalty) * 1000) / 1000);
   const passMark = paper.passMark ?? 70;
-  return { score, totalMarks: maximum, correctCount, wrongCount, skippedCount, groupPenalty, passMark, passed: maximum > 0 && score * 100 >= maximum * passMark };
+  // groupPenalty only appears when a group rule actually cut marks, so other results keep their shape.
+  return { score, totalMarks: maximum, correctCount, wrongCount, skippedCount, ...(groupPenalty > 0 ? { groupPenalty } : {}), passMark, passed: maximum > 0 && score * 100 >= maximum * passMark };
 }
 
 // Everything about an exam except its (large) question list, for the hot paths that never look at questions.
