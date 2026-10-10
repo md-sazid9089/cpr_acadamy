@@ -44,7 +44,8 @@ export const ADMIN_NAV = [
   { to: '/admin/complaints', label: 'Complain Box', icon: 'chat' },
   { to: '/admin/notices', label: 'Notices', icon: 'bell' },
   { to: '/admin/gallery', label: 'Gallery', icon: 'image' },
-  { to: '/admin/reports', label: 'Reports', icon: 'report' },
+  // Reports is hidden for now; restore this entry and its route in router.jsx to bring it back.
+  // { to: '/admin/reports', label: 'Reports', icon: 'report' },
 ];
 
 /**

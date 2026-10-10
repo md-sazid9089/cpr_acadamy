@@ -69,7 +69,6 @@ const AdminOverview = lazy(() => import('@/features/admin/AdminOverview.jsx'));
 const AdminStudents = lazy(() => import('@/features/admin/AdminStudents.jsx'));
 const AdminStudentDetail = lazy(() => import('@/features/admin/AdminStudentDetail.jsx'));
 const AdminCourses = lazy(() => import('@/features/admin/AdminCourses.jsx'));
-const AdminReports = lazy(() => import('@/features/admin/AdminReports.jsx'));
 const AdminComplaints = lazy(() => import('@/features/admin/AdminComplaints.jsx'));
 const AdminNotices = lazy(() => import('@/features/admin/AdminNotices.jsx'));
 const AdminGallery = lazy(() => import('@/features/admin/AdminGallery.jsx'));
@@ -211,7 +210,8 @@ const router = createBrowserRouter([
       { path: 'exams', element: <Navigate to="/admin/courses" replace /> },
       { path: 'schedules', element: <Navigate to="/admin/courses" replace /> },
       { path: 'revenue', element: <Navigate to="/admin" replace /> },
-      { path: 'reports', element: suspend(<AdminReports />, 'dashboard') },
+      // Reports is hidden for now: restore `suspend(<AdminReports />, 'dashboard')` and its Sidebar entry to bring it back.
+      { path: 'reports', element: <Navigate to="/admin" replace /> },
       { path: '*', element: <Navigate to="/admin" replace /> },
     ],
   },

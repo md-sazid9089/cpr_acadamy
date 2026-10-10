@@ -5,6 +5,9 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { formatBDT, formatNumber } from '@/lib/utils';
 
+// Revenue is hidden from the admin panel for now. Set to true to show the chart again.
+const SHOW_REVENUE = false;
+
 export default function AdminReports() {
   const { data, isLoading, isError, error, isFetching, refetch } = useQuery({ queryKey: ['admin', 'reports'], queryFn: fetchAdminReports });
 
@@ -37,27 +40,29 @@ export default function AdminReports() {
         <StatCard label="Average score" value={`${data.examParticipation.averageScore}%`} />
       </div>
 
-      <Card>
-        <CardHeader title="Revenue" description="Last six months." />
-        <CardBody>
-          {/* CSS bars — a charting library isn't warranted for six data points. */}
-          <div className="flex h-48 items-end justify-between gap-4">
-            {data.revenueByMonth.map((month) => (
-              <div key={month.month} className="flex flex-1 flex-col items-center gap-2">
-                <span className="text-xs font-medium text-stone-500 dark:text-brand-200">
-                  {Math.round(month.amount / 1000)}k
-                </span>
-                <div
-                  className="w-full rounded-t-lg bg-brand-500 dark:bg-brand-600"
-                  style={{ height: `${(month.amount / peakRevenue) * 100}%` }}
-                  title={formatBDT(month.amount)}
-                />
-                <span className="text-xs text-stone-500 dark:text-brand-200">{month.month}</span>
-              </div>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
+      {SHOW_REVENUE && (
+        <Card>
+          <CardHeader title="Revenue" description="Last six months." />
+          <CardBody>
+            {/* CSS bars — a charting library isn't warranted for six data points. */}
+            <div className="flex h-48 items-end justify-between gap-4">
+              {data.revenueByMonth.map((month) => (
+                <div key={month.month} className="flex flex-1 flex-col items-center gap-2">
+                  <span className="text-xs font-medium text-stone-500 dark:text-brand-200">
+                    {Math.round(month.amount / 1000)}k
+                  </span>
+                  <div
+                    className="w-full rounded-t-lg bg-brand-500 dark:bg-brand-600"
+                    style={{ height: `${(month.amount / peakRevenue) * 100}%` }}
+                    title={formatBDT(month.amount)}
+                  />
+                  <span className="text-xs text-stone-500 dark:text-brand-200">{month.month}</span>
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       <Card>
         <CardHeader title="Enrolment by category" />
