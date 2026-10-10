@@ -111,7 +111,8 @@ function ExamEditor({ exam, course }) {
   const invalidateList = () => queryClient.invalidateQueries({ queryKey: adminExamsKey(course.id) });
 
   const remember = (saved) => {
-    queryClient.setQueryData(adminExamKey(exam.id), saved);
+    // A save response carries no attempt count; keep the known one so a locked paper stays locked.
+    queryClient.setQueryData(adminExamKey(exam.id), (previous) => ({ ...saved, attemptCount: previous?.attemptCount ?? saved.attemptCount }));
     invalidateList();
     setSaveError(null);
     setSavedAt(Date.now());
@@ -135,6 +136,15 @@ function ExamEditor({ exam, course }) {
   const saveSettings = (event) => {
     event.preventDefault();
     const timed = settings.kind !== EXAM_TYPES.PRACTICE;
+    if (locked) {
+      // Students have started: only the schedule may move (see the banner), so send nothing else.
+      settingsMutation.mutate({
+        id: exam.id,
+        ...(closingLocked ? {} : { closesAt: timed || settings.closesAt ? fromLocalInput(settings.closesAt) : null }),
+        resultsAt: settings.resultsAt ? fromLocalInput(settings.resultsAt) : null,
+      });
+      return;
+    }
     settingsMutation.mutate({
       id: exam.id,
       title: settings.title.trim(),
@@ -180,6 +190,10 @@ function ExamEditor({ exam, course }) {
   });
 
   const locked = (exam.attemptCount ?? 0) > 0;
+  // Once students have started, the paper is frozen but the schedule can still move, until results are out
+  // (no release time at all means results show on submit). A live exam's closing time stays fixed.
+  const resultsOut = locked && (!exam.resultsReleaseAt || new Date(exam.resultsReleaseAt).getTime() <= Date.now());
+  const closingLocked = locked && (resultsOut || exam.kind === EXAM_TYPES.LIVE);
 
   const persist = (list) => questionsMutation.mutate(list);
 
@@ -330,8 +344,13 @@ function ExamEditor({ exam, course }) {
         <p className="flex items-start gap-2 rounded-xl border border-stone-200 bg-brand-50 p-3 text-sm text-brand-900 dark:border-stone-200 dark:bg-brand-950/40 dark:text-brand-200">
           <FaTriangleExclamation aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            {exam.attemptCount} {exam.attemptCount === 1 ? 'student has' : 'students have'} already sat this paper, so it can no longer be
-            changed. Create a new exam for a revised paper.
+            {exam.attemptCount} {exam.attemptCount === 1 ? 'student has' : 'students have'} already sat this paper, so its questions and
+            marking can no longer be changed. {resultsOut
+              ? 'Its results are already out, so the schedule is fixed too.'
+              : closingLocked
+                ? 'You can still change when results are released.'
+                : 'You can still move the closing time later, for students who missed it, and change when results are released.'}{' '}
+            Create a new exam for a revised paper.
           </span>
         </p>
       )}
@@ -364,7 +383,7 @@ function ExamEditor({ exam, course }) {
                   <span className="text-sm font-medium text-stone-500">Saving...</span>
                 )}
                 {/* Saves in place: the admin stays on this exam. */}
-                <Button type="submit" size="sm" isLoading={settingsMutation.isPending} disabled={locked}>
+                <Button type="submit" size="sm" isLoading={settingsMutation.isPending} disabled={resultsOut}>
                   Save settings
                 </Button>
               </div>
@@ -383,7 +402,7 @@ function ExamEditor({ exam, course }) {
                 </span>
               </p>
             )}
-            <Input label="Exam title" required value={settings.title} onChange={setField('title')} />
+            <Input label="Exam title" required value={settings.title} onChange={setField('title')} disabled={locked} />
 
             <div className="grid gap-4 sm:grid-cols-3">
               <Select label="Question type" value={settings.type} onChange={setField('type')} disabled={typeLocked}>
@@ -391,7 +410,7 @@ function ExamEditor({ exam, course }) {
                 <option value={QUESTION_TYPES.MTF}>MCQ</option>
                 <option value="mixed">Mixed</option>
               </Select>
-              <Select label="Exam kind" value={settings.kind} onChange={setField('kind')}>
+              <Select label="Exam kind" value={settings.kind} onChange={setField('kind')} disabled={locked}>
                 {Object.entries(KIND_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
@@ -400,6 +419,7 @@ function ExamEditor({ exam, course }) {
               </Select>
               <Select
                 label="Visibility"
+                disabled={locked}
                 value={settings.isPublished}
                 onChange={setField('isPublished')}
                 hint={publishBlocker ?? undefined}
@@ -420,7 +440,7 @@ function ExamEditor({ exam, course }) {
             </p>
 
             <div className="grid gap-4 sm:grid-cols-3">
-              <Input label="Opens at" type="datetime-local" required value={settings.scheduledAt} onChange={setField('scheduledAt')} />
+              <Input label="Opens at" type="datetime-local" required value={settings.scheduledAt} onChange={setField('scheduledAt')} disabled={locked} />
               <Input
                 label="Closes at"
                 type="datetime-local"
@@ -428,7 +448,8 @@ function ExamEditor({ exam, course }) {
                 min={settings.scheduledAt || undefined}
                 value={settings.closesAt}
                 onChange={setField('closesAt')}
-                hint={CLOSING_HINTS[settings.kind]}
+                disabled={closingLocked}
+                hint={locked && !closingLocked ? 'Later only. Students who have not sat it yet can start until this time.' : CLOSING_HINTS[settings.kind]}
               />
               <Input
                 label="Results released"
@@ -436,13 +457,14 @@ function ExamEditor({ exam, course }) {
                 min={settings.closesAt || settings.scheduledAt || undefined}
                 value={settings.resultsAt}
                 onChange={setField('resultsAt')}
+                disabled={resultsOut}
                 hint={settings.closesAt
                   ? 'Optional. Blank releases results when the exam closes; otherwise at this time (not before closing).'
                   : 'Optional. Blank shows results as soon as a student submits; otherwise at this time (not before the exam opens).'}
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-4">
+            <fieldset disabled={locked} className="grid gap-4 sm:grid-cols-4">
               <Input
                 label="Duration (min)"
                 type="number"
@@ -495,7 +517,7 @@ function ExamEditor({ exam, course }) {
                 onChange={setField('passMark')}
                 hint={isMixed ? `Mixed policy for this course: ${passRange.min}% to ${passRange.max}%.` : undefined}
               />
-            </div>
+            </fieldset>
 
             <p
               className="rounded-xl bg-brand-50 px-4 py-3 text-sm font-medium text-brand-900 dark:bg-brand-950/60 dark:text-brand-200"

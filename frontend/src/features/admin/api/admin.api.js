@@ -391,6 +391,7 @@ function toEditorExam(exam) {
     scheduledAt: exam.scheduledAt,
     closesAt: exam.closesAt,
     resultsAt: exam.resultsAt,
+    resultsReleaseAt: exam.resultsReleaseAt ?? null,
     durationMinutes: exam.durationMinutes,
     questionCount,
     writtenCount: exam.questionCount ?? 0,

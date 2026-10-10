@@ -43,6 +43,8 @@ const examFields = z.object({
   resultsAt: z.string().datetime({ offset: true }).nullable().default(null), isPublished: z.boolean().default(false),
   questions: z.array(questionSchema).max(500).default([]),
 }).strict();
+/** The only exam settings an admin may still change after a student has started the exam. */
+const RESCHEDULE_FIELDS = ['closesAt', 'resultsAt'];
 
 function totalMarks(questions) {
   return Math.round(questions.reduce((total, question) => total + question.marks * (question.type === 'mtf' ? question.options.length : 1), 0) * 1000) / 1000;
@@ -360,9 +362,13 @@ export function examRoutes(route, database) {
   async function saveExam(request, creating) {
     return database.transaction(async transaction => {
       const existing = creating ? null : await one(transaction, 'SELECT * FROM exams WHERE id=$1 FOR UPDATE', [request.params.id]);
+      let attempted = false;
       if (!creating) {
         ensure(existing, 404, 'NOT_FOUND', 'Exam not found.');
-        ensure(!await one(transaction, 'SELECT id FROM exam_attempts WHERE exam_id=$1 LIMIT 1', [existing.id]), 409, 'EXAM_LOCKED', 'An exam with attempts is immutable. Create a new exam.');
+        attempted = Boolean(await one(transaction, 'SELECT id FROM exam_attempts WHERE exam_id=$1 LIMIT 1', [existing.id]));
+        // Once a student has started, the paper and its marking are frozen; only the schedule may still move.
+        ensure(!attempted || Object.keys(request.body).every(key => RESCHEDULE_FIELDS.includes(key)), 409, 'EXAM_LOCKED',
+          'Students have already started this exam, so only its closing time and result release time can change. Create a new exam for a revised paper.');
       }
       const previous = existing ? { courseId: existing.course_id, title: existing.title, type: existing.type, questionType: existing.question_type,
         durationMinutes: existing.duration_minutes, negativeMarking: Number(existing.negative_marking), passMark: Number(existing.pass_mark),
@@ -370,24 +376,8 @@ export function examRoutes(route, database) {
         scheduledAt: new Date(existing.scheduled_at).toISOString(), closesAt: existing.closes_at ? new Date(existing.closes_at).toISOString() : null,
         resultsAt: existing.results_at ? new Date(existing.results_at).toISOString() : null, isPublished: existing.is_published, questions: existing.questions } : {};
       const input = examFields.parse({ ...previous, ...request.body });
-      ensure(new Set(input.questions.map(question => question.id)).size === input.questions.length, 400, 'DUPLICATE_QUESTION', 'Question IDs must be unique.');
-      ensure(!input.targetQuestionCount || input.questions.length <= input.targetQuestionCount, 400, 'TOO_MANY_QUESTIONS',
-        `This paper has ${input.questions.length} questions but the target is ${input.targetQuestionCount}. Delete the extra questions or raise the target.`);
-      ensure(!input.isPublished || input.questions.length > 0, 400, 'EMPTY_EXAM', 'A published exam requires questions.');
-      ensure(!input.isPublished || input.questions.every(isQuestionComplete), 400, 'INCOMPLETE_QUESTIONS', 'Every question needs a stem, all option texts and an answer key before the exam is published.');
-      ensure(input.questionType === 'mixed' || input.questions.every(question => question.type === input.questionType), 400, 'QUESTION_TYPE_MISMATCH', 'Questions must match the exam question type.');
-      let bounds;
-      if (input.questionType === 'mixed') {
-        const course = await one(transaction, 'SELECT mixed_negative_marking_min,mixed_negative_marking_max,mixed_pass_mark_min,mixed_pass_mark_max FROM courses WHERE id=$1', [input.courseId]);
-        // A missing course fails the same way the exams.course_id foreign key would have:
-        // the generic 23503 -> 409 CONFLICT handler in web-app.js. Matched here explicitly
-        // so this now-earlier lookup doesn't change the response before that insert runs.
-        ensure(course, 409, 'CONFLICT', 'This change conflicts with an existing record or constraint.');
-        bounds = { negativeMarkingMin: Number(course.mixed_negative_marking_min), negativeMarkingMax: Number(course.mixed_negative_marking_max),
-          passMarkMin: Number(course.mixed_pass_mark_min), passMarkMax: Number(course.mixed_pass_mark_max) };
-      }
-      if (bounds && !input.isPublished) validateMixedBounds(input, bounds);
-      validatePublication(input, bounds);
+      if (attempted) await validateReschedule(transaction, existing, input);
+      else await validatePaper(transaction, input);
       ensure(!input.closesAt || new Date(input.closesAt) > new Date(input.scheduledAt), 400, 'INVALID_SCHEDULE', 'Closing time must follow the start.');
       ensure(input.type === 'practice' || input.closesAt, 400, 'CLOSING_TIME_REQUIRED', 'Timed exams require a closing time.');
       ensure(!input.resultsAt || !input.closesAt || new Date(input.resultsAt) >= new Date(input.closesAt), 400, 'INVALID_RESULTS_RELEASE', 'Results cannot be released before the exam closes.');
@@ -398,9 +388,54 @@ export function examRoutes(route, database) {
       const exam = creating
         ? await one(transaction, `INSERT INTO exams(${columns.join(',')}) VALUES (${values.map((value, index) => `$${index + 1}`).join(',')}) RETURNING *`, values)
         : await one(transaction, `UPDATE exams SET ${columns.map((column, index) => `${column}=$${index + 1}`).join(',')} WHERE id=$${values.length + 1} RETURNING *`, [...values, existing.id]);
-      await audit(transaction, request.auth.user_id, `exam.${creating ? 'created' : 'updated'}`, exam.id);
+      await audit(transaction, request.auth.user_id, attempted ? 'exam.rescheduled' : `exam.${creating ? 'created' : 'updated'}`, exam.id,
+        attempted ? { closesAt: [previous.closesAt, input.closesAt], resultsAt: [previous.resultsAt, input.resultsAt] } : {});
       return { ...examDto(exam), questions: exam.questions };
     });
+  }
+
+  async function validatePaper(transaction, input) {
+    ensure(new Set(input.questions.map(question => question.id)).size === input.questions.length, 400, 'DUPLICATE_QUESTION', 'Question IDs must be unique.');
+    ensure(!input.targetQuestionCount || input.questions.length <= input.targetQuestionCount, 400, 'TOO_MANY_QUESTIONS',
+      `This paper has ${input.questions.length} questions but the target is ${input.targetQuestionCount}. Delete the extra questions or raise the target.`);
+    ensure(!input.isPublished || input.questions.length > 0, 400, 'EMPTY_EXAM', 'A published exam requires questions.');
+    ensure(!input.isPublished || input.questions.every(isQuestionComplete), 400, 'INCOMPLETE_QUESTIONS', 'Every question needs a stem, all option texts and an answer key before the exam is published.');
+    ensure(input.questionType === 'mixed' || input.questions.every(question => question.type === input.questionType), 400, 'QUESTION_TYPE_MISMATCH', 'Questions must match the exam question type.');
+    let bounds;
+    if (input.questionType === 'mixed') {
+      const course = await one(transaction, 'SELECT mixed_negative_marking_min,mixed_negative_marking_max,mixed_pass_mark_min,mixed_pass_mark_max FROM courses WHERE id=$1', [input.courseId]);
+      // A missing course fails the same way the exams.course_id foreign key would have:
+      // the generic 23503 -> 409 CONFLICT handler in web-app.js. Matched here explicitly
+      // so this now-earlier lookup doesn't change the response before that insert runs.
+      ensure(course, 409, 'CONFLICT', 'This change conflicts with an existing record or constraint.');
+      bounds = { negativeMarkingMin: Number(course.mixed_negative_marking_min), negativeMarkingMax: Number(course.mixed_negative_marking_max),
+        passMarkMin: Number(course.mixed_pass_mark_min), passMarkMax: Number(course.mixed_pass_mark_max) };
+    }
+    if (bounds && !input.isPublished) validateMixedBounds(input, bounds);
+    validatePublication(input, bounds);
+  }
+
+  /**
+   * Moving an exam's schedule after students have started (e.g. most of the batch missed it).
+   * The closing time may only move later, so nobody already admitted loses time and in-progress
+   * deadlines (fixed when each attempt began) stay valid. A live exam runs on one shared clock, so
+   * its closing time stays put. Once results are out, nothing moves: students who sat it may have
+   * seen the answers, and reopening would hand them to everyone else.
+   */
+  async function validateReschedule(transaction, existing, input) {
+    const time = value => (value ? new Date(value).getTime() : null);
+    const closesChanged = time(input.closesAt) !== time(existing.closes_at);
+    const resultsChanged = time(input.resultsAt) !== time(existing.results_at);
+    if (!closesChanged && !resultsChanged) return;
+    ensure(!resultsReleased(existing), 409, 'RESULTS_ALREADY_RELEASED',
+      'Results for this exam are already out, so its closing and release times can no longer change: students who sat it may have seen the answers.');
+    if (closesChanged) {
+      ensure(existing.type !== 'live', 409, 'LIVE_SCHEDULE_LOCKED', 'A live exam runs on one shared clock, so its closing time cannot change once students have started.');
+      const removingClose = input.closesAt === null;
+      ensure(removingClose || (existing.closes_at && time(input.closesAt) > time(existing.closes_at)), 400, 'CLOSING_TIME_EARLIER',
+        'Once students have started, the closing time can only move later.');
+      ensure(removingClose || time(input.closesAt) > Date.now(), 400, 'CLOSING_TIME_PAST', 'Choose a closing time in the future.');
+    }
   }
   route('POST', '/admin/exams', { auth: 'admin', body: examFields }, request => saveExam(request, true));
   route('PATCH', '/admin/exams/:id', { auth: 'admin', body: examFields.partial() }, request => saveExam(request, false));

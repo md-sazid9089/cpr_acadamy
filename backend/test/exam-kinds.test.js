@@ -46,3 +46,73 @@ test('practice and mock time each student from their own start, live runs one sh
     assert.equal((await first.request('GET', '/exams')).json().find(exam => exam.id === live.id).status, 'running');
   } finally { await context.close(); }
 });
+
+test('after students start, an admin can still move the closing and result times later, but nothing else', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const early = await context.user('student', '01712345678');
+    const late = await context.user('student', '01812345678');
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'reschedule', title: 'Reschedule', category: 'FCPS', price: 100, isPublished: true })).json();
+    for (const user of [early, late]) await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [user.id, course.id]);
+    const iso = offset => new Date(Date.now() + offset).toISOString();
+    const create = async patch => {
+      const response = await admin.request('POST', '/admin/exams', { courseId: course.id, title: 'Weekly mock', questionType: 'sba', durationMinutes: 30, isPublished: true, targetQuestionCount: 1, questions, ...patch });
+      assert.equal(response.statusCode, 200, response.body);
+      return response.json();
+    };
+
+    // One student sits a mock; it then closes before the rest of the batch could take it. Results are due tomorrow.
+    const mock = await create({ type: 'mock', scheduledAt: iso(-minutes(60)), closesAt: iso(minutes(20)), resultsAt: iso(minutes(24 * 60)) });
+    assert.equal((await early.request('POST', `/exams/${mock.id}/start`)).statusCode, 200);
+    assert.equal((await early.request('POST', `/exams/${mock.id}/submit`, { answers: { q1: 'b' } })).statusCode, 200);
+    await context.database.query("UPDATE exams SET closes_at=now()-interval '5 minutes' WHERE id=$1", [mock.id]);
+    assert.equal((await late.request('POST', `/exams/${mock.id}/start`)).json().code, 'EXAM_CLOSED');
+
+    // The paper and its marking stay frozen.
+    for (const patch of [{ title: 'Renamed' }, { durationMinutes: 60 }, { questions: [] }, { closesAt: iso(minutes(120)), passMark: 50 }]) {
+      const refused = await admin.request('PATCH', `/admin/exams/${mock.id}`, patch);
+      assert.equal(refused.statusCode, 409, JSON.stringify(patch));
+      assert.equal(refused.json().code, 'EXAM_LOCKED');
+    }
+    let response = await admin.request('PATCH', `/admin/exams/${mock.id}`, { closesAt: iso(-minutes(10)) });
+    assert.equal(response.json().code, 'CLOSING_TIME_EARLIER', 'the closing time cannot move earlier');
+    response = await admin.request('PATCH', `/admin/exams/${mock.id}`, { closesAt: iso(-minutes(1)) });
+    assert.equal(response.json().code, 'CLOSING_TIME_PAST', 'a reopened exam needs a closing time in the future');
+    response = await admin.request('PATCH', `/admin/exams/${mock.id}`, { closesAt: iso(minutes(120)), resultsAt: iso(minutes(60)) });
+    assert.equal(response.json().code, 'INVALID_RESULTS_RELEASE', 'results still cannot come out before the exam closes');
+
+    // Reopen it for two hours and publish results an hour after that.
+    response = await admin.request('PATCH', `/admin/exams/${mock.id}`, { closesAt: iso(minutes(120)), resultsAt: iso(minutes(180)) });
+    assert.equal(response.statusCode, 200, response.body);
+    assert.ok(Math.abs(new Date(response.json().closesAt).getTime() - (Date.now() + minutes(120))) < 5000);
+    const audit = await context.database.query("SELECT details FROM audit_log WHERE action='exam.rescheduled' AND entity_id=$1", [mock.id]);
+    assert.equal(audit.rows.length, 1);
+    const stored = await context.database.query('SELECT questions,duration_minutes,title FROM exams WHERE id=$1', [mock.id]);
+    assert.equal(stored.rows[0].title, 'Weekly mock');
+    assert.equal(stored.rows[0].questions.length, 1, 'the paper is untouched');
+
+    // The student who missed it can now sit it, with a full timer; the early student's result stays embargoed.
+    response = await late.request('POST', `/exams/${mock.id}/start`);
+    assert.equal(response.statusCode, 200, response.body);
+    assert.ok(Math.abs(new Date(response.json().endsAt).getTime() - (Date.now() + minutes(30))) < 5000);
+    assert.equal((await early.request('GET', `/exams/${mock.id}/result`)).json().code, 'RESULTS_NOT_RELEASED');
+    assert.equal((await admin.request('PATCH', `/admin/exams/${mock.id}`, { closesAt: iso(minutes(30)) })).json().code, 'CLOSING_TIME_EARLIER');
+
+    // Once results are out, nothing moves: the answers may already be circulating.
+    await context.database.query("UPDATE exams SET closes_at=now()-interval '2 minutes', results_at=now()-interval '1 minute' WHERE id=$1", [mock.id]);
+    response = await admin.request('PATCH', `/admin/exams/${mock.id}`, { closesAt: iso(minutes(240)), resultsAt: iso(minutes(300)) });
+    assert.equal(response.statusCode, 409);
+    assert.equal(response.json().code, 'RESULTS_ALREADY_RELEASED');
+
+    // A live exam keeps its shared clock; its result time can still move.
+    const live = await create({ type: 'live', scheduledAt: iso(-minutes(5)), closesAt: iso(minutes(60)), resultsAt: iso(minutes(90)) });
+    assert.equal((await early.request('POST', `/exams/${live.id}/start`)).statusCode, 200);
+    assert.equal((await admin.request('PATCH', `/admin/exams/${live.id}`, { closesAt: iso(minutes(120)) })).json().code, 'LIVE_SCHEDULE_LOCKED');
+    assert.equal((await admin.request('PATCH', `/admin/exams/${live.id}`, { resultsAt: iso(minutes(150)) })).statusCode, 200);
+
+    // An exam nobody has started is still fully editable.
+    const fresh = await create({ type: 'mock', scheduledAt: iso(-minutes(5)), closesAt: iso(minutes(60)) });
+    assert.equal((await admin.request('PATCH', `/admin/exams/${fresh.id}`, { title: 'Renamed freely', closesAt: iso(minutes(30)) })).statusCode, 200);
+  } finally { await context.close(); }
+});
