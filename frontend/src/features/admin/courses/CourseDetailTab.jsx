@@ -360,62 +360,8 @@ export default function CourseDetailTab() {
         </CardBody>
       </Card>
 
-      {/* ── Mixed exam policy ── */}
-      <Card>
-        <CardHeader
-          title="Mixed exam policy"
-          description="Applies only to Mixed exams (MCQ + SBA) in this course: the deduction and pass mark of each Mixed exam must fall inside these ranges."
-        />
-        <CardBody className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Minimum deduction (%)"
-              type="number"
-              required
-              min={0}
-              max={1000}
-              step={0.001}
-              value={form.mixedNegativeMarkingMin}
-              onChange={set('mixedNegativeMarkingMin')}
-            />
-            <Input
-              label="Maximum deduction (%)"
-              type="number"
-              required
-              min={0}
-              max={1000}
-              step={0.001}
-              value={form.mixedNegativeMarkingMax}
-              onChange={set('mixedNegativeMarkingMax')}
-            />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Minimum pass mark (%)"
-              type="number"
-              required
-              min={0}
-              max={100}
-              step={0.001}
-              value={form.mixedPassMarkMin}
-              onChange={set('mixedPassMarkMin')}
-            />
-            <Input
-              label="Maximum pass mark (%)"
-              type="number"
-              required
-              min={0}
-              max={100}
-              step={0.001}
-              value={form.mixedPassMarkMax}
-              onChange={set('mixedPassMarkMax')}
-            />
-          </div>
-          <p className="text-xs text-stone-500 dark:text-brand-200">
-            The minimum cannot exceed the maximum. A Mixed exam under this course cannot be saved, as a draft or published, with a deduction or pass mark outside these ranges.
-          </p>
-        </CardBody>
-      </Card>
+      {/* The Mixed exam policy card is hidden. Its ranges still load into the form and are
+          saved back unchanged, so existing Mixed exams keep the policy they had. */}
 
       {/* ── Timing ── */}
       <Card>
