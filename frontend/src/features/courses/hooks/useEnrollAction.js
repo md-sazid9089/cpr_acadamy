@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CATEGORY_SLUGS } from '@/constants';
 import { useAuthStore } from '@/lib/auth';
+import { categorySlug } from '@/features/courses/catalog.js';
 
 /**
  * Shared "Enrol" behaviour for cards and the detail page: signed-out visitors
@@ -14,7 +14,7 @@ export function useEnrollAction() {
 
   return useCallback(
     (course) => {
-      const detailPath = `/courses/${CATEGORY_SLUGS[course.category] || 'fcps'}/${course.slug}`;
+      const detailPath = `/courses/${categorySlug(course.category)}/${course.slug}`;
 
       if (!isAuthenticated) {
         navigate('/login', { state: { from: detailPath, intent: 'enroll' } });

@@ -1,8 +1,8 @@
 import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
-import { CATEGORY_SLUGS } from '@/constants';
 import { formatBDT, formatDate } from '@/lib/utils';
 import ResponsiveImage, { localWebpSrcSet } from '@/components/ui/ResponsiveImage.jsx';
+import { categorySlug } from '@/features/courses/catalog.js';
 
 /** Fallback poster collection */
 const POSTERS = [
@@ -27,7 +27,7 @@ const CATEGORY_GRADIENTS = {
  * @param {{ course: import('@/types').Course, onEnroll?: (course: any) => void }} props
  */
 export default function CourseCard({ course, onEnroll }) {
-  const detailPath = `/courses/${CATEGORY_SLUGS[course.category] || 'fcps'}/${course.slug}`;
+  const detailPath = `/courses/${categorySlug(course.category)}/${course.slug}`;
   const hasDiscount = Boolean(course.discountPrice);
 
   // Deterministic fallback poster based on course id

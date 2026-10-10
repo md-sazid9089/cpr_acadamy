@@ -309,3 +309,30 @@ test('an admin uploads a lecture PDF, and only enrolled students can open it thr
     assert.deepEqual(Buffer.from(await opened.arrayBuffer()), pdf);
   } finally { await context.close(); }
 });
+
+test('the public catalog lists every published category and batch group, including ones an admin made up', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const create = body => admin.request('POST', '/admin/courses', { price: 1000, isPublished: true, ...body });
+    assert.deepEqual((await context.app.inject('/api/catalog')).json(), []);
+    await create({ slug: 'med-a', title: 'Medicine A', category: 'FCPS', batchGroup: 'fcps-p1-medicine' });
+    await create({ slug: 'med-b', title: 'Medicine B', category: 'FCPS', batchGroup: 'fcps-p1-medicine' });
+    await create({ slug: 'dental-a', title: 'Dental A', category: 'Dental', batchGroup: 'BDS Part-1' });
+    await create({ slug: 'dental-b', title: 'Dental B', category: 'Dental' });
+    await create({ slug: 'bcs-a', title: 'BCS A', category: 'BCS', batchGroup: '47th BCS' });
+    await create({ slug: 'hidden', title: 'Draft', category: 'Nursing', batchGroup: 'Staff Nurse', isPublished: false });
+
+    const catalog = (await context.app.inject('/api/catalog')).json();
+    assert.deepEqual(catalog, [
+      { category: 'BCS', batchGroup: '47th BCS', count: 1 },
+      { category: 'Dental', batchGroup: 'BDS Part-1', count: 1 },
+      { category: 'Dental', batchGroup: null, count: 1 },
+      { category: 'FCPS', batchGroup: 'fcps-p1-medicine', count: 2 },
+    ], 'drafts stay out until they are published');
+
+    // The course list filters by the made-up names the catalog hands out.
+    assert.deepEqual((await context.app.inject('/api/courses?group=BDS%20Part-1')).json().map(course => course.slug), ['dental-a']);
+    assert.deepEqual((await context.app.inject('/api/courses?category=Dental')).json().map(course => course.slug).sort(), ['dental-a', 'dental-b']);
+  } finally { await context.close(); }
+});

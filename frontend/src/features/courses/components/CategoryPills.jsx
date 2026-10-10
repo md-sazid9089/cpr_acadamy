@@ -2,12 +2,13 @@ import { COURSE_CATEGORIES } from '@/constants';
 import { cn } from '@/lib/utils';
 
 /**
- * Horizontal filter pills — 'ALL' plus the three fixed categories.
+ * Horizontal filter pills — 'ALL' plus the categories: the three fixed ones by
+ * default, or a list that also holds the ones an admin created (catalogCategories()).
  *
- * @param {{ value: string, onChange: (next: string) => void, className?: string }} props
+ * @param {{ value: string, onChange: (next: string) => void, className?: string, categories?: string[] }} props
  */
-export default function CategoryPills({ value = 'ALL', onChange, className, counts }) {
-  const options = ['ALL', ...COURSE_CATEGORIES];
+export default function CategoryPills({ value = 'ALL', onChange, className, counts, categories = COURSE_CATEGORIES }) {
+  const options = ['ALL', ...categories];
 
   return (
     <div

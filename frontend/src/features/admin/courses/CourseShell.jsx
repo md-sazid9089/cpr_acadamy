@@ -17,9 +17,10 @@ import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
-import { CATEGORY_SLUGS, COURSE_STATUS } from '@/constants';
+import { COURSE_STATUS } from '@/constants';
 import { batchGroupLabel } from './catalogOptions.js';
 import { cn } from '@/lib/utils';
+import { categorySlug } from '@/features/courses/catalog.js';
 
 const TABS = [
   { to: 'detail', label: 'Detail', icon: FaCircleInfo },
@@ -62,7 +63,7 @@ export default function CourseShell() {
   }
 
   const group = course.batchGroup ? { label: batchGroupLabel(course.batchGroup) } : null;
-  const publicUrl = `/courses/${CATEGORY_SLUGS[course.category] ?? 'fcps'}/${course.slug}`;
+  const publicUrl = `/courses/${categorySlug(course.category)}/${course.slug}`;
 
   return (
     <div className="space-y-5">

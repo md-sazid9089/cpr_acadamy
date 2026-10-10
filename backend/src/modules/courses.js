@@ -171,6 +171,13 @@ const courseSelect = `SELECT c.*,
   (SELECT count(*) FROM enrollments e WHERE e.course_id=c.id AND e.status='active' AND e.expires_at>now()) AS enrolled_count FROM courses c`;
 
 export function courseRoutes(route, database, config) {
+  // Every category and batch group that has a published course, with how many. The public Batches page builds its
+  // cards from this, so a category or group an admin creates appears there as soon as one of its courses is published.
+  route('GET', '/catalog', {}, async () => {
+    const rows = (await database.query(`SELECT category, NULLIF(metadata->>'batchGroup','') AS batch_group, count(*)::int AS count
+      FROM courses WHERE is_published GROUP BY 1,2 ORDER BY 1,2`)).rows;
+    return rows.map(row => ({ category: row.category, batchGroup: row.batch_group, count: row.count }));
+  });
   route('GET', '/courses', { query: catalogQuery }, async request => {
     const query = request.query;
     const values = [];

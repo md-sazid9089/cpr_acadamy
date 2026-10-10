@@ -6,9 +6,9 @@ import DashboardTabs from './components/DashboardTabs.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import { CATEGORY_SLUGS } from '@/constants';
 import { formatDate } from '@/lib/utils';
 import './MyCourses.css';
+import { categorySlug as slugForCategory } from '@/features/courses/catalog.js';
 
 const TABS = [
   { id: 'active', label: 'Active Batches', icon: FaCheck, iconColor: 'text-brand-500' },
@@ -67,7 +67,7 @@ function AccessNote({ course }) {
 }
 
 function CourseCard({ course }) {
-  const categorySlug = CATEGORY_SLUGS[course.category] || 'fcps';
+  const categorySlug = slugForCategory(course.category);
   const hubUrl = `/dashboard/course/${course.slug}`;
   const scheduleUrl = `/courses/${categorySlug}/${course.slug}/schedule`;
   const isCompleted = course.lessonCount > 0 && course.completedLessons === course.lessonCount && !course.nextLesson;

@@ -1,25 +1,16 @@
 import { Link } from 'react-router-dom';
 import { FaGraduationCap, FaArrowRightLong } from 'react-icons/fa6';
-import { BATCH_GROUPS } from '@/constants';
 import { cn } from '@/lib/utils';
-
-function groupHref(group) {
-  return `/batches?group=${group.id}`;
-}
 
 /**
  * Batch-group chooser — 2-column responsive layout matching Genesis.
  *
  * @param {Object} props
- * @param {string} [props.category]
- * @param {Record<string, number>} [props.counts]
+ * @param {{ id: string, label: string, note?: string, href: string, count?: number }[]} props.cards
+ *   From batchCards(): the built-in groups, then groups and categories an admin created.
  * @param {string} [props.className]
  */
-export default function BatchGroupGrid({ category, counts, className }) {
-  const groups = category
-    ? BATCH_GROUPS.filter((group) => group.category === category)
-    : BATCH_GROUPS;
-
+export default function BatchGroupGrid({ cards: groups, className }) {
   if (!groups.length) return null;
 
   return (
@@ -36,13 +27,13 @@ export default function BatchGroupGrid({ category, counts, className }) {
         return (
           <Link
             key={group.id}
-            to={groupHref(group)}
+            to={group.href}
             className={cn(
               'group flex h-full min-h-[120px] flex-col items-center justify-between rounded-xl border border-stone-200 bg-white p-3.5 text-center transition-all duration-200 sm:min-h-[140px] sm:p-5',
               'hover:-translate-y-1 hover:border-stone-200 border border-stone-200',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600',
               'dark:border-stone-200 dark:bg-surface-dark-subtle dark:hover:border-stone-200 dark:hover:bg-surface-dark',
-              // On 2-col mobile view, center the last odd item (BMDC Licensing)
+              // On 2-col mobile view, center the last odd card
               isLastOdd &&
                 'col-span-2 w-full max-w-[calc(50%-0.375rem)] mx-auto md:col-span-1 md:max-w-none',
             )}
@@ -63,9 +54,9 @@ export default function BatchGroupGrid({ category, counts, className }) {
                 </p>
               )}
 
-              {counts?.[group.id] != null && counts[group.id] > 0 && (
+              {group.count > 0 && (
                 <p className="mt-1 text-[10px] text-stone-400 sm:text-xs">
-                  {counts[group.id]} {counts[group.id] === 1 ? 'batch' : 'batches'}
+                  {group.count} {group.count === 1 ? 'batch' : 'batches'}
                 </p>
               )}
             </div>

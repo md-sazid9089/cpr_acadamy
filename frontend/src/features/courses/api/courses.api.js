@@ -71,3 +71,13 @@ export async function deleteInstructorReview(slug) {
   const { data } = await apiClient.delete(`/courses/${encodeURIComponent(slug)}/review`);
   return data;
 }
+
+/**
+ * Every category and batch group with a published course, and how many:
+ * `[{ category, batchGroup | null, count }]`. Feeds the Batches cards and the
+ * category pills, so names an admin made up appear alongside the built-in ones.
+ */
+export async function fetchCatalog() {
+  const { data } = await apiClient.get('/catalog');
+  return data;
+}

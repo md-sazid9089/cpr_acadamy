@@ -17,8 +17,9 @@ import Button from '@/components/ui/Button.jsx';
 import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import InstructorReviews from './components/InstructorReviews.jsx';
-import { CONTACT, CATEGORY_SLUGS } from '@/constants';
+import { CONTACT } from '@/constants';
 import { formatBDT, formatClassDays, formatDate, formatNumber, formatTimeRange } from '@/lib/utils';
+import { categorySlug as slugForCategory } from '@/features/courses/catalog.js';
 
 /** Blank lines in the stored description separate paragraphs. */
 function paragraphs(text) {
@@ -51,7 +52,7 @@ export default function CourseDetail() {
     );
   }
 
-  const categorySlug = CATEGORY_SLUGS[course.category] || 'fcps';
+  const categorySlug = slugForCategory(course.category);
   const scheduleUrl = `/courses/${categorySlug}/${course.slug}/schedule`;
   const hasDiscount = Boolean(course.discountPrice);
   const startsOnLabel = course.startsOn ? formatDate(course.startsOn) : 'To be announced';

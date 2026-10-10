@@ -2,20 +2,13 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CategoryPills from './components/CategoryPills.jsx';
 import CourseCard from './components/CourseCard.jsx';
-import { useCourses } from './api/courses.queries.js';
+import { useCatalog, useCourses } from './api/courses.queries.js';
+import { catalogCategories, categoryFromSlug, categoryLabel, categorySlug } from './catalog.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
 import Input from '@/components/ui/Input.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Button from '@/components/ui/Button.jsx';
-import { CATEGORY_LABELS, CATEGORY_SLUGS, COURSE_CATEGORIES } from '@/constants';
-
-/** Resolve the `:category` URL segment ('fcps') to a category ('FCPS'). */
-function categoryFromSlug(slug) {
-  if (!slug) return 'ALL';
-  const match = COURSE_CATEGORIES.find((category) => CATEGORY_SLUGS[category] === slug.toLowerCase());
-  return match ?? 'ALL';
-}
 
 /** Public catalogue for both /courses and /courses/:category. */
 export default function CourseList() {
@@ -23,17 +16,20 @@ export default function CourseList() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
 
-  const activeCategory = categoryFromSlug(categoryParam);
+  // The built-in three plus any category an admin created that has a published course.
+  const { data: catalog } = useCatalog();
+  const categories = useMemo(() => catalogCategories(catalog), [catalog]);
+  const activeCategory = categoryFromSlug(categoryParam, categories);
   const { data: courses = [], isLoading, isError } = useCourses({ category: activeCategory, search });
   const onEnroll = useEnrollAction();
 
   const heading = useMemo(
-    () => (activeCategory === 'ALL' ? 'All Courses' : CATEGORY_LABELS[activeCategory]),
+    () => (activeCategory === 'ALL' ? 'All Courses' : categoryLabel(activeCategory)),
     [activeCategory],
   );
 
   const handleCategoryChange = (next) => {
-    navigate(next === 'ALL' ? '/courses' : `/courses/${CATEGORY_SLUGS[next]}`);
+    navigate(next === 'ALL' ? '/courses' : `/courses/${categorySlug(next)}`);
   };
 
   return (
@@ -56,7 +52,7 @@ export default function CourseList() {
             />
           </div>
 
-          <CategoryPills value={activeCategory} onChange={handleCategoryChange} className="mt-6" />
+          <CategoryPills value={activeCategory} onChange={handleCategoryChange} categories={categories} className="mt-6" />
         </div>
       </section>
 

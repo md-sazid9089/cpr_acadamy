@@ -4,13 +4,13 @@ import { FaArrowLeftLong } from 'react-icons/fa6';
 import CourseCard from './components/CourseCard.jsx';
 import BatchGroupGrid from './components/BatchGroupGrid.jsx';
 import BatchFilters from './components/BatchFilters.jsx';
-import { useCourses } from './api/courses.queries.js';
+import { useCatalog, useCourses } from './api/courses.queries.js';
+import { batchCards, batchGroupTitle, categoryLabel } from './catalog.js';
 import { useEnrollAction } from './hooks/useEnrollAction.js';
 import Input from '@/components/ui/Input.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Button from '@/components/ui/Button.jsx';
-import { BATCH_GROUPS } from '@/constants';
 
 /** Sentinel `?group=` value meaning "every batch we run". */
 const ALL_GROUPS = 'all';
@@ -21,9 +21,11 @@ const FACET_PARAMS = { batchTypes: 'type', sessions: 'session', branches: 'branc
 /**
  * /batches — the batch catalogue.
  *
- * Two views share the route, switched by the `group` query parameter:
- *   - no `group`   → the category chooser (BatchGroupGrid)
- *   - with `group` → that category's batches beside the facet sidebar
+ * Two views share the route, switched by the `group` / `category` query parameters:
+ *   - neither         → the chooser (BatchGroupGrid): built-in groups, then any group or
+ *                       category an admin created, as soon as it has a published course
+ *   - `group`         → that group's batches beside the facet sidebar (`all` = every batch)
+ *   - `category`      → every batch in that category, for categories with no group card
  *
  * Every selectable thing lives in the URL, so a filtered view can be linked,
  * bookmarked or shared, and the back button steps through choices.
@@ -32,8 +34,9 @@ export default function Batches() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const group = searchParams.get('group') ?? '';
+  const category = searchParams.get('category') ?? '';
   const search = searchParams.get('q') ?? '';
-  const showResults = Boolean(group);
+  const showResults = Boolean(group || category);
 
   // Selected facet ids, read straight back out of the URL.
   const filters = useMemo(
@@ -47,27 +50,23 @@ export default function Batches() {
     [searchParams],
   );
 
-  const activeGroup = BATCH_GROUPS.find((item) => item.id === group);
+  const title = category ? categoryLabel(category) : group === ALL_GROUPS ? 'All Batches' : batchGroupTitle(group);
 
   const queryParams = useMemo(() => {
     if (!showResults) return undefined;
     return {
       group: group && group !== ALL_GROUPS ? group : undefined,
+      category: category || undefined,
       ...filters,
       search,
     };
-  }, [showResults, group, filters, search]);
+  }, [showResults, group, category, filters, search]);
 
-  const { data: courses = [], isLoading, isError } = useCourses(queryParams);
+  // The landing grid counts batches from the catalog, so the course list is only needed once a card is open.
+  const { data: courses = [], isLoading, isError } = useCourses(queryParams, { enabled: showResults });
 
-  const groupCounts = useMemo(() => {
-    if (showResults) return {};
-    const counts = {};
-    for (const course of courses) {
-      if (course.batchGroup) counts[course.batchGroup] = (counts[course.batchGroup] ?? 0) + 1;
-    }
-    return counts;
-  }, [showResults, courses]);
+  const { data: catalog } = useCatalog();
+  const cards = useMemo(() => batchCards(catalog), [catalog]);
 
   const onEnroll = useEnrollAction();
 
@@ -106,7 +105,7 @@ export default function Batches() {
           )}
 
           <h1 className="section-heading" lang={showResults ? undefined : 'bn'}>
-            {showResults ? (activeGroup?.label ?? 'All Batches') : 'আপনার কাঙ্ক্ষিত ব্যাচটি খুঁজে নিন'}
+            {showResults ? title : 'আপনার কাঙ্ক্ষিত ব্যাচটি খুঁজে নিন'}
           </h1>
           <p className="section-subheading mx-auto text-center" lang={showResults ? undefined : 'bn'}>
             {showResults
@@ -175,7 +174,7 @@ export default function Batches() {
         </section>
       ) : (
         <section className="container-page py-12">
-          <BatchGroupGrid counts={groupCounts} />
+          <BatchGroupGrid cards={cards} />
 
           <div className="mt-10 text-center">
             <Button variant="outline" to={`/batches?group=${ALL_GROUPS}`}>

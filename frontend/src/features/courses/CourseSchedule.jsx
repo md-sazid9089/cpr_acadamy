@@ -6,7 +6,8 @@ import { useCourseSchedule } from '@/features/course-hub/api/courseHub.queries.j
 import Button from '@/components/ui/Button.jsx';
 import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
-import { CONTACT, CATEGORY_SLUGS } from '@/constants';
+import { CONTACT } from '@/constants';
+import { categorySlug as slugForCategory } from '@/features/courses/catalog.js';
 
 export default function CourseSchedule() {
   const { slug } = useParams();
@@ -34,7 +35,7 @@ export default function CourseSchedule() {
 
   const courseData = course;
 
-  const categorySlug = CATEGORY_SLUGS[courseData.category] || 'fcps';
+  const categorySlug = slugForCategory(courseData.category);
   const detailUrl = `/courses/${categorySlug}/${courseData.slug}`;
 
   const handlePrint = () => {
