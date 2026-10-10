@@ -28,7 +28,7 @@ export async function myCourses(database, userId) {
   const rows = (await database.query(`SELECT e.*,c.slug,c.title,c.category,
     (SELECT count(*)::int FROM lessons l WHERE l.course_id=c.id AND l.status='published' AND l.scheduled_at<=now()) AS lesson_count,
     (SELECT count(*)::int FROM lesson_progress p JOIN lessons l ON l.id=p.lesson_id WHERE p.user_id=e.user_id AND l.course_id=c.id AND l.status='published' AND l.scheduled_at<=now()) AS completed_lessons,
-    (SELECT jsonb_build_object('id',l.id,'title',l.title) FROM lessons l WHERE l.course_id=c.id AND l.status='published' AND l.scheduled_at<=now()
+    (SELECT jsonb_build_object('id',l.id,'title',l.title,'durationMinutes',l.duration_minutes,'hasVideo',l.src<>'','hasNotes',l.notes_url<>'') FROM lessons l WHERE l.course_id=c.id AND l.status='published' AND l.scheduled_at<=now()
       AND NOT EXISTS(SELECT 1 FROM lesson_progress p WHERE p.user_id=e.user_id AND p.lesson_id=l.id) ORDER BY l.position,l.id LIMIT 1) AS next_lesson,
     (SELECT p.proof_submitted_at IS NOT NULL FROM payments p WHERE p.user_id=e.user_id AND p.course_id=c.id AND p.status='pending' ORDER BY p.created_at DESC LIMIT 1) AS payment_awaiting_approval
     FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE e.user_id=$1 ORDER BY e.created_at DESC,e.id`, [userId])).rows;

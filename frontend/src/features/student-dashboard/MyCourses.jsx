@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowLeft, FaCheck, FaTriangleExclamation, FaClockRotateLeft, FaPlay, FaCircleInfo, FaBookOpen } from 'react-icons/fa6';
+import { FaArrowLeft, FaCheck, FaTriangleExclamation, FaClockRotateLeft, FaPlay, FaCircleInfo, FaBookOpen, FaFilePdf, FaRegCalendar, FaChartLine } from 'react-icons/fa6';
 import { useMyCourses } from './api/dashboard.queries.js';
 import DashboardTabs from './components/DashboardTabs.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -15,6 +15,143 @@ const TABS = [
   { id: 'unpaid', label: 'Unpaid Batches', icon: FaTriangleExclamation, iconColor: 'text-brand-500' },
   { id: 'previous', label: 'Previous Batches', icon: FaClockRotateLeft, iconColor: 'text-brand-500' },
 ];
+
+// Within this many days of the end date, the access note turns into a warning.
+const EXPIRY_WARNING_DAYS = 14;
+const DAY_MS = 86400000;
+
+function lessonMeta(lesson) {
+  const kind = lesson.hasVideo && lesson.hasNotes ? 'Video + notes' : lesson.hasVideo ? 'Video' : lesson.hasNotes ? 'Notes' : 'Lesson';
+  return lesson.durationMinutes ? `${kind} · ${lesson.durationMinutes} min` : kind;
+}
+
+function AccessNote({ course }) {
+  if (course.status === 'pending_payment') {
+    return (
+      <p className="course-access">
+        <FaCircleInfo aria-hidden="true" />
+        <span>
+          {course.awaitingApproval
+            ? 'Your payment is submitted and awaiting admin approval. Access opens as soon as it’s confirmed.'
+            : 'Complete your payment to start this batch.'}
+        </span>
+      </p>
+    );
+  }
+  if (course.status === 'expired') {
+    return (
+      <p className="course-access">
+        <FaCircleInfo aria-hidden="true" />
+        <span>Access ended on <strong>{formatDate(course.expiresOn)}</strong>.</span>
+      </p>
+    );
+  }
+  const daysLeft = Math.ceil((new Date(course.expiresOn).getTime() - Date.now()) / DAY_MS);
+  if (daysLeft <= EXPIRY_WARNING_DAYS) {
+    return (
+      <p className="course-access course-access--warn">
+        <FaTriangleExclamation aria-hidden="true" />
+        <span>
+          Access ends in <strong>{daysLeft} {daysLeft === 1 ? 'day' : 'days'}</strong> ({formatDate(course.expiresOn)}).
+          Finish your remaining lessons before then.
+        </span>
+      </p>
+    );
+  }
+  return (
+    <p className="course-access">
+      <FaCircleInfo aria-hidden="true" />
+      <span>Access until <strong>{formatDate(course.expiresOn)}</strong>. May be extended after the exam circular.</span>
+    </p>
+  );
+}
+
+function CourseCard({ course }) {
+  const categorySlug = CATEGORY_SLUGS[course.category] || 'fcps';
+  const hubUrl = `/dashboard/course/${course.slug}`;
+  const isCompleted = course.lessonCount > 0 && course.completedLessons === course.lessonCount && !course.nextLesson;
+  // Read the record, not the tab: a card is only resumable when
+  // the enrolment itself is running.
+  const isActive = course.status === 'active' || !course.status;
+  const percent = course.lessonCount ? Math.round((course.completedLessons / course.lessonCount) * 100) : 0;
+  const next = isActive && !isCompleted ? course.nextLesson : null;
+
+  return (
+    <article className="batch-card">
+      <header>
+        <div className="course-title-row">
+          <h2 className="text-lg font-bold leading-snug">{course.title}</h2>
+          <span className="course-chip">{course.category || 'Medicine & Allied'}</span>
+        </div>
+        <p className="course-reg">Reg no. {course.regNo ?? '—'}</p>
+      </header>
+
+      {course.status !== 'pending_payment' && course.lessonCount > 0 && (
+        <div className="course-progress">
+          <div className="course-progress-label">
+            <strong>{isCompleted ? <><FaCheck aria-hidden="true" /> All {course.lessonCount} lessons done</> : `${course.completedLessons} of ${course.lessonCount} lessons`}</strong>
+            <span>{percent}%</span>
+          </div>
+          <div
+            className="course-bar"
+            role="progressbar"
+            aria-label="Lessons completed"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <span style={{ width: `${percent}%` }} />
+          </div>
+        </div>
+      )}
+
+      <div className="course-card-body">
+        {next && (
+          <div className="course-next">
+            <div className="course-next-thumb" aria-hidden="true">
+              {next.hasVideo || !next.hasNotes ? <FaPlay /> : <FaFilePdf />}
+            </div>
+            <div className="min-w-0">
+              <p className="course-next-label">Up next</p>
+              <p className="course-next-title">{next.title}</p>
+              <p className="course-next-meta">{lessonMeta(next)}</p>
+            </div>
+          </div>
+        )}
+
+        {course.awaitingApproval ? (
+          <span className="course-primary-action course-primary-action--pending">
+            <FaClockRotateLeft aria-hidden="true" /> Waiting for Approval
+          </span>
+        ) : (
+          <Link to={isActive ? hubUrl : `/dashboard/checkout/${course.slug}`} className="course-primary-action">
+            {isCompleted && isActive ? <FaBookOpen aria-hidden="true" /> : isActive ? <FaPlay aria-hidden="true" /> : null}
+            {isActive
+              ? isCompleted ? 'Review materials' : next ? 'Continue lesson' : 'Open course'
+              : course.status === 'expired' ? 'Renew access' : 'Pay course fee'}
+          </Link>
+        )}
+
+        <AccessNote course={course} />
+      </div>
+
+      <nav aria-label={`${course.title} links`} className="course-actions">
+        <Link to={`/courses/${categorySlug}/${course.slug}/schedule`}>
+          <FaRegCalendar aria-hidden="true" />
+          Schedule
+        </Link>
+        <Link to={hubUrl}>
+          <FaBookOpen aria-hidden="true" />
+          Course hub
+        </Link>
+        <Link to="/dashboard/exams">
+          <FaChartLine aria-hidden="true" />
+          Exam results
+        </Link>
+      </nav>
+    </article>
+  );
+}
 
 export default function MyCourses() {
   const { data: courses = [], isLoading, isError, refetch } = useMyCourses();
@@ -61,91 +198,9 @@ export default function MyCourses() {
             />
           ) : (
             <div className={`course-grid grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 ${filteredCourses.length === 1 ? 'course-grid--single' : ''}`}>
-              {filteredCourses.map((course) => {
-                const categorySlug = CATEGORY_SLUGS[course.category] || 'fcps';
-                const scheduleUrl = `/courses/${categorySlug}/${course.slug}/schedule`;
-                const isCompleted = course.lessonCount > 0 && course.completedLessons === course.lessonCount && !course.nextLesson;
-                // Read the record, not the tab: a card is only resumable when
-                // the enrolment itself is running.
-                const isActive = course.status === 'active' || !course.status;
-
-                return (
-                  <article
-                    key={course.id}
-                    className="batch-card"
-                  >
-                    <div>
-                      {isCompleted && <span className="course-completed"><FaCheck aria-hidden="true" />Completed</span>}
-                      {/* Course / Batch Title */}
-                      <h2 className="text-base font-bold leading-snug text-stone-900 sm:text-lg dark:text-white">
-                        {course.title}
-                      </h2>
-
-                      <dl className="course-details">
-                        <div><dt>Discipline</dt><dd>{course.category || 'Medicine & Allied'}</dd></div>
-                        <div><dt>Reg No</dt><dd>{course.regNo ?? '—'}</dd></div>
-                      </dl>
-
-                      {/* Notice / Validity text */}
-                      <div className="course-access-notice mt-4">
-                        <FaCircleInfo aria-hidden="true" />
-                        <p>
-                        {course.status === 'pending_payment'
-                          ? course.awaitingApproval
-                            ? 'Your payment is submitted and awaiting admin approval. Access opens as soon as it’s confirmed.'
-                            : 'Complete your payment to start this batch.'
-                          : course.status === 'expired'
-                            ? <>Access to this batch ended on <strong>{formatDate(course.expiresOn)}</strong>.</>
-                            : <>Your batch access remains active till <strong>{formatDate(course.expiresOn)}</strong>. The date is reviewed after the exam circular.</>}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-6">
-                      {course.awaitingApproval ? (
-                        <span className="course-primary-action course-primary-action--pending">
-                          <FaClockRotateLeft aria-hidden="true" /> Waiting for Approval
-                        </span>
-                      ) : (
-                        <Link
-                          to={isActive ? `/dashboard/course/${course.slug}` : `/dashboard/checkout/${course.slug}`}
-                          className="course-primary-action"
-                        >
-                          {isCompleted && isActive ? <FaBookOpen aria-hidden="true" /> : isActive ? <FaPlay aria-hidden="true" /> : null}
-                          {isActive ? (isCompleted ? 'Review Materials' : course.nextLesson ? 'Continue Course' : 'Open Course') : course.status === 'expired' ? 'Renew Access' : 'Pay Course Fee'}
-                        </Link>
-                      )}
-
-                    {isActive && !isCompleted && course.nextLesson && (
-                      <p className="course-next-lesson">
-                        Up next: {course.nextLesson.title}
-                      </p>
-                    )}
-
-                    <nav aria-label={`${course.title} links`} className="course-secondary-links">
-                      <Link
-                        to={scheduleUrl}
-                      >
-                        View Schedule
-                      </Link>
-
-                      <Link
-                        to={`/dashboard/course/${course.slug}`}
-                      >
-                        Course Hub
-                      </Link>
-
-                      <Link
-                        to="/dashboard/exams"
-                      >
-                        My Exam Performance
-                      </Link>
-
-                    </nav>
-                    </div>
-                  </article>
-                );
-              })}
+              {filteredCourses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
             </div>
           )}
       </section>}
