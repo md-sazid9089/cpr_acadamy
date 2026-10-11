@@ -52,10 +52,11 @@ const READY_TIMEOUT_MS = 8000;
  * seeks back to the first frame immediately so the related-videos end
  * screen never has a chance to render.
  *
- * Until the first frame plays, whenever the video is paused, and after it ends,
- * a black cover hides the video: YouTube paints its logo, title and "Watch on
- * YouTube" over an unstarted embed, and a "More videos" shelf over a paused one
- * (no player setting turns that shelf off).
+ * Until the first frame plays, and after it ends, a black cover hides the
+ * video, because YouTube paints its logo, title and "Watch on YouTube" over an
+ * unstarted embed. While paused, only the bottom band is covered: YouTube puts
+ * a "More videos" shelf there (no player setting turns it off), and the rest of
+ * the paused frame stays visible for the student to read.
  *
  * If the IFrame API fails to load, the player never becomes ready, or the
  * video itself errors out, the player shows a "Try again" message. It never
@@ -244,11 +245,16 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         type="button"
         onClick={toggle}
         aria-label={playing ? 'Pause' : 'Play'}
-        className={`absolute inset-0 flex h-full w-full items-center justify-center ${started && playing ? 'bg-transparent' : 'bg-black'}`}
+        className={`absolute inset-0 flex h-full w-full items-center justify-center ${started ? 'bg-transparent' : 'bg-black'}`}
       >
+        {/* Paused: only the bottom band goes dark, where YouTube puts its "More videos" shelf, so the paused frame
+            (a slide, a diagram) stays readable above it. */}
+        {started && !playing && (
+          <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[44%] bg-gradient-to-t from-black from-0% via-black via-72% to-transparent" />
+        )}
         {!ready && <span className="text-sm text-white/70">Loading…</span>}
         {ready && !playing && (
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white">
+          <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white">
             <FaPlay aria-hidden="true" className="h-6 w-6 translate-x-0.5" />
           </span>
         )}
