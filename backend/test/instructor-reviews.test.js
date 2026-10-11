@@ -64,3 +64,40 @@ test('instructor reviews enforce enrollment, isolate courses, validate ratings, 
     assert.equal((await student.request('POST', path, input)).statusCode, 404);
   } finally { await context.close(); }
 });
+test('admins see every review with its author and course, can filter, and can remove one', async () => {
+  const context = await fixture();
+  try {
+    const admin = await context.user('admin', '01799999999');
+    const student = await context.user();
+    const course = (await admin.request('POST', '/admin/courses', { slug: 'moderated', title: 'Moderated course', category: 'FCPS', price: 1000, isPublished: true })).json();
+    const other = (await admin.request('POST', '/admin/courses', { slug: 'quiet', title: 'Quiet course', category: 'FCPS', price: 1000, isPublished: true })).json();
+    await context.database.query("INSERT INTO enrollments(user_id,course_id,status,starts_at,expires_at) VALUES ($1,$2,'active',now(),now()+interval '30 days')", [student.id, course.id]);
+    const lesson = (await admin.request('POST', '/admin/videos', { courseId: course.id, title: 'Only lesson', src: 'https://cdn.example/a.mp4', scheduledAt: '2025-01-01T00:00:00Z', status: 'published' })).json();
+    await student.request('POST', `/lessons/${lesson.id}/complete`);
+    const review = (await student.request('POST', '/courses/moderated/review', { rating: 1, feedback: 'Rude words here.' })).json();
+
+    assert.equal((await student.request('GET', '/admin/reviews')).statusCode, 403);
+    assert.equal((await student.request('DELETE', `/admin/reviews/${review.id}`)).statusCode, 403);
+
+    const all = (await admin.request('GET', '/admin/reviews')).json();
+    assert.equal(all.total, 1);
+    assert.equal(all.average, 1);
+    assert.deepEqual(
+      [all.reviews[0].studentName, all.reviews[0].userId, all.reviews[0].courseTitle, all.reviews[0].courseSlug, all.reviews[0].feedback],
+      ['Test User', student.id, 'Moderated course', 'moderated', 'Rude words here.'],
+    );
+    assert.equal((await admin.request('GET', `/admin/reviews?courseId=${other.id}`)).json().total, 0, 'filtered by course');
+    assert.equal((await admin.request('GET', '/admin/reviews?rating=5')).json().total, 0, 'filtered by rating');
+    assert.equal((await admin.request('GET', '/admin/reviews?rating=1')).json().total, 1);
+    // Still listed for the admin after the course is unpublished.
+    await admin.request('PATCH', `/admin/courses/${course.id}`, { isPublished: false });
+    assert.equal((await admin.request('GET', '/admin/reviews')).json().total, 1);
+    await admin.request('PATCH', `/admin/courses/${course.id}`, { isPublished: true });
+
+    assert.equal((await admin.request('DELETE', `/admin/reviews/${review.id}`)).statusCode, 200);
+    assert.equal((await admin.request('DELETE', `/admin/reviews/${review.id}`)).statusCode, 404);
+    assert.equal((await context.app.inject({ method: 'GET', url: '/api/courses/moderated/reviews' })).json().total, 0, 'gone from the public page');
+    const logged = await context.database.query("SELECT details FROM audit_log WHERE action='review.removed' AND entity_id=$1", [review.id]);
+    assert.equal(logged.rows.length, 1, 'removal is recorded in the audit log');
+  } finally { await context.close(); }
+});

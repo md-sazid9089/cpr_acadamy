@@ -537,6 +537,22 @@ export async function setComplaintStatus({ id, status }) {
   return data;
 }
 
+// ─── Instructor reviews ────────────────────────────────────────────────────
+
+/** @param {{ courseId?: string, rating?: number, page?: number, pageSize?: number }} args */
+export async function fetchAdminReviews({ courseId, rating, page = 0, pageSize = 20 } = {}) {
+  const { data } = await apiClient.get('/admin/reviews', {
+    params: { courseId: courseId || undefined, rating: rating || undefined, limit: pageSize, offset: page * pageSize },
+  });
+  return data;
+}
+
+/** @param {string} id */
+export async function deleteAdminReview(id) {
+  const { data } = await apiClient.delete(`/admin/reviews/${id}`);
+  return data;
+}
+
 // ─── Announcements ─────────────────────────────────────────────────────────
 
 export async function fetchAdminAnnouncements() {

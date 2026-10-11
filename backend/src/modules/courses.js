@@ -246,6 +246,24 @@ export function courseRoutes(route, database, config) {
     await database.query('DELETE FROM instructor_reviews WHERE course_id=$1 AND user_id=$2', [course.id, request.auth.user_id]);
     return { ok: true };
   });
+  // Admin moderation: every review (published or not) with who wrote it, and removal of one that breaks the rules.
+  route('GET', '/admin/reviews', { auth: 'admin', query: pageQuery.extend({ courseId: uuid.optional(), rating: z.coerce.number().int().min(1).max(5).optional() }) }, async request => {
+    const params = [request.query.courseId || null, request.query.rating || null];
+    const where = 'WHERE ($1::uuid IS NULL OR review.course_id=$1) AND ($2::int IS NULL OR review.rating=$2)';
+    const summary = await one(database, `SELECT count(*) AS total, COALESCE(avg(rating),0) AS average FROM instructor_reviews review ${where}`, params);
+    const reviews = (await database.query(`SELECT review.id, review.rating, review.feedback, review.created_at AS "createdAt", review.updated_at AS "updatedAt",
+        review.user_id AS "userId", student.full_name AS "studentName", student.mobile AS "studentMobile",
+        review.course_id AS "courseId", course.title AS "courseTitle", course.slug AS "courseSlug", course.category AS "courseCategory"
+      FROM instructor_reviews review JOIN users student ON student.id=review.user_id JOIN courses course ON course.id=review.course_id
+      ${where} ORDER BY review.updated_at DESC,review.id LIMIT $3 OFFSET $4`, [...params, request.query.limit, request.query.offset])).rows;
+    return { total: Number(summary.total), average: Number(summary.average), reviews };
+  });
+  route('DELETE', '/admin/reviews/:id', { auth: 'admin' }, async request => database.transaction(async transaction => {
+    const removed = await one(transaction, 'DELETE FROM instructor_reviews WHERE id=$1 RETURNING id,course_id,user_id,rating', [request.params.id]);
+    ensure(removed, 404, 'NOT_FOUND', 'Review not found.');
+    await audit(transaction, request.auth.user_id, 'review.removed', removed.id, { courseId: removed.course_id, userId: removed.user_id, rating: removed.rating });
+    return { ok: true };
+  }));
   route('POST', '/courses/:id/enroll', { auth: 'active' }, async request => {
     const course = await one(database, 'SELECT * FROM courses WHERE id=$1 AND is_published', [request.params.id]);
     ensure(course, 404, 'COURSE_NOT_FOUND', 'This course could not be found.');
