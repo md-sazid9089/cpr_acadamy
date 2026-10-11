@@ -11,3 +11,9 @@ export async function fetchGalleryPage() {
   const { data } = await apiClient.get('/gallery/page');
   return data;
 }
+
+/** Home page student reviews that are switched on, in order: `[{ id, name, role, quote, rating }]`. */
+export async function fetchHomeReviews() {
+  const { data } = await apiClient.get('/home-reviews');
+  return data;
+}

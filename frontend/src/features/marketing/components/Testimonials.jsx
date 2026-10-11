@@ -1,4 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
 import { FaQuoteRight, FaStar } from 'react-icons/fa6';
+import { fetchHomeReviews } from '../api/siteMedia.api.js';
+
+/** Fallback while the admin-managed list loads or if it cannot be reached (Admin → Reviews → Home page reviews). */
 
 const WRITTEN_REVIEWS = [
   {
@@ -43,7 +47,19 @@ const WRITTEN_REVIEWS = [
   },
 ];
 
+/** Two letters for the avatar circle: the first letters of the first two words of the name. */
+function initials(name) {
+  return name.trim().split(/\s+/).slice(0, 2).map((word) => [...word][0]).join('').toUpperCase();
+}
+
 export default function Testimonials() {
+  const { data } = useQuery({ queryKey: ['marketing', 'home-reviews'], queryFn: fetchHomeReviews, staleTime: 5 * 60 * 1000 });
+  const reviews = data
+    ? data.map((review) => ({ ...review, avatarText: initials(review.name), borderColor: 'border-stone-200' }))
+    : WRITTEN_REVIEWS.map((review) => ({ rating: 5, ...review }));
+  // The admin switched every review off: leave the section out rather than show an empty heading.
+  if (!reviews.length) return null;
+
   return (
     <section className="relative overflow-hidden bg-surface-light py-16 text-stone-800 sm:py-20 dark:bg-surface-dark dark:text-brand-200">
 
@@ -70,7 +86,7 @@ export default function Testimonials() {
 
           {/* Horizontal scroll on mobile (in a row) with Facebook poster ratio / Grid on desktop */}
           <div className="mt-8 flex gap-4 overflow-x-auto px-4 pb-4 pt-2 snap-x snap-mandatory scroll-smooth sm:mt-10 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:px-0 sm:pb-0">
-            {WRITTEN_REVIEWS.map((review) => (
+            {reviews.map((review) => (
               <div
                 key={review.id}
                 className={`group flex w-[78vw] max-w-[280px] shrink-0 snap-center flex-col justify-between rounded-2xl border ${review.borderColor} bg-white p-5 border border-stone-200 transition-all duration-300 hover:-translate-y-1 dark:bg-surface-dark-subtle aspect-[4/5] sm:aspect-auto sm:w-auto sm:max-w-none`}
@@ -78,9 +94,9 @@ export default function Testimonials() {
                 <div>
                   {/* Rating Stars & Quote Icon */}
                   <div className="flex items-center justify-between">
-                    <div className="flex gap-1 text-brand-400">
+                    <div className="flex gap-1" role="img" aria-label={`${review.rating} out of 5 stars`}>
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <FaStar key={i} className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current" />
+                        <FaStar key={i} aria-hidden="true" className={`h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current ${i < review.rating ? 'text-brand-400' : 'text-stone-200 dark:text-brand-800'}`} />
                       ))}
                     </div>
                     <FaQuoteRight className="h-4 w-4 text-brand-600 dark:text-brand-300" />
@@ -104,7 +120,7 @@ export default function Testimonials() {
                     <h3 className="text-xs font-bold text-brand-900 sm:text-sm dark:text-white">
                       {review.name}
                     </h3>
-                    <p className="text-[11px] text-stone-600 dark:text-brand-200">{review.role}</p>
+                    {review.role && <p className="text-[11px] text-stone-600 dark:text-brand-200">{review.role}</p>}
                   </div>
                 </div>
               </div>

@@ -10,6 +10,7 @@ import FormError from '@/components/ui/FormError.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { Select } from '@/components/ui/Input.jsx';
+import HomeReviewsSection from './reviews/HomeReviewsSection.jsx';
 import { categorySlug } from '@/features/courses/catalog.js';
 import { formatDateTime } from '@/lib/utils';
 
@@ -64,7 +65,9 @@ export default function AdminReviews() {
   };
 
   return (
-    <>
+    <div className="space-y-5">
+      <HomeReviewsSection />
+
       <Card>
         <CardHeader
           title="Instructor Reviews"
@@ -198,6 +201,6 @@ export default function AdminReviews() {
           )}
         </div>
       </Modal>
-    </>
+    </div>
   );
 }
