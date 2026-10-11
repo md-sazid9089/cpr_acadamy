@@ -17,7 +17,7 @@ export default function PlaybackRateControl({ rate, onChange }) {
     >
       {RATES.map((value) => (
         <option key={value} value={value} className="text-black">
-          {value === 1 ? 'Normal' : `${value}x`}
+          {`${value}x`}
         </option>
       ))}
     </select>

@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { FaPlay, FaPause, FaVolumeHigh, FaVolumeXmark, FaExpand, FaCompress } from 'react-icons/fa6';
 import YouTubePlayer from './YouTubePlayer.jsx';
 import PlaybackRateControl from './PlaybackRateControl.jsx';
+import SkipControls, { SKIP_SECONDS } from './SkipControls.jsx';
 
 /** 'https://youtu.be/ID', '…/watch?v=ID', '…/embed/ID', '…/shorts/ID' -> 'ID', else null. */
 function extractYouTubeId(url) {
@@ -71,6 +72,15 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
     setCurrent(ratio * duration);
   };
 
+  /** Back or forward by `seconds`, kept inside the video. */
+  const skip = (seconds) => {
+    const video = videoRef.current;
+    if (!video) return;
+    const target = Math.min(Math.max(0, video.currentTime + seconds), duration || video.duration || Infinity);
+    video.currentTime = target;
+    setCurrent(target);
+  };
+
   const toggleMute = () => {
     if (!videoRef.current) return;
     videoRef.current.muted = !muted;
@@ -89,8 +99,8 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
 
   const handleKeyDown = (event) => {
     if (event.key === ' ') { event.preventDefault(); toggle(); }
-    if (event.key === 'ArrowRight' && videoRef.current) { videoRef.current.currentTime = Math.min(duration, current + 5); }
-    if (event.key === 'ArrowLeft' && videoRef.current) { videoRef.current.currentTime = Math.max(0, current - 5); }
+    if (event.key === 'ArrowRight') skip(SKIP_SECONDS);
+    if (event.key === 'ArrowLeft') skip(-SKIP_SECONDS);
   };
 
   if (!src || error) {
@@ -157,6 +167,8 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
           </span>
         )}
       </button>
+
+      <SkipControls playing={playing} onSkip={skip} />
 
       {watermark && (
         <span className="pointer-events-none absolute right-3 top-3 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70">

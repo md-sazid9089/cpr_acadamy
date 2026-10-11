@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FaPlay, FaPause, FaVolumeHigh, FaVolumeXmark, FaExpand, FaCompress } from 'react-icons/fa6';
 import PlaybackRateControl from './PlaybackRateControl.jsx';
+import SkipControls, { SKIP_SECONDS } from './SkipControls.jsx';
 
 let apiPromise = null;
 /** Loads the YouTube IFrame API script once and resolves with `window.YT`. */
@@ -51,9 +52,10 @@ const READY_TIMEOUT_MS = 8000;
  * seeks back to the first frame immediately so the related-videos end
  * screen never has a chance to render.
  *
- * Until the first frame plays (and again after the video ends) a black cover
- * hides the video, because YouTube paints its logo, title and "Watch on
- * YouTube" over an unstarted embed.
+ * Until the first frame plays, whenever the video is paused, and after it ends,
+ * a black cover hides the video: YouTube paints its logo, title and "Watch on
+ * YouTube" over an unstarted embed, and a "More videos" shelf over a paused one
+ * (no player setting turns that shelf off).
  *
  * If the IFrame API fails to load, the player never becomes ready, or the
  * video itself errors out, the player shows a "Try again" message. It never
@@ -173,6 +175,15 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
     setCurrent(ratio * duration);
   };
 
+  /** Back or forward by `seconds`, kept inside the video. */
+  const skip = (seconds) => {
+    const player = playerRef.current;
+    if (!player?.seekTo) return;
+    const target = Math.min(Math.max(0, (player.getCurrentTime?.() ?? current) + seconds), duration || Infinity);
+    player.seekTo(target, true);
+    setCurrent(target);
+  };
+
   const toggleMute = () => {
     const player = playerRef.current;
     if (!player) return;
@@ -191,8 +202,8 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
 
   const handleKeyDown = (event) => {
     if (event.key === ' ') { event.preventDefault(); toggle(); }
-    if (event.key === 'ArrowRight') playerRef.current?.seekTo(current + 5, true);
-    if (event.key === 'ArrowLeft') playerRef.current?.seekTo(Math.max(0, current - 5), true);
+    if (event.key === 'ArrowRight') skip(SKIP_SECONDS);
+    if (event.key === 'ArrowLeft') skip(-SKIP_SECONDS);
   };
 
   // The custom player could not start. Show our own message with a retry, never YouTube's own player.
@@ -219,7 +230,7 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
       aria-label={title ?? 'Lecture video'}
       onKeyDown={handleKeyDown}
       onContextMenu={(event) => event.preventDefault()}
-      className="relative overflow-hidden rounded-xl bg-black outline-none"
+      className="group relative overflow-hidden rounded-xl bg-black outline-none"
     >
       {/* Slightly oversized and re-centered, then clipped by this wrapper's overflow-hidden —
           crops YouTube's own title card off the top edge (and matches it on every side so
@@ -233,7 +244,7 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         type="button"
         onClick={toggle}
         aria-label={playing ? 'Pause' : 'Play'}
-        className={`absolute inset-0 flex h-full w-full items-center justify-center ${started ? 'bg-transparent' : 'bg-black'}`}
+        className={`absolute inset-0 flex h-full w-full items-center justify-center ${started && playing ? 'bg-transparent' : 'bg-black'}`}
       >
         {!ready && <span className="text-sm text-white/70">Loading…</span>}
         {ready && !playing && (
@@ -243,7 +254,7 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         )}
       </button>
 
-
+      {ready && <SkipControls playing={playing} onSkip={skip} />}
 
       {watermark && (
         <span className="pointer-events-none absolute right-3 top-3 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70">
@@ -251,7 +262,8 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         </span>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-6">
+      {/* Solid along the bottom edge, where YouTube draws "More videos" and its logo for a moment after a seek. */}
+      <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black from-0% via-black via-55% to-transparent px-3 pb-2 pt-7">
         <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} className="shrink-0 text-white">
           {playing ? <FaPause aria-hidden="true" className="h-4 w-4" /> : <FaPlay aria-hidden="true" className="h-4 w-4" />}
         </button>
