@@ -74,7 +74,7 @@ export default function Gallery() {
       </section>
 
       {events.length > 0 && (
-        <section aria-label="Events" className="relative flex-1 bg-surface-subtle py-10 sm:py-14 dark:bg-surface-dark-subtle">
+        <section aria-label="Events" className="relative flex-1 py-10 sm:py-14">
           <div className="container-page relative z-10">
             <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
               {events.map((event) => (
