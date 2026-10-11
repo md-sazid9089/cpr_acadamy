@@ -1,55 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchAdminStats } from './api/admin.api.js';
-import Card, { CardBody, CardHeader } from '@/components/ui/Card.jsx';
-import Button from '@/components/ui/Button.jsx';
-import EmptyState from '@/components/ui/EmptyState.jsx';
-import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import TransactionsPanel from './AdminTransactions.jsx';
+import ApprovalQueue from './dashboard/ApprovalQueue.jsx';
 
+/** Admin dashboard: the two things waiting on an admin, side by side on wide screens. */
 export default function AdminOverview() {
-  const { data: stats, isLoading, isError, error, isFetching, refetch } = useQuery({
-    queryKey: ['admin', 'stats'],
-    queryFn: fetchAdminStats,
-  });
-
-  if (isLoading) {
-    return (
-      <ContentSkeleton variant="dashboard" label="Loading dashboard" />
-    );
-  }
-
-  if (isError || !stats) {
-    return (
-      <EmptyState
-        variant="error"
-        title="Couldn't load the dashboard"
-        description={error?.message || 'Something went wrong. Please try again.'}
-        onRetry={refetch}
-        isFetching={isFetching}
-      />
-    );
-  }
+  // The waiting count for the approval queue; the card shows its own list even if this is still loading.
+  const { data: stats } = useQuery({ queryKey: ['admin', 'stats'], queryFn: fetchAdminStats });
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader
-          title="Approval queue"
-          description={`${stats.pendingApprovals} registrations are waiting for review.`}
-          action={
-            <Button to="/admin/students" size="sm">
-              Review now
-            </Button>
-          }
-        />
-        <CardBody>
-          <p className="text-sm text-stone-600 dark:text-brand-200">
-            New accounts stay inactive until approved here. Students see a pending-approval screen
-            and receive an SMS the moment you activate them.
-          </p>
-        </CardBody>
-      </Card>
-
+    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <ApprovalQueue pendingCount={stats?.pendingApprovals} />
       <TransactionsPanel />
     </div>
   );

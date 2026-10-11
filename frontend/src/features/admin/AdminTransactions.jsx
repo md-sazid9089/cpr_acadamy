@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { keepPreviousData, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FaCamera } from 'react-icons/fa6';
+import { FaCamera, FaCheck, FaMagnifyingGlass, FaRegCopy } from 'react-icons/fa6';
 import { confirmPayment, fetchAdminTransactions, rejectPayment } from './api/admin.api.js';
-import Card, { CardHeader } from '@/components/ui/Card.jsx';
-import Table from '@/components/ui/Table.jsx';
+import Card from '@/components/ui/Card.jsx';
+import { DashboardCardHeader, dayAndTime } from './dashboard/parts.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -15,14 +15,6 @@ import { PAYMENT_METHODS, PAYMENT_STATUS } from '@/constants';
 import { cn, formatBDT, formatDateTime } from '@/lib/utils';
 
 const METHOD_LABELS = Object.fromEntries(PAYMENT_METHODS.map((method) => [method.id, method.label]));
-
-const FILTERS = [
-  { id: 'ALL', label: 'All' },
-  { id: PAYMENT_STATUS.PAID, label: 'Paid' },
-  { id: PAYMENT_STATUS.PENDING, label: 'Pending' },
-  { id: PAYMENT_STATUS.FAILED, label: 'Failed' },
-  { id: PAYMENT_STATUS.REFUNDED, label: 'Refunded' },
-];
 
 /** Transaction columns shared with the student detail page. */
 export const PAYMENT_COLUMNS = [
@@ -75,9 +67,11 @@ export const PAYMENT_COLUMNS = [
  * from a dropdown and writes a comment: "Payment received" confirms it (which
  * activates the student's enrolment, so it also needs the provider transaction
  * ID); "Not received" rejects it. The comment goes to the audit log either way.
+ * `initialDecision` ('received' | 'not-received') pre-selects the outcome when the admin
+ * clicked Confirm or Reject on the row.
  */
-export function ReconcileDialog({ payment, onClose, onDone }) {
-  const [decision, setDecision] = useState('');
+export function ReconcileDialog({ payment, onClose, onDone, initialDecision = '' }) {
+  const [decision, setDecision] = useState(initialDecision);
   const [transactionId, setTransactionId] = useState(payment?.transactionId ?? '');
   const [comment, setComment] = useState('');
 
@@ -164,17 +158,59 @@ export function ReconcileDialog({ payment, onClose, onDone }) {
   );
 }
 
+const STATUS_FILTERS = [
+  { id: 'ALL', label: 'All', count: 'all' },
+  { id: PAYMENT_STATUS.PENDING, label: 'Pending', count: 'pending' },
+  { id: PAYMENT_STATUS.PAID, label: 'Paid', count: 'paid' },
+  { id: PAYMENT_STATUS.FAILED, label: 'Failed', count: 'failed' },
+  { id: PAYMENT_STATUS.REFUNDED, label: 'Refunded', count: 'refunded' },
+];
+const METHOD_DOTS = { bkash: 'bg-accent-500', nagad: 'bg-brand-400', rocket: 'bg-brand-700', card: 'bg-brand-500', manual: 'bg-stone-400' };
+
+function CopyButton({ value }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label={copied ? 'Copied' : `Copy ${value}`}
+      title={copied ? 'Copied' : 'Copy'}
+      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-stone-400 transition-colors hover:text-brand-600 dark:text-brand-200"
+    >
+      {copied ? <FaCheck aria-hidden="true" className="h-3 w-3 text-brand-600" /> : <FaRegCopy aria-hidden="true" className="h-3 w-3" />}
+    </button>
+  );
+}
+
 /**
- * Every invoice with a status filter; pending manual payments get a Reconcile
- * button that opens the approval dialog. Lives on the admin dashboard.
+ * Every invoice with status chips (with counts) and a search; pending manual payments get
+ * Reject and Confirm, which open the approval dialog with that outcome chosen. Lives on the admin dashboard.
  */
 export default function TransactionsPanel() {
   const [filter, setFilter] = useState(PAYMENT_STATUS.PENDING);
-  const [reconciling, setReconciling] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [search, setSearch] = useState('');
+  const [reconciling, setReconciling] = useState(null); // { payment, decision }
   const queryClient = useQueryClient();
+
+  // Wait for a pause in typing before searching.
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchText.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
   const { data, isLoading, isError, error, isFetching, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ['admin', 'transactions', filter],
-    queryFn: ({ pageParam }) => fetchAdminTransactions({ status: filter, offset: pageParam }),
+    queryKey: ['admin', 'transactions', filter, search],
+    queryFn: ({ pageParam }) => fetchAdminTransactions({ status: filter, search, offset: pageParam }),
     initialPageParam: 0,
     getNextPageParam: (last, pages) => {
       const loaded = pages.reduce((count, page) => count + page.items.length, 0);
@@ -188,11 +224,64 @@ export default function TransactionsPanel() {
     queryClient.invalidateQueries({ queryKey: ['admin'] });
   };
 
-  if (isLoading) return <ContentSkeleton variant="table" label="Loading transactions" />;
+  const latest = data?.pages[data.pages.length - 1];
+  const rows = data?.pages.flatMap((page) => page.items) ?? [];
+  const counts = latest?.counts ?? {};
 
-  if (isError || !data) {
-    return (
-      <Card>
+  return (
+    // contain:paint keeps the wide table's scroll width inside the card; overflow:hidden alone let it widen the page on phones.
+    <Card className="min-w-0 overflow-hidden [contain:paint]">
+      <DashboardCardHeader
+        title="Transaction approval"
+        count={latest?.pendingCount}
+        description="Manual payments (bKash, Nagad, bank) to confirm once the money arrives."
+        infoLabel="About transaction approval"
+        info="Check the transaction ID against your bKash, Nagad or bank statement. Confirming activates the student's access to the course; rejecting marks the payment failed. Both ask for a short note for the audit log."
+      />
+
+      <div className="space-y-3 border-b border-stone-200 px-5 py-4 sm:px-6 dark:border-stone-200">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
+          {STATUS_FILTERS.map((option) => {
+            const active = filter === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setFilter(option.id)}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-semibold transition-colors',
+                  active
+                    ? 'border-brand-800 bg-brand-800 text-white dark:border-brand-500 dark:bg-brand-500'
+                    : 'border-stone-200 bg-white text-stone-700 hover:bg-stone-100 dark:border-stone-200 dark:bg-surface-dark dark:text-brand-200',
+                )}
+              >
+                {option.label}
+                {latest && (
+                  <span className={cn('min-w-[22px] rounded-full px-1.5 text-xs tabular-nums',
+                    active ? 'bg-white text-brand-800' : 'bg-stone-100 text-stone-600 dark:bg-surface-dark-subtle dark:text-brand-200')}>
+                    {counts[option.count] ?? 0}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <label className="relative block max-w-xs">
+          <span className="sr-only">Search transactions</span>
+          <FaMagnifyingGlass aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
+          <input
+            type="search"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            placeholder="Name, phone or Trx ID"
+            maxLength={100}
+            className="block min-h-[42px] w-full rounded-control border border-stone-200 bg-white py-2 pl-9 pr-3 text-sm text-stone-900 placeholder:text-stone-400 dark:border-stone-200 dark:bg-surface-dark dark:text-brand-200"
+          />
+        </label>
+      </div>
+
+      {isLoading ? <div className="p-5"><ContentSkeleton variant="table" label="Loading transactions" /></div> : isError || !data ? (
         <EmptyState
           variant="error"
           title="Couldn't load transactions"
@@ -200,73 +289,88 @@ export default function TransactionsPanel() {
           onRetry={refetch}
           isFetching={isFetching}
         />
-      </Card>
-    );
-  }
+      ) : rows.length === 0 ? (
+        <EmptyState title="No transactions" description={search ? 'Nothing matches that search.' : 'Try a different filter.'} />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[680px] text-left text-sm">
+            <thead className="bg-stone-50 text-xs font-medium text-stone-500 dark:bg-surface-dark dark:text-brand-200">
+              <tr>
+                <th scope="col" className="min-w-[160px] px-5 py-3 font-medium sm:pl-6">Student</th>
+                <th scope="col" className="px-3 py-3 font-medium">Amount · method</th>
+                <th scope="col" className="px-3 py-3 font-medium">Trx ID</th>
+                <th scope="col" className="px-3 py-3 font-medium">Status · submitted</th>
+                <th scope="col" className="py-3 pl-3 pr-5"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-200 dark:divide-stone-200">
+              {rows.map((row) => (
+                <tr key={row.id} className="align-middle">
+                  <td className="px-5 py-3.5 sm:pl-6">
+                    <Link to={`/admin/students/${row.studentId}`} className="block font-semibold text-stone-900 hover:text-brand-600 dark:text-white dark:hover:text-brand-300">
+                      {row.studentName}
+                    </Link>
+                    <p className="max-w-[150px] truncate text-xs text-stone-500 dark:text-brand-200" title={row.courseTitle}>{row.courseTitle}</p>
+                    {row.studentMobile && <p className="text-xs tabular-nums text-stone-500 dark:text-brand-200">{row.studentMobile}</p>}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3.5">
+                    <span className="font-bold tabular-nums text-stone-900 dark:text-white">{formatBDT(row.amount)}</span>
+                    <span className="mt-0.5 flex items-center gap-1.5 text-xs text-stone-600 dark:text-brand-200">
+                      <span aria-hidden="true" className={cn('h-2 w-2 rounded-sm', METHOD_DOTS[row.method] ?? 'bg-stone-400')} />
+                      {METHOD_LABELS[row.method] ?? row.method}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3.5">
+                    {row.transactionId ? (
+                      <span className="inline-flex items-center gap-1">
+                        <code className="whitespace-nowrap rounded bg-stone-100 px-1.5 py-0.5 font-mono text-xs text-stone-800 dark:bg-surface-dark dark:text-brand-200">{row.transactionId}</code>
+                        <CopyButton value={row.transactionId} />
+                        {row.screenshotUrl && (
+                          <a href={row.screenshotUrl} target="_blank" rel="noopener noreferrer" aria-label="Open payment screenshot" title="Screenshot attached" className="inline-flex h-6 w-6 items-center justify-center text-brand-500 hover:text-brand-700">
+                            <FaCamera aria-hidden="true" className="h-3 w-3" />
+                          </a>
+                        )}
+                      </span>
+                    ) : <span className="text-xs text-stone-400 dark:text-brand-200">—</span>}
+                    <p className="font-mono text-[11px] text-stone-400 dark:text-brand-200">{row.invoiceNo}</p>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3.5">
+                    <StatusBadge status={row.status} className="capitalize" />
+                    <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">{dayAndTime(row.proofSubmittedAt ?? row.createdAt)}</p>
+                  </td>
+                  <td className="whitespace-nowrap py-3.5 pl-3 pr-5">
+                    {row.status === PAYMENT_STATUS.PENDING && (
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="danger" onClick={() => setReconciling({ payment: row, decision: 'not-received' })}>Reject</Button>
+                        <Button size="sm" onClick={() => setReconciling({ payment: row, decision: 'received' })}>Confirm</Button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-  const rows = data.pages.flatMap((page) => page.items);
-  const { pendingCount, total } = data.pages[data.pages.length - 1];
-
-  const studentColumn = {
-    key: 'studentName',
-    header: 'Student',
-    render: (row) => (
-      <Link
-        to={`/admin/students/${row.studentId}`}
-        className="text-xs font-medium text-brand-700 hover:underline dark:text-brand-400"
-      >
-        {row.studentName}
-      </Link>
-    ),
-  };
-  const columns = [PAYMENT_COLUMNS[0], studentColumn, ...PAYMENT_COLUMNS.slice(1), {
-    key: 'actions',
-    header: '',
-    align: 'right',
-    render: (row) =>
-      row.status === PAYMENT_STATUS.PENDING ? (
-        <Button size="sm" onClick={() => setReconciling(row)}>
-          Reconcile
-        </Button>
-      ) : null,
-  }];
-
-  return (
-    <Card>
-      <CardHeader
-        title="Transaction approval"
-        description={`${pendingCount} pending ${pendingCount === 1 ? 'payment' : 'payments'}. Pending invoices are manual payments waiting for you to confirm the money arrived — confirming activates the student's access.`}
-      />
-      <div className="flex flex-wrap gap-2 px-5 pt-4">
-        {FILTERS.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            onClick={() => setFilter(option.id)}
-            className={cn(
-              'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-              filter === option.id
-                ? 'bg-brand-600 text-white'
-                : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-surface-dark dark:text-brand-200',
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-      <div className="mt-4">
-        <Table columns={columns} rows={rows} emptyTitle="No transactions" emptyDescription="Try a different filter." />
-      </div>
       {hasNextPage && (
         <div className="flex items-center justify-between gap-3 border-t border-stone-200 px-5 py-3 text-xs text-stone-500 dark:text-brand-200">
-          <span>Showing {rows.length} of {total}</span>
+          <span>Showing {rows.length} of {latest.total}</span>
           <Button size="sm" variant="outline" onClick={() => fetchNextPage()} isLoading={isFetchingNextPage}>
             Show more
           </Button>
         </div>
       )}
 
-      {reconciling && <ReconcileDialog payment={reconciling} onClose={() => setReconciling(null)} onDone={finishReconcile} />}
+      {reconciling && (
+        <ReconcileDialog
+          key={reconciling.payment.id + reconciling.decision}
+          payment={reconciling.payment}
+          initialDecision={reconciling.decision}
+          onClose={() => setReconciling(null)}
+          onDone={finishReconcile}
+        />
+      )}
     </Card>
   );
 }

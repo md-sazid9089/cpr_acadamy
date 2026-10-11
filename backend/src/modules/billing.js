@@ -135,14 +135,25 @@ export function billingRoutes(route, database, config) {
   });
   // The dashboard's Transaction approval panel. Filtering and paging happen here, so an old pending
   // invoice can never fall outside a fixed window of recent rows and go unreviewed.
-  route('GET', '/admin/transactions', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => {
+  route('GET', '/admin/transactions', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional(), search: z.string().trim().max(100).optional() }) }, async request => {
     const status = request.query.status || null;
+    // Search matches the student's name, their mobile, the transaction ID or the invoice number.
+    const term = request.query.search || null;
+    const like = term ? `%${term.replace(/[\\%_]/g, character => `\\${character}`)}%` : null;
+    const matches = `($2::text IS NULL OR u.full_name ILIKE $2 OR u.mobile LIKE $2 OR p.payer_mobile LIKE $2 OR p.transaction_id ILIKE $2 OR p.invoice_no ILIKE $2)`;
     const [rows, counts] = await Promise.all([
-      database.query(`SELECT p.*,u.full_name FROM payments p JOIN users u ON u.id=p.user_id WHERE ($1::text IS NULL OR p.status=$1)
-        ORDER BY (p.status='pending') DESC, p.created_at DESC, p.id LIMIT $2 OFFSET $3`, [status, request.query.limit, request.query.offset]),
-      one(database, `SELECT count(*) FILTER (WHERE $1::text IS NULL OR status=$1)::int AS total, count(*) FILTER (WHERE status='pending')::int AS pending FROM payments`, [status]),
+      database.query(`SELECT p.*,u.full_name,u.mobile AS student_mobile FROM payments p JOIN users u ON u.id=p.user_id WHERE ($1::text IS NULL OR p.status=$1) AND ${matches}
+        ORDER BY (p.status='pending') DESC, p.created_at DESC, p.id LIMIT $3 OFFSET $4`, [status, like, request.query.limit, request.query.offset]),
+      one(database, `SELECT count(*) FILTER (WHERE $1::text IS NULL OR p.status=$1)::int AS total, count(*)::int AS "all",
+        count(*) FILTER (WHERE p.status='pending')::int AS pending, count(*) FILTER (WHERE p.status='paid')::int AS paid,
+        count(*) FILTER (WHERE p.status='failed')::int AS failed, count(*) FILTER (WHERE p.status='refunded')::int AS refunded
+        FROM payments p JOIN users u ON u.id=p.user_id WHERE ${matches}`, [status, like]),
     ]);
-    return { items: rows.rows.map(row => ({ ...paymentDto(row), userId: row.user_id, studentId: row.user_id, studentName: row.full_name })), total: counts.total, pendingCount: counts.pending };
+    // pendingCount is every pending payment, whatever the search, for the "waiting" badge.
+    const { pending: pendingCount } = term ? await one(database, "SELECT count(*)::int AS pending FROM payments WHERE status='pending'") : counts;
+    return { items: rows.rows.map(row => ({ ...paymentDto(row), userId: row.user_id, studentId: row.user_id, studentName: row.full_name, studentMobile: row.student_mobile })),
+      total: counts.total, pendingCount,
+      counts: { all: counts.all, pending: counts.pending, paid: counts.paid, failed: counts.failed, refunded: counts.refunded } };
   });
   route('GET', '/admin/payments', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => (await database.query('SELECT * FROM payments WHERE ($1::text IS NULL OR status=$1) ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.query.status || null, request.query.limit, request.query.offset])).rows.map(row => ({ ...paymentDto(row), userId: row.user_id })));
 

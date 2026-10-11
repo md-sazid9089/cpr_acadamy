@@ -103,9 +103,9 @@ export async function fetchAdminReports() {
  * One page of invoices for the dashboard's approval panel, filtered on the server.
  * `{ items, total, pendingCount }`; status is 'pending' | 'paid' | 'failed' | 'refunded', or ALL.
  */
-export async function fetchAdminTransactions({ status, offset = 0, limit = 50 } = {}) {
+export async function fetchAdminTransactions({ status, search, offset = 0, limit = 50 } = {}) {
   const { data } = await apiClient.get('/admin/transactions', {
-    params: { status: status && status !== 'ALL' ? status : undefined, offset, limit },
+    params: { status: status && status !== 'ALL' ? status : undefined, search: search?.trim() || undefined, offset, limit },
   });
   return data;
 }
