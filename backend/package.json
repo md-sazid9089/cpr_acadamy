@@ -15,7 +15,8 @@
     "test": "node --test --test-concurrency=1 test/*.test.js",
     "worker": "node --env-file-if-exists=.env scripts/worker.js",
     "db:migrate": "node --env-file-if-exists=.env scripts/migrate.js",
-    "admin:create": "node --env-file-if-exists=.env scripts/create-admin.js"
+    "admin:create": "node --env-file-if-exists=.env scripts/create-admin.js",
+    "sms:test": "node --env-file-if-exists=.env scripts/sms-test.js"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.16",

@@ -20,6 +20,34 @@ export function decryptMessage(payload, secret) {
   return JSON.parse(Buffer.concat([decipher.update(bytes.subarray(28)), decipher.final()]).toString());
 }
 
+const bangladeshMobile = /^01[3-9]\d{8}$/;
+
+/**
+ * Sends one SMS through Reve. Reve wants its keys in the query string of a GET, so the whole URL is a secret:
+ * it is never logged, and every error thrown from here carries only a status code or an error class,
+ * never the URL or anything from the response body.
+ */
+export async function sendWithReve(config, { mobile, message }) {
+  if (!bangladeshMobile.test(mobile)) throw new Error('Reve SMS: not a Bangladesh mobile number');
+  const query = Object.entries({
+    apikey: config.reveSmsApiKey,
+    secretkey: config.reveSmsSecretKey,
+    callerID: config.reveSmsCallerId,
+    toUser: `88${mobile}`, // Reve takes the number with the country code, 8801XXXXXXXXX
+    messageContent: message,
+  }).map(([name, value]) => `${name}=${encodeURIComponent(value)}`).join('&');
+  let response;
+  try {
+    response = await fetch(`${config.reveSmsBaseUrl}/sendtext?${query}`, { method: 'GET', cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(8000) });
+  } catch (error) {
+    throw new Error(`Reve SMS request failed (${String(error.cause?.code ?? error.name).replace(/[^A-Za-z0-9_]/g, '').slice(0, 40)})`);
+  }
+  if (!response.ok) throw new Error(`Reve SMS HTTP ${response.status}`);
+  // A refusal still comes back as HTTP 200: {"Status":"108","Text":"REJECTD"}. Only Status "0" means it was accepted.
+  const status = String((await response.json().catch(() => null))?.Status ?? '');
+  if (status !== '0') throw new Error(`Reve SMS rejected (status ${/^-?\d{1,4}$/.test(status) ? status : 'unreadable'})`);
+}
+
 export function requireSms(config) {
   ensure(config.smsMode !== 'disabled', 503, 'SMS_UNAVAILABLE', 'SMS delivery is not configured. Please contact the academy.');
 }
@@ -45,6 +73,8 @@ export async function deliverSms(database, config, testSink) {
           await testSink(payload);
         } else if (config.smsMode === 'console') {
           console.info(`[SMS → ${payload.mobile}] ${payload.message}`);
+        } else if (config.smsMode === 'reve') {
+          await sendWithReve(config, payload);
         } else {
           const response = await fetch(config.smsWebhookUrl, {
             method: 'POST',
@@ -56,7 +86,9 @@ export async function deliverSms(database, config, testSink) {
           if (!response.ok) throw new Error('SMS provider rejected delivery');
         }
         await transaction.query("UPDATE sms_outbox SET status='sent',payload='' WHERE id=$1", [message.id]);
-      } catch {
+      } catch (error) {
+        // The reason only (a status code or error class): never the message, the number or the provider URL.
+        if (config.smsMode !== 'test') console.error('SMS delivery failed:', error.message);
         await transaction.query(`UPDATE sms_outbox SET attempts=attempts+1,
           status=CASE WHEN attempts>=4 THEN 'failed' ELSE 'pending' END,
           payload=CASE WHEN attempts>=4 THEN '' ELSE payload END,

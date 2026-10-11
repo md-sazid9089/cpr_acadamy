@@ -15,7 +15,7 @@ You need three outside services:
 
 1. **PostgreSQL**, e.g. [Neon](https://neon.tech). Vercel has no disk, so the built-in local database (PGlite) cannot be used. Use Neon's **pooled** connection string (the host contains `-pooler`): every serverless instance opens its own connections.
 2. **Cloudinary**, for every upload: course posters, gallery photos, payment screenshots and lecture PDFs. Files are sent from the browser straight to Cloudinary, because Vercel refuses any request or response larger than 4.5 MB. On a free Cloudinary plan, turn on **Settings → Security → "Allow delivery of PDF and ZIP files"**, or lecture PDFs will not open.
-3. **SMS and email providers** (webhook SMS gateway, Resend), as for any production deployment.
+3. **SMS and email providers** (Reve SMS or a webhook SMS gateway, Resend), as for any production deployment. Vercel's outgoing addresses change, so if Reve only accepts requests from whitelisted IPs, run the backend on a server with a fixed IP instead.
 
 ## 1. Backend project
 
@@ -33,7 +33,7 @@ Set these **Environment Variables** (Production, and Preview if you use it):
 | `CRON_SECRET` | At least 16 random characters. Vercel sends it to the maintenance call automatically |
 | `ADMIN_GATE_KEY` | At least 16 random characters. Admins type it on the staff access page before their password works. Share it only with admins. Changing it (then redeploying) signs every admin out and voids every staff pass at once, so anyone who knew the old key is locked out |
 | `CLOUDINARY_URL` | `cloudinary://<api_key>:<api_secret>@<cloud_name>` |
-| `SMS_MODE`, `SMS_WEBHOOK_URL`, `SMS_WEBHOOK_TOKEN` | Your SMS gateway (see `backend/.env.example`) |
+| `SMS_MODE`, `REVE_SMS_API_KEY`, `REVE_SMS_SECRET_KEY`, `REVE_SMS_CALLER_ID`, `REVE_SMS_BASE_URL` (Reve) or `SMS_WEBHOOK_URL`, `SMS_WEBHOOK_TOKEN` (webhook) | Your SMS gateway (see `backend/.env.example`). Mark the keys as sensitive |
 | `EMAIL_MODE`, `RESEND_API_KEY`, `EMAIL_FROM` | Your email settings |
 | `SKIP_PHONE_VERIFICATION` | `false` (or `true` together with `ACKNOWLEDGE_UNVERIFIED_MOBILES=true`) |
 

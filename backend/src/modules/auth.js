@@ -104,12 +104,22 @@ export function authRoutes(route, database, config) {
     requireSms(config);
     await throttle(database, config, 'register', request.ip, 5);
     const hash = await hashPassword(data.password);
-    await database.transaction(async transaction => {
-      const user = await one(transaction, `INSERT INTO users(mobile,full_name,password_hash,institution,bmdc_number,email,interest)
-        VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(mobile) DO NOTHING RETURNING *`,
-      [data.mobile, data.fullName, hash, data.institution, data.bmdcNumber || '', data.email || null, data.interest]);
-      if (user) await issueOtp(transaction, user, 'registration');
-    });
+    try {
+      await database.transaction(async transaction => {
+        // A number whose owner has not yet entered the code can be registered again: the details are replaced and a new code goes
+        // out, so a mistyped or squatted number cannot lock the real owner out. A verified account is never touched.
+        const user = await one(transaction, `INSERT INTO users(mobile,full_name,password_hash,institution,bmdc_number,email,interest)
+          VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(mobile) DO UPDATE SET full_name=EXCLUDED.full_name,password_hash=EXCLUDED.password_hash,
+          institution=EXCLUDED.institution,bmdc_number=EXCLUDED.bmdc_number,email=EXCLUDED.email,interest=EXCLUDED.interest
+          WHERE users.status='otp_pending' RETURNING *`,
+        [data.mobile, data.fullName, hash, data.institution, data.bmdcNumber || '', data.email || null, data.interest]);
+        if (user) await issueOtp(transaction, user, 'registration');
+      });
+    } catch (error) {
+      // A code went out less than a minute ago: the whole attempt is rolled back (the details are not replaced) and the answer stays
+      // the same as for any other number, so it does not reveal that this one is mid-registration.
+      if (error.code !== 'OTP_COOLDOWN') throw error;
+    }
     return { ok: true, mobile: data.mobile, otpSentAt: new Date().toISOString() };
   });
 

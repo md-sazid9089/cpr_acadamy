@@ -43,11 +43,19 @@ export function loadConfig(env = process.env) {
   }
   const trustedProxyHops = Number(env.TRUST_PROXY_HOPS || 1);
   if (!Number.isInteger(trustedProxyHops) || trustedProxyHops < 1 || trustedProxyHops > 10) throw new Error('TRUST_PROXY_HOPS must be a whole number from 1 to 10');
-  if (!['disabled', 'webhook', 'test', 'console'].includes(smsMode)) throw new Error('Invalid SMS_MODE');
+  if (!['disabled', 'webhook', 'reve', 'test', 'console'].includes(smsMode)) throw new Error('Invalid SMS_MODE');
   if (smsMode === 'test' && env.NODE_ENV !== 'test') throw new Error('Test SMS is only allowed in tests');
   if (smsMode === 'console' && production) throw new Error('Console SMS is only allowed outside production');
   if (smsMode === 'webhook' && (!env.SMS_WEBHOOK_URL?.startsWith('https://') || !env.SMS_WEBHOOK_TOKEN)) {
     throw new Error('SMS webhook requires HTTPS and an authentication token');
+  }
+  // Reve takes its keys in the query string of a GET, so the address must be HTTPS or they would cross the network in the clear.
+  // These messages name the variable, never its value.
+  const reveSmsBaseUrl = (env.REVE_SMS_BASE_URL || 'https://smpp.revesms.com:7790').replace(/\/+$/, '');
+  if (smsMode === 'reve') {
+    if (!env.REVE_SMS_API_KEY || !env.REVE_SMS_SECRET_KEY) throw new Error('Reve SMS requires REVE_SMS_API_KEY and REVE_SMS_SECRET_KEY');
+    if (!env.REVE_SMS_CALLER_ID) throw new Error('Reve SMS requires REVE_SMS_CALLER_ID (the approved sender ID)');
+    if (!reveSmsBaseUrl.startsWith('https://')) throw new Error('REVE_SMS_BASE_URL must start with https://');
   }
   if (!['disabled', 'resend', 'test', 'console'].includes(emailMode)) throw new Error('Invalid EMAIL_MODE');
   if (emailMode === 'test' && env.NODE_ENV !== 'test') throw new Error('Test email is only allowed in tests');
@@ -74,6 +82,10 @@ export function loadConfig(env = process.env) {
     smsMode,
     smsWebhookUrl: env.SMS_WEBHOOK_URL,
     smsWebhookToken: env.SMS_WEBHOOK_TOKEN,
+    reveSmsBaseUrl,
+    reveSmsApiKey: env.REVE_SMS_API_KEY,
+    reveSmsSecretKey: env.REVE_SMS_SECRET_KEY,
+    reveSmsCallerId: env.REVE_SMS_CALLER_ID,
     emailMode,
     resendApiKey: env.RESEND_API_KEY,
     emailFrom: env.EMAIL_FROM,

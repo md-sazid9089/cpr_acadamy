@@ -60,7 +60,7 @@ Both sites deploy automatically from `main` on Vercel; see [DEPLOY-VERCEL.md](DE
 | Backend | Next.js 16 (API route handlers), Node.js 22, Zod (validation + OpenAPI) |
 | Database | PostgreSQL in production; embedded [PGlite](https://pglite.dev) for local development (no install needed) |
 | Files | Cloudinary (falls back to local disk at `backend/public/uploads` in development) |
-| Messaging | SMS via HTTPS webhook gateway, email via Resend (both can print to the console in development) |
+| Messaging | SMS via Reve SMS (Bangladesh) or an HTTPS webhook gateway, email via Resend (both can print to the console in development) |
 | Hosting | Vercel (two projects) or Docker |
 
 ---
@@ -215,7 +215,9 @@ $env:ADMIN_MOBILE="017XXXXXXXX"; $env:ADMIN_NAME="Academy Admin"; $env:ADMIN_PAS
 | `ADMIN_GATE_KEY` | – | Production: 16+ characters. Required for admin sign-in when set |
 | `CORS_ORIGINS` | `http://localhost:5173,…` | Comma-separated frontend origins |
 | `TRUST_PROXY` / `TRUST_PROXY_HOPS` | `false` / `1` | Production must set `TRUST_PROXY` explicitly |
-| `SMS_MODE` | `disabled` | `console` (dev), `webhook` (needs `SMS_WEBHOOK_URL` over HTTPS + `SMS_WEBHOOK_TOKEN`) |
+| `SMS_MODE` | `disabled` | `console` (dev), `reve` (needs the three `REVE_SMS_*` values below), `webhook` (needs `SMS_WEBHOOK_URL` over HTTPS + `SMS_WEBHOOK_TOKEN`) |
+| `REVE_SMS_API_KEY` / `REVE_SMS_SECRET_KEY` / `REVE_SMS_CALLER_ID` | – | Required with `SMS_MODE=reve`: the keys and the approved sender ID from your Reve account. Secrets: keep them in `backend/.env` or the host's environment settings only |
+| `REVE_SMS_BASE_URL` | `https://smpp.revesms.com:7790` | Must be `https`. Reve's "C panel" accounts use `https://apismpp.revesms.com` |
 | `EMAIL_MODE` | `disabled` | `console` (dev), `resend` (needs `RESEND_API_KEY` + `EMAIL_FROM`) |
 | `SKIP_PHONE_VERIFICATION` | `false` | `true` skips OTP; production also needs `ACKNOWLEDGE_UNVERIFIED_MOBILES=true` |
 | `CLOUDINARY_URL` | – | `cloudinary://<key>:<secret>@<cloud>`; without it uploads go to local disk |
@@ -332,6 +334,7 @@ Production refuses to start unless it has PostgreSQL, a 32+ character `TOKEN_SEC
 | Everyone is signed out after restarting the API | Set a fixed `TOKEN_SECRET` in `backend/.env` |
 | Admin login says "Administrators sign in from the staff access page" | `ADMIN_GATE_KEY` is set; use `/staff-access` (or your `VITE_ADMIN_GATE_PATH`) |
 | No OTP arrives during sign-up | Set `SMS_MODE=console` and read the code from the backend terminal, or `SKIP_PHONE_VERIFICATION=true` in development |
+| With `SMS_MODE=reve` no SMS arrives | The backend log shows `SMS delivery failed: Reve SMS rejected (status N)`: `108`/`109` mean the keys (or `REVE_SMS_BASE_URL`) are wrong, `114` an empty message, `101`/`1` a Reve-side failure. Run `npm run sms:test -- 01XXXXXXXXX` in `backend/` to send one test message. If the log shows `request failed`, the server cannot reach Reve (outbound port 7790, or Reve needs this server's IP whitelisted) |
 | Frontend shows network errors | Make sure the backend is running on port 3001 and `VITE_API_BASE_URL` is unset |
 | Want a clean database | Stop the backend and delete `backend/.local/database`, then seed again |
 
