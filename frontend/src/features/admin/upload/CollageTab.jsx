@@ -6,7 +6,8 @@ import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import { SUCCESS_COLLAGE_SECTION } from '@/constants';
 
-const HOME_LIMIT = 8;
+// Matches the home page collage, which has 7 card places (COLLAGE_SIZE in SuccessCollage.jsx).
+const HOME_LIMIT = 7;
 const TILTS = ['-rotate-3 mt-3', 'rotate-2', '-rotate-2 mt-6', 'rotate-3 -mt-1', '-rotate-3 mt-4', 'rotate-2', 'rotate-3 mt-3', '-rotate-2 mt-1'];
 
 /** Success collage posts: the existing "Success Collage" gallery section, shown as tilted cards on the home page. */

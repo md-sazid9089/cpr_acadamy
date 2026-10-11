@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 /**
  * Full-screen viewer for one event's photos: arrows, thumbnails, swipe on phones,
  * arrow keys and Escape. Focus moves into the viewer and back to the card on close.
+ * A photo may carry a `caption`, shown under it.
  */
 export default function PhotoLightbox({ photos, startIndex = 0, label, onClose }) {
   const [index, setIndex] = useState(startIndex);
@@ -74,7 +75,10 @@ export default function PhotoLightbox({ photos, startIndex = 0, label, onClose }
             if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
           }}
         >
-          <img key={photo.id} src={photo.imageUrl} alt={`${label}, photo ${index + 1} of ${total}`} className="max-h-full max-w-full rounded-image object-contain" />
+          <figure className="flex h-full max-w-full flex-col items-center justify-center gap-3">
+            <img key={photo.id} src={photo.imageUrl} alt={photo.caption || `${label}, photo ${index + 1} of ${total}`} className="min-h-0 max-w-full flex-1 rounded-image object-contain" />
+            {photo.caption && <figcaption className="text-center text-sm text-white/90">{photo.caption}</figcaption>}
+          </figure>
         </div>
         {total > 1 && (
           <button type="button" onClick={() => go(1)} aria-label="Next photo" className={arrow}>
