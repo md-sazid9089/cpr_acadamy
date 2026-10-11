@@ -14,6 +14,7 @@ const ICONS = {
   chat: 'M4 5h16v11H8l-4 4z',
   bell: 'M6 16V11a6 6 0 0112 0v5l2 2H4zM10 21h4',
   image: 'M4 4h16v16H4z M4 16l5-5 3 3 4-5 4 5 M8.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3z',
+  star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z',
 };
 
 function Icon({ name }) {
@@ -42,8 +43,9 @@ export const ADMIN_NAV = [
   { to: '/admin/students', label: 'Students', icon: 'users' },
   { to: '/admin/courses', label: 'Courses', icon: 'book' },
   { to: '/admin/complaints', label: 'Complain Box', icon: 'chat' },
+  { to: '/admin/reviews', label: 'Reviews', icon: 'star' },
   { to: '/admin/notices', label: 'Notices', icon: 'bell' },
-  { to: '/admin/gallery', label: 'Gallery', icon: 'image' },
+  { to: '/admin/upload', label: 'Upload', icon: 'image' },
   // Reports is hidden for now; restore this entry and its route in router.jsx to bring it back.
   // { to: '/admin/reports', label: 'Reports', icon: 'report' },
 ];

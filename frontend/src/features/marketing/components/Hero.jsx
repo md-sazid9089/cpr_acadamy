@@ -1,9 +1,12 @@
+import { useQuery } from '@tanstack/react-query';
 import Carousel from '@/components/ui/Carousel.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ValueProps from './ValueProps.jsx';
+import { fetchHeroSlides } from '../api/siteMedia.api.js';
 
 /**
- * Promotional posters, served from `public/assets/carousel/`.
+ * Fallback posters, served from `public/assets/carousel/`. The live list is managed on the admin Upload page;
+ * these show only while it loads or if it cannot be reached.
  *
  * The artwork is a mix of portrait, square and landscape, so the carousel runs
  * in `contain` mode — nothing is cropped, which matters because these posters
@@ -51,6 +54,11 @@ const CAROUSEL_SLIDES = [
 ];
 
 export default function Hero() {
+  const { data: managed } = useQuery({ queryKey: ['marketing', 'hero-slides'], queryFn: fetchHeroSlides, staleTime: 5 * 60 * 1000 });
+  const slides = managed
+    ? managed.map((slide) => ({ id: slide.id, src: slide.imageUrl, alt: slide.title || 'CPR Medical Academy poster', link: slide.link || undefined }))
+    : CAROUSEL_SLIDES;
+
   return (
     <section className="homepage-hero hero-surface relative isolate flex flex-col items-center justify-center gap-6 overflow-hidden lg:gap-12">
       <img
@@ -111,10 +119,10 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Poster carousel card. */}
+          {/* Poster carousel card; hidden when the admin has switched every poster off. */}
           <div className="mx-auto w-full max-w-xl">
-            <Carousel
-              slides={CAROUSEL_SLIDES}
+            {slides.length > 0 && <Carousel
+              slides={slides}
               interval={5000}
               fit="contain"
               // Landscape frame with side arrows, matching the reference card.
@@ -123,7 +131,7 @@ export default function Hero() {
               // Wide landscape card on every viewport.
               aspectClassName="aspect-[16/10]"
               label="Course promotions"
-            />
+            />}
           </div>
         </div>
       </div>

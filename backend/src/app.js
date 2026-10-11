@@ -8,6 +8,7 @@ import { studentRoutes } from './modules/students.js';
 import { reportRoutes } from './modules/reports.js';
 import { mediaRoutes } from './modules/media.js';
 import { galleryRoutes } from './modules/gallery.js';
+import { siteMediaRoutes } from './modules/siteMedia.js';
 
 export async function buildApp({ database, config, logger = false }) {
   const app = createWebApp({ database, config, logger });
@@ -39,6 +40,7 @@ export async function buildApp({ database, config, logger = false }) {
   reportRoutes(route, database);
   mediaRoutes(route, config);
   galleryRoutes(route, database, config);
+  siteMediaRoutes(route, database, config);
   route('GET', '/openapi.json', config.production ? { auth: 'admin' } : {}, async () => contract);
   return app;
 }

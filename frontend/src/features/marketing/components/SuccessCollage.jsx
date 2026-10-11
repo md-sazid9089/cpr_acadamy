@@ -34,7 +34,8 @@ export default function SuccessCollage() {
   // Shares the Gallery page's query cache/key — admin uploads under the
   // "Success Collage" section without needing a separate upload feature.
   const { data: sections = [] } = useQuery({ queryKey: ['marketing', 'gallery'], queryFn: fetchGallery, staleTime: 5 * 60 * 1000 });
-  const uploaded = sections.find((group) => group.section === SUCCESS_COLLAGE_SECTION)?.photos ?? [];
+  // The collage has room for 8 cards; the admin Upload page keeps at most 8 switched on.
+  const uploaded = (sections.find((group) => group.section === SUCCESS_COLLAGE_SECTION)?.photos ?? []).slice(0, 8);
   const tiles = uploaded.length
     ? uploaded.map((photo) => ({ id: photo.id, src: photo.imageUrl, alt: photo.caption || 'Success story' }))
     : DEFAULT_TILES;

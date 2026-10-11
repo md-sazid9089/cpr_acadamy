@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
+import { Link } from 'react-router-dom';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 import ResponsiveImage, { localWebpSrcSet } from './ResponsiveImage.jsx';
@@ -12,7 +13,8 @@ import ResponsiveImage, { localWebpSrcSet } from './ResponsiveImage.jsx';
  * hover, on keyboard focus, and whenever the visitor prefers reduced motion.
  *
  * @param {Object} props
- * @param {{ id?: string, src: string, alt: string, label?: string }[]} props.slides
+ * @param {{ id?: string, src: string, alt: string, label?: string, link?: string }[]} props.slides
+ *   `link` (optional) makes the slide clickable: a site path opens in-app, an https:// address in a new tab.
  * @param {boolean} [props.autoPlay=true]
  * @param {number} [props.interval=5000]  Autoplay delay in ms.
  * @param {boolean} [props.loop=true]
@@ -107,7 +109,9 @@ export default function Carousel({
               aria-roledescription="slide"
               aria-label={`${index + 1} of ${slides.length}`}
             >
-              <CarouselSlide slide={slide} aspectClassName={aspectClassName} fit={fit} />
+              <SlideLink link={slide.link} label={slide.alt}>
+                <CarouselSlide slide={slide} aspectClassName={aspectClassName} fit={fit} />
+              </SlideLink>
             </div>
           ))}
         </div>
@@ -232,4 +236,13 @@ function CarouselArrow({ direction, onClick }) {
       </svg>
     </button>
   );
+}
+
+/** Wraps a slide in a link when it has one; otherwise renders the slide as it is. */
+function SlideLink({ link, label, children }) {
+  if (!link) return children;
+  if (/^https:\/\//.test(link)) {
+    return <a href={link} target="_blank" rel="noopener noreferrer" aria-label={label} className="block">{children}</a>;
+  }
+  return <Link to={link} aria-label={label} className="block">{children}</Link>;
 }

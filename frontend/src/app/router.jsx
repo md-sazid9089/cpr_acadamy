@@ -71,7 +71,8 @@ const AdminStudentDetail = lazy(() => import('@/features/admin/AdminStudentDetai
 const AdminCourses = lazy(() => import('@/features/admin/AdminCourses.jsx'));
 const AdminComplaints = lazy(() => import('@/features/admin/AdminComplaints.jsx'));
 const AdminNotices = lazy(() => import('@/features/admin/AdminNotices.jsx'));
-const AdminGallery = lazy(() => import('@/features/admin/AdminGallery.jsx'));
+const AdminUpload = lazy(() => import('@/features/admin/upload/AdminUpload.jsx'));
+const AdminReviews = lazy(() => import('@/features/admin/AdminReviews.jsx'));
 // One course, built from tabs. Videos, exams and the routine hang off the course
 // so the admin never picks "which course?" from a dropdown.
 const CourseShell = lazy(() => import('@/features/admin/courses/CourseShell.jsx'));
@@ -188,7 +189,9 @@ const router = createBrowserRouter([
       { path: 'students/:studentId', element: suspend(<AdminStudentDetail />) },
       { path: 'complaints', element: suspend(<AdminComplaints />) },
       { path: 'notices', element: suspend(<AdminNotices />) },
-      { path: 'gallery', element: suspend(<AdminGallery />) },
+      { path: 'upload', element: suspend(<AdminUpload />) },
+      { path: 'gallery', element: <Navigate to="/admin/upload" replace /> },
+      { path: 'reviews', element: suspend(<AdminReviews />) },
       { path: 'courses', element: suspend(<AdminCourses />, 'table') },
       {
         path: 'courses/:id',
