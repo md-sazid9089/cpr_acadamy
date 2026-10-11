@@ -230,7 +230,6 @@ function DoubtPanel({ lesson, courseTitle }) {
 export default function CoursePlayer() {
   const { courseSlug, lessonId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [activeTool, setActiveTool] = useState('notes');
 
   const { data: videoGroups = [], isLoading, isError, error, isFetching, refetch } = useCourseVideos(courseSlug);
@@ -254,8 +253,6 @@ export default function CoursePlayer() {
   const current = currentIndex >= 0 ? lessons[currentIndex] : null;
   const prev = currentIndex > 0 ? lessons[currentIndex - 1] : null;
   const next = currentIndex < lessons.length - 1 ? lessons[currentIndex + 1] : null;
-
-  const watermark = user?.fullName || user?.mobile || undefined;
 
   // A YouTube lesson's `src` is already the (inherently public) embed URL. A directly-hosted
   // file never sends its permanent URL to the client, so a signed, short-lived link is
@@ -315,7 +312,7 @@ export default function CoursePlayer() {
       <div className="mx-auto grid max-w-7xl gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {/* Player column */}
         <div className="min-w-0 space-y-5">
-          <VideoPlayer src={videoSrc} title={current.title} watermark={watermark} onEnded={() => complete.mutate(current.id)} />
+          <VideoPlayer src={videoSrc} title={current.title} onEnded={() => complete.mutate(current.id)} />
 
           <div className="rounded-2xl border border-stone-200 bg-white p-5">
             <h1 className="text-base font-bold leading-snug text-stone-900 sm:text-lg">
