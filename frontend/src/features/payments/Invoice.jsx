@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button.jsx';
 import Input from '@/components/ui/Input.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
+import FormError from '@/components/ui/FormError.jsx';
 import { PAYMENT_METHODS, CONTACT } from '@/constants';
 import { formatBDT, formatDate } from '@/lib/utils';
 import './payments.css';
@@ -35,6 +36,12 @@ function PaymentProofForm({ invoice, onSubmitted }) {
       onSubmitted(updated);
     },
   });
+
+  // A refused proof: each message under its own field, and only what fits no field in the alert below.
+  const PROOF_FIELDS = ['transactionId', 'payerMobile', 'screenshotUrl'];
+  const refusal = submitMutation.error;
+  const proofFieldErrors = Object.fromEntries(Object.entries(refusal?.fieldErrors ?? {}).filter(([field]) => PROOF_FIELDS.includes(field)));
+  const formMessage = refusal && (refusal.code !== 'VALIDATION_ERROR' || Object.keys(proofFieldErrors).length === 0) ? refusal.message : null;
 
   const handleFile = async (event) => {
     const [file] = event.target.files ?? [];
@@ -86,6 +93,7 @@ function PaymentProofForm({ invoice, onSubmitted }) {
 
       <form
         className="mt-4 space-y-3"
+        aria-describedby={formMessage ? 'proof-error' : undefined}
         onSubmit={(event) => {
           event.preventDefault();
           submitMutation.mutate({ id: invoice.id, transactionId: transactionId.trim(), payerMobile: payerMobile.trim(), screenshotUrl });
@@ -98,6 +106,7 @@ function PaymentProofForm({ invoice, onSubmitted }) {
             minLength={3}
             maxLength={120}
             placeholder="e.g. 9F7K2LX0PQ"
+            error={proofFieldErrors.transactionId}
             value={transactionId}
             onChange={(event) => setTransactionId(event.target.value)}
           />
@@ -106,6 +115,7 @@ function PaymentProofForm({ invoice, onSubmitted }) {
             required
             inputMode="numeric"
             placeholder="01712345678"
+            error={proofFieldErrors.payerMobile}
             value={payerMobile}
             onChange={(event) => setPayerMobile(event.target.value)}
           />
@@ -120,13 +130,11 @@ function PaymentProofForm({ invoice, onSubmitted }) {
             {isUploading ? 'Uploading…' : screenshotUrl ? 'Replace screenshot' : 'Attach screenshot'}
             <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} disabled={isUploading} />
           </label>
-          {uploadError && <p className="text-xs font-medium text-red-600 dark:text-red-400">{uploadError}</p>}
+          {(uploadError || proofFieldErrors.screenshotUrl) && <p className="text-xs font-medium text-red-600 dark:text-red-400">{uploadError || proofFieldErrors.screenshotUrl}</p>}
           {screenshotUrl && <img src={screenshotUrl} alt="Payment screenshot preview" className="max-h-40 rounded-lg border border-stone-200" />}
         </div>
 
-        {submitMutation.isError && (
-          <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{submitMutation.error.message}</p>
-        )}
+        {formMessage && <FormError><span id="proof-error">{formMessage}</span></FormError>}
 
         <Button type="submit" isLoading={submitMutation.isPending} disabled={isUploading}>
           Submit for review

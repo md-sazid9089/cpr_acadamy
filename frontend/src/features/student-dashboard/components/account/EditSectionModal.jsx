@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Modal from '@/components/ui/Modal.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
+import FormError from '@/components/ui/FormError.jsx';
+import { applyServerErrors } from '@/lib/form-errors';
 
 /**
  * Build the validation schema from the section's field list. Required fields
@@ -46,9 +49,11 @@ function buildSchema(fields) {
  * @param {boolean} [props.isSaving]
  */
 export default function EditSectionModal({ open, onClose, section, values, onSave, isSaving }) {
+  const [formError, setFormError] = useState(null);
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(buildSchema(section.fields)),
@@ -59,7 +64,15 @@ export default function EditSectionModal({ open, onClose, section, values, onSav
   });
 
   const submit = handleSubmit(async (formValues) => {
-    await onSave({ section: section.id, values: formValues });
+    setFormError(null);
+    try {
+      await onSave({ section: section.id, values: formValues });
+    } catch (error) {
+      // The API names these fields 'values.<key>'; show each message under its own field.
+      const fieldErrors = Object.fromEntries(Object.entries(error.fieldErrors ?? {}).map(([path, message]) => [path.replace(/^values\./, ''), message]));
+      setFormError(applyServerErrors({ ...error, fieldErrors }, setError, section.fields.map((field) => field.key)));
+      return;
+    }
     onClose();
   });
 
@@ -80,7 +93,8 @@ export default function EditSectionModal({ open, onClose, section, values, onSav
         </>
       }
     >
-      <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2" noValidate>
+        {formError && <FormError className="sm:col-span-2">{formError}</FormError>}
         {section.fields.map((field) => {
           const error = errors[field.key]?.message;
           const spanFull = field.type === 'textarea';
@@ -93,15 +107,17 @@ export default function EditSectionModal({ open, onClose, section, values, onSav
                   className="block text-sm font-medium text-stone-700 dark:text-brand-200"
                 >
                   {field.label}
-                  {!field.optional && <span className="ml-0.5 text-red-500">*</span>}
+                  {!field.optional && <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>}
                 </label>
                 <select
                   id={`edit-${field.key}`}
                   {...register(field.key)}
+                  required={!field.optional}
                   aria-invalid={error ? 'true' : undefined}
+                  aria-describedby={error ? `edit-${field.key}-error` : undefined}
                   className={`block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 transition-colors focus:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200 ${
                     error
-                      ? 'border-stone-200 dark:border-stone-200'
+                      ? 'border-red-500 dark:border-red-400'
                       : 'border-stone-200 dark:border-stone-200'
                   }`}
                 >
@@ -112,7 +128,7 @@ export default function EditSectionModal({ open, onClose, section, values, onSav
                     </option>
                   ))}
                 </select>
-                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+                {error && <p id={`edit-${field.key}-error`} className="text-sm text-red-600 dark:text-red-400">{error}</p>}
               </div>
             );
           }
@@ -125,20 +141,22 @@ export default function EditSectionModal({ open, onClose, section, values, onSav
                   className="block text-sm font-medium text-stone-700 dark:text-brand-200"
                 >
                   {field.label}
-                  {!field.optional && <span className="ml-0.5 text-red-500">*</span>}
+                  {!field.optional && <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>}
                 </label>
                 <textarea
                   id={`edit-${field.key}`}
                   rows={3}
                   {...register(field.key)}
+                  required={!field.optional}
                   aria-invalid={error ? 'true' : undefined}
+                  aria-describedby={error ? `edit-${field.key}-error` : undefined}
                   className={`block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 transition-colors focus:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200 ${
                     error
-                      ? 'border-stone-200 dark:border-stone-200'
+                      ? 'border-red-500 dark:border-red-400'
                       : 'border-stone-200 dark:border-stone-200'
                   }`}
                 />
-                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+                {error && <p id={`edit-${field.key}-error`} className="text-sm text-red-600 dark:text-red-400">{error}</p>}
               </div>
             );
           }

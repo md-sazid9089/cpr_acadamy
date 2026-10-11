@@ -16,6 +16,7 @@ const FORCED_LOGOUT_MESSAGES = {
   [FORCED_LOGOUT_REASONS.TOKEN_EXPIRED]: 'Your session expired. Please sign in again.',
   [FORCED_LOGOUT_REASONS.ACCOUNT_SUSPENDED]:
     'This account has been suspended. Please contact the academy office.',
+  [FORCED_LOGOUT_REASONS.PASSWORD_CHANGED]: 'Your password was changed. Sign in with your new password.',
 };
 
 export default function Login() {
@@ -25,11 +26,11 @@ export default function Login() {
 
   const setSession = useAuthStore((s) => s.setSession);
   const setPendingMobile = useAuthStore((s) => s.setPendingMobile);
-  const forcedLogoutReason = useAuthStore((s) => s.forcedLogoutReason);
   const clearForcedLogout = useAuthStore((s) => s.clearForcedLogout);
-
-  // Surface the "signed out elsewhere" notice once, then drop it.
-  useEffect(() => () => clearForcedLogout(), [clearForcedLogout]);
+  // Keep the "why you were signed out" reason for this visit, and drop it from the store so it shows only once.
+  // (Clearing it in an unmount cleanup lost it: StrictMode runs that cleanup straight after the first mount.)
+  const [forcedLogoutReason] = useState(() => useAuthStore.getState().forcedLogoutReason);
+  useEffect(() => { clearForcedLogout(); }, [clearForcedLogout]);
 
   const {
     register,
@@ -80,7 +81,9 @@ export default function Login() {
         </>
       }
     >
-      <FormAlert>{submitError ?? FORCED_LOGOUT_MESSAGES[forcedLogoutReason]}</FormAlert>
+      <FormAlert tone={!submitError && forcedLogoutReason === FORCED_LOGOUT_REASONS.PASSWORD_CHANGED ? 'info' : 'error'}>
+        {submitError ?? FORCED_LOGOUT_MESSAGES[forcedLogoutReason]}
+      </FormAlert>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <Input

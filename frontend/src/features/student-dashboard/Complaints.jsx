@@ -13,6 +13,8 @@ import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
+import FormError from '@/components/ui/FormError.jsx';
+import { applyServerErrors } from '@/lib/form-errors';
 import { formatDateTime } from '@/lib/utils';
 
 const schema = z.object({
@@ -31,11 +33,13 @@ export default function Complaints() {
   const { data: courses = [] } = useMyCourses();
   const createComplaint = useCreateComplaint();
   const [open, setOpen] = useState(false);
+  const [formError, setFormError] = useState(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
@@ -44,11 +48,18 @@ export default function Complaints() {
 
   const close = () => {
     setOpen(false);
+    setFormError(null);
     reset();
   };
 
   const submit = handleSubmit(async (values) => {
-    await createComplaint.mutateAsync(values);
+    setFormError(null);
+    try {
+      await createComplaint.mutateAsync(values);
+    } catch (error) {
+      setFormError(applyServerErrors(error, setError, ['relatedTo', 'batchTitle', 'body']));
+      return;
+    }
     close();
   });
 
@@ -135,18 +146,22 @@ export default function Complaints() {
           </>
         }
       >
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-4" noValidate>
+          <FormError>{formError}</FormError>
           <div className="space-y-1.5">
             <label
               htmlFor="complaint-topic"
               className="block text-sm font-medium text-stone-700 dark:text-brand-200"
             >
-              Related to<span className="ml-0.5 text-red-500">*</span>
+              Related to<span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
             </label>
             <select
               id="complaint-topic"
               {...register('relatedTo')}
-              className="block w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-200 dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200"
+              required
+              aria-invalid={errors.relatedTo ? 'true' : undefined}
+              aria-describedby={errors.relatedTo ? 'complaint-topic-error' : undefined}
+              className={`block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 dark:bg-surface-dark-subtle dark:text-brand-200 ${errors.relatedTo ? 'border-red-500 focus:border-red-500 dark:border-red-400' : 'border-stone-200 focus:border-stone-200 dark:border-stone-200'}`}
             >
               <option value="">Select a topic…</option>
               {COMPLAINT_TOPICS.map((topic) => (
@@ -156,7 +171,7 @@ export default function Complaints() {
               ))}
             </select>
             {errors.relatedTo && (
-              <p className="text-sm text-red-600 dark:text-red-400">{errors.relatedTo.message}</p>
+              <p id="complaint-topic-error" className="text-sm text-red-600 dark:text-red-400">{errors.relatedTo.message}</p>
             )}
           </div>
 
@@ -165,12 +180,15 @@ export default function Complaints() {
               htmlFor="complaint-batch"
               className="block text-sm font-medium text-stone-700 dark:text-brand-200"
             >
-              Batch<span className="ml-0.5 text-red-500">*</span>
+              Batch<span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
             </label>
             <select
               id="complaint-batch"
               {...register('batchTitle')}
-              className="block w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-200 dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200"
+              required
+              aria-invalid={errors.batchTitle ? 'true' : undefined}
+              aria-describedby={errors.batchTitle ? 'complaint-batch-error' : undefined}
+              className={`block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 dark:bg-surface-dark-subtle dark:text-brand-200 ${errors.batchTitle ? 'border-red-500 focus:border-red-500 dark:border-red-400' : 'border-stone-200 focus:border-stone-200 dark:border-stone-200'}`}
             >
               <option value="">Select a batch…</option>
               {courses.map((course) => (
@@ -180,7 +198,7 @@ export default function Complaints() {
               ))}
             </select>
             {errors.batchTitle && (
-              <p className="text-sm text-red-600 dark:text-red-400">{errors.batchTitle.message}</p>
+              <p id="complaint-batch-error" className="text-sm text-red-600 dark:text-red-400">{errors.batchTitle.message}</p>
             )}
           </div>
 
@@ -189,16 +207,19 @@ export default function Complaints() {
               htmlFor="complaint-body"
               className="block text-sm font-medium text-stone-700 dark:text-brand-200"
             >
-              Describe the problem<span className="ml-0.5 text-red-500">*</span>
+              Describe the problem<span aria-hidden="true" className="ml-0.5 text-red-500">*</span>
             </label>
             <textarea
               id="complaint-body"
               rows={4}
               {...register('body')}
-              className="block w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-200 dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200"
+              required
+              aria-invalid={errors.body ? 'true' : undefined}
+              aria-describedby={errors.body ? 'complaint-body-error' : undefined}
+              className={`block w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 dark:bg-surface-dark-subtle dark:text-brand-200 ${errors.body ? 'border-red-500 focus:border-red-500 dark:border-red-400' : 'border-stone-200 focus:border-stone-200 dark:border-stone-200'}`}
             />
             {errors.body && (
-              <p className="text-sm text-red-600 dark:text-red-400">{errors.body.message}</p>
+              <p id="complaint-body-error" className="text-sm text-red-600 dark:text-red-400">{errors.body.message}</p>
             )}
           </div>
         </form>

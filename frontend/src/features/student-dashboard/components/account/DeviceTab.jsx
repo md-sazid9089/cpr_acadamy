@@ -4,6 +4,7 @@ import { useDevices, useRequestDeviceVerification } from '../../api/dashboard.qu
 import Modal from '@/components/ui/Modal.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
+import FormError from '@/components/ui/FormError.jsx';
 
 /** One device row — icon, "Device . Platform . Browser", status marker. */
 function DeviceRow({ device, verified }) {
@@ -56,6 +57,7 @@ export default function DeviceTab() {
   const [modalOpen, setModalOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [requestError, setRequestError] = useState(null);
 
   if (isLoading || !data) {
     return (
@@ -63,8 +65,19 @@ export default function DeviceTab() {
     );
   }
 
+  const close = () => {
+    setModalOpen(false);
+    setRequestError(null);
+  };
+
   const submit = async () => {
-    await requestVerification.mutateAsync({ reason });
+    setRequestError(null);
+    try {
+      await requestVerification.mutateAsync({ reason });
+    } catch (error) {
+      setRequestError(error.message);
+      return;
+    }
     setSubmitted(true);
     setModalOpen(false);
     setReason('');
@@ -123,12 +136,12 @@ export default function DeviceTab() {
 
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={close}
         title="Request device verification"
         description="Tell us why you need to switch device. An administrator will review it."
         footer={
           <>
-            <Button variant="outline" onClick={() => setModalOpen(false)}>
+            <Button variant="outline" onClick={close}>
               Cancel
             </Button>
             <Button
@@ -152,12 +165,14 @@ export default function DeviceTab() {
           rows={4}
           value={reason}
           onChange={(event) => setReason(event.target.value)}
+          aria-invalid={requestError ? 'true' : undefined}
           placeholder="e.g. My previous phone was lost and I now study on my laptop."
           className="mt-1.5 block w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 transition-colors focus:border-stone-200 dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200"
         />
         <p className="mt-1.5 text-xs text-stone-500 dark:text-brand-200">
           Minimum 10 characters.
         </p>
+        {requestError && <FormError className="mt-3">{requestError}</FormError>}
       </Modal>
     </div>
   );

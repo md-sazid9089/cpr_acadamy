@@ -279,6 +279,8 @@ export const FORCED_LOGOUT_REASONS = Object.freeze({
   ANOTHER_DEVICE: 'another_device',
   TOKEN_EXPIRED: 'token_expired',
   ACCOUNT_SUSPENDED: 'account_suspended',
+  // Changing the password ends every session, this one included, so the new password is proven at once.
+  PASSWORD_CHANGED: 'password_changed',
 });
 
 export const OTP_LENGTH = 6;

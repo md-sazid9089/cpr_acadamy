@@ -5,6 +5,7 @@ import DashboardPageHeader from './components/DashboardPageHeader.jsx';
 import Button from '@/components/ui/Button.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
+import FormError from '@/components/ui/FormError.jsx';
 import { formatDateTime } from '@/lib/utils';
 
 /**
@@ -43,6 +44,7 @@ export default function ComplaintDetail() {
   const { data: complaint, isLoading, isError } = useComplaint(complaintId);
   const reply = useReplyToComplaint();
   const [body, setBody] = useState('');
+  const [sendError, setSendError] = useState(null);
   const threadEndRef = useRef(null);
 
   const messageCount = complaint?.messages.length ?? 0;
@@ -74,7 +76,14 @@ export default function ComplaintDetail() {
   const isSolved = complaint.status === 'solved';
 
   const send = async () => {
-    await reply.mutateAsync({ id: complaint.id, body: body.trim() });
+    setSendError(null);
+    try {
+      await reply.mutateAsync({ id: complaint.id, body: body.trim() });
+    } catch (error) {
+      // Keep the typed reply so nothing is lost; say why it was not sent.
+      setSendError(error.message);
+      return;
+    }
     setBody('');
   };
 
@@ -126,9 +135,12 @@ export default function ComplaintDetail() {
               rows={3}
               value={body}
               onChange={(event) => setBody(event.target.value)}
+              aria-invalid={sendError ? 'true' : undefined}
+              aria-describedby={sendError ? 'complaint-reply-error' : undefined}
               placeholder="Add more detail, or let us know if the problem is still there…"
               className="mt-1.5 block w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 focus:border-stone-200 dark:border-stone-200 dark:bg-surface-dark-subtle dark:text-brand-200"
             />
+            {sendError && <FormError className="mt-3"><span id="complaint-reply-error">{sendError}</span></FormError>}
             <div className="mt-3 flex justify-end">
               <Button
                 onClick={send}

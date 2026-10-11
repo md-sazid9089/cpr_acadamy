@@ -5,6 +5,10 @@ import { z } from 'zod';
 import { FaPenToSquare } from 'react-icons/fa6';
 import { useChangePassword } from '../../api/dashboard.queries.js';
 import { passwordSchema } from '@/lib/validation';
+import { applyServerErrors } from '@/lib/form-errors';
+import { handleForcedLogout } from '@/lib/auth';
+import { FORCED_LOGOUT_REASONS } from '@/constants';
+import FormError from '@/components/ui/FormError.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -23,13 +27,14 @@ const schema = z
 /** Security tab — currently just the change-password entry point. */
 export default function SecurityTab() {
   const [open, setOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [formError, setFormError] = useState(null);
   const changePassword = useChangePassword();
 
   const {
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
@@ -38,13 +43,26 @@ export default function SecurityTab() {
 
   const close = () => {
     setOpen(false);
+    setFormError(null);
     reset();
   };
 
   const submit = handleSubmit(async (values) => {
-    await changePassword.mutateAsync(values);
-    setSaved(true);
+    setFormError(null);
+    try {
+      await changePassword.mutateAsync({ currentPassword: values.currentPassword, newPassword: values.newPassword });
+    } catch (error) {
+      // A wrong current password belongs on that field; anything else is shown above the form.
+      if (error.code === 'INVALID_PASSWORD') {
+        setError('currentPassword', { type: 'server', message: error.message }, { shouldFocus: true });
+      } else {
+        setFormError(applyServerErrors(error, setError, ['currentPassword', 'newPassword', 'confirmPassword']));
+      }
+      return;
+    }
+    // The server ends every session on a password change; sign out here too and say why on the login page.
     close();
+    handleForcedLogout(FORCED_LOGOUT_REASONS.PASSWORD_CHANGED);
   });
 
   return (
@@ -68,17 +86,11 @@ export default function SecurityTab() {
         <span className="tracking-widest">••••••••</span>
       </p>
 
-      {saved && (
-        <p className="mt-3 text-sm font-bold text-brand-700 dark:text-brand-400">
-          Your password has been updated.
-        </p>
-      )}
-
       <Modal
         open={open}
         onClose={close}
         title="Change password"
-        description="You will stay signed in on this device."
+        description="After the change you will sign in again with your new password, on this and any other device."
         footer={
           <>
             <Button variant="outline" onClick={close} disabled={changePassword.isPending}>
@@ -90,7 +102,8 @@ export default function SecurityTab() {
           </>
         }
       >
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-4" noValidate>
+          <FormError>{formError}</FormError>
           <Input
             label="Current password"
             type="password"

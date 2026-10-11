@@ -2,17 +2,32 @@ import { z } from 'zod';
 import { one } from '../db.js';
 import { ensure, text, pageQuery, audit } from '../http.js';
 
-// A photo's URL is either the admin's own upload (a root-relative /api/media/...
-// path) or a full HTTPS link, mirroring the same union used for course posters.
-const imageUrl = z.union([
-  z.string().url().max(2048).refine(value => value.startsWith('https://'), 'An HTTPS URL is required'),
-  z.string().regex(/^\/[A-Za-z0-9_\-./%]{1,500}$/),
-]);
+/** A path on this site: an upload the admin made here (/api/media/...) or one of the site's own images (/assets/...). */
+const sitePath = /^\/(?!\/)[A-Za-z0-9_\-./%]{1,500}$/;
 
-const galleryFields = z.object({
+/**
+ * A gallery photo must be an image this academy stored itself: a path on this site, or this account's
+ * Cloudinary uploads (where the upload button puts it). An arbitrary HTTPS address is refused, as for payment
+ * screenshots: an outside image can vanish or change, and its host learns who viewed the page. This is the
+ * usual allowlist approach to user-supplied URLs.
+ */
+export function isOwnImageUrl(value, config) {
+  if (sitePath.test(value)) return true;
+  if (!config?.cloudinaryUrl) return false;
+  try {
+    const url = new URL(value);
+    const cloud = new URL(config.cloudinaryUrl).hostname;
+    return url.protocol === 'https:' && url.hostname === 'res.cloudinary.com' && !url.username && !url.password && !url.port
+      && url.pathname.startsWith(`/${cloud}/image/upload/`) && /\/cpr-academy\/uploads\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)$/.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+const galleryFields = config => z.object({
   section: text.max(80),
   caption: z.string().trim().max(300).default(''),
-  imageUrl,
+  imageUrl: z.string().max(2048).refine(value => isOwnImageUrl(value, config), 'Add the photo with the upload button.'),
   position: z.number().int().min(0).max(100000).default(0),
   isPublished: z.boolean().default(true),
 }).strict();
@@ -22,7 +37,8 @@ function galleryDto(row) {
     position: row.position, isPublished: row.is_published, createdAt: row.created_at };
 }
 
-export function galleryRoutes(route, database) {
+export function galleryRoutes(route, database, config) {
+  const fields = galleryFields(config);
   // Public: every published photo, grouped by section for the Gallery page.
   route('GET', '/gallery', {}, async () => {
     const rows = (await database.query("SELECT * FROM gallery_photos WHERE is_published ORDER BY section,position,id")).rows;
@@ -44,7 +60,7 @@ export function galleryRoutes(route, database) {
       const existing = creating ? null : await one(transaction, 'SELECT * FROM gallery_photos WHERE id=$1 FOR UPDATE', [request.params.id]);
       if (!creating) ensure(existing, 404, 'NOT_FOUND', 'Photo not found.');
       const previous = existing ? { section: existing.section, caption: existing.caption, imageUrl: existing.image_url, position: existing.position, isPublished: existing.is_published } : {};
-      const input = galleryFields.parse({ ...previous, ...request.body });
+      const input = fields.parse({ ...previous, ...request.body });
       const saved = creating
         ? await one(transaction, 'INSERT INTO gallery_photos(section,caption,image_url,position,is_published) VALUES ($1,$2,$3,$4,$5) RETURNING *',
           [input.section, input.caption, input.imageUrl, input.position, input.isPublished])
@@ -54,8 +70,8 @@ export function galleryRoutes(route, database) {
       return galleryDto(saved);
     });
   }
-  route('POST', '/admin/gallery', { auth: 'admin', body: galleryFields }, request => save(request, true));
-  route('PATCH', '/admin/gallery/:id', { auth: 'admin', body: galleryFields.partial() }, request => save(request, false));
+  route('POST', '/admin/gallery', { auth: 'admin', body: fields }, request => save(request, true));
+  route('PATCH', '/admin/gallery/:id', { auth: 'admin', body: fields.partial() }, request => save(request, false));
   route('DELETE', '/admin/gallery/:id', { auth: 'admin' }, async request => database.transaction(async transaction => {
     const removed = await one(transaction, 'DELETE FROM gallery_photos WHERE id=$1 RETURNING id', [request.params.id]);
     ensure(removed, 404, 'NOT_FOUND', 'Photo not found.');

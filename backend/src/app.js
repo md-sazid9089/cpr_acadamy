@@ -38,7 +38,7 @@ export async function buildApp({ database, config, logger = false }) {
   studentRoutes(route, database, config);
   reportRoutes(route, database);
   mediaRoutes(route, config);
-  galleryRoutes(route, database);
+  galleryRoutes(route, database, config);
   route('GET', '/openapi.json', config.production ? { auth: 'admin' } : {}, async () => contract);
   return app;
 }

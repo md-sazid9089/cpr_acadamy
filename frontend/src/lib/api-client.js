@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { FORCED_LOGOUT_REASONS } from '@/constants';
 import { adoptStoredSession, getAccessToken, getDeviceId, handleForcedLogout, useAuthStore } from '@/lib/auth';
+import { describeApiError } from '@/lib/form-errors';
 
 const BASE_URL = import.meta.env?.VITE_API_BASE_URL ?? '/api';
 
@@ -104,15 +105,18 @@ apiClient.interceptors.response.use(
 /** Flatten an axios error into a predictable shape for the UI layer. */
 export function normalizeError(error) {
   const data = error.response?.data;
+  const code = data?.code ?? 'NETWORK_ERROR';
+  const summary = data?.message ?? error.message ?? 'Something went wrong. Please check your connection and try again.';
+  /** @type {Record<string, string>} field -> message, for RHF setError. */
+  const fieldErrors = data?.errors ?? {};
   return {
     status: error.response?.status ?? 0,
-    code: data?.code ?? 'NETWORK_ERROR',
-    message:
-      data?.message ??
-      error.message ??
-      'Something went wrong. Please check your connection and try again.',
-    /** @type {Record<string, string>} field -> message, for RHF setError. */
-    fieldErrors: data?.errors ?? {},
+    code,
+    // Says which field and why when the server named one, so every screen that shows `message` is specific.
+    message: describeApiError(code, summary, fieldErrors),
+    /** The server's own headline, e.g. "Please check the submitted fields." */
+    summary,
+    fieldErrors,
   };
 }
 

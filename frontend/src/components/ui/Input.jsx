@@ -7,6 +7,10 @@ const fieldStyles =
   'transition-colors focus:border-stone-200 disabled:cursor-not-allowed disabled:bg-stone-50 ' +
   'dark:bg-surface-dark-subtle dark:text-brand-200 dark:placeholder:text-brand-200 dark:disabled:bg-surface-dark';
 
+/** Border for a field with an error: red, so the field itself shows the problem, not only the message below it. */
+const errorBorder = 'border-red-500 focus:border-red-500 dark:border-red-400';
+const normalBorder = 'border-stone-200 dark:border-stone-200';
+
 /** Text input with label, hint, prefix/suffix and error slot. Forwards refs for RHF.
  * A `type="password"` field always gets a show/hide toggle — permanent, not opt-in. */
 const Input = forwardRef(function Input(
@@ -24,7 +28,7 @@ const Input = forwardRef(function Input(
       {label && (
         <label htmlFor={inputId} className="block text-sm font-medium text-stone-700 dark:text-brand-200">
           {label}
-          {required && <span className="ml-0.5 text-red-500">*</span>}
+          {required && <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>}
         </label>
       )}
 
@@ -38,6 +42,7 @@ const Input = forwardRef(function Input(
           ref={ref}
           id={inputId}
           type={isPassword ? (visible ? 'text' : 'password') : type}
+          required={required}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}
           className={cn(
@@ -45,9 +50,7 @@ const Input = forwardRef(function Input(
             prefix && 'pl-14',
             suffix && 'pr-12',
             isPassword && 'pr-11',
-            error
-              ? 'border-stone-200 focus:border-stone-200 dark:border-stone-200'
-              : 'border-stone-200 dark:border-stone-200',
+            error ? errorBorder : normalBorder,
             className,
           )}
           maxLength={maxLength ?? (isPassword ? 128 : type === 'email' ? 254 : type === 'tel' || type === 'number' ? 20 : 255)}
@@ -90,33 +93,36 @@ export const Textarea = forwardRef(function Textarea(
 ) {
   const autoId = useId();
   const inputId = id ?? autoId;
+  const describedBy = error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined;
 
   return (
     <div className={cn('space-y-1.5', containerClassName)}>
       {label && (
         <label htmlFor={inputId} className="block text-sm font-medium text-stone-700 dark:text-brand-200">
           {label}
-          {required && <span className="ml-0.5 text-red-500">*</span>}
+          {required && <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>}
         </label>
       )}
       <textarea
         ref={ref}
         id={inputId}
         rows={rows}
+        required={required}
         aria-invalid={error ? 'true' : undefined}
+        aria-describedby={describedBy}
         className={cn(
           fieldStyles,
           'resize-y',
-          error ? 'border-stone-200 dark:border-stone-200' : 'border-stone-200 dark:border-stone-200',
+          error ? errorBorder : normalBorder,
           className,
         )}
         maxLength={maxLength}
         {...props}
       />
       {error ? (
-        <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>
+        <p id={`${inputId}-error`} className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>
       ) : hint ? (
-        <p className="text-xs text-stone-500 dark:text-brand-200">{hint}</p>
+        <p id={`${inputId}-hint`} className="text-xs text-stone-500 dark:text-brand-200">{hint}</p>
       ) : null}
     </div>
   );
@@ -129,21 +135,25 @@ export const Select = forwardRef(function Select(
 ) {
   const autoId = useId();
   const inputId = id ?? autoId;
+  const describedBy = error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined;
 
   return (
     <div className={cn('space-y-1.5', containerClassName)}>
       {label && (
         <label htmlFor={inputId} className="block text-sm font-medium text-stone-700 dark:text-brand-200">
           {label}
-          {required && <span className="ml-0.5 text-red-500">*</span>}
+          {required && <span aria-hidden="true" className="ml-0.5 text-red-500">*</span>}
         </label>
       )}
       <select
         ref={ref}
         id={inputId}
+        required={required}
+        aria-invalid={error ? 'true' : undefined}
+        aria-describedby={describedBy}
         className={cn(
           fieldStyles,
-          error ? 'border-stone-200 dark:border-stone-200' : 'border-stone-200 dark:border-stone-200',
+          error ? errorBorder : normalBorder,
           className,
         )}
         {...props}
@@ -151,9 +161,9 @@ export const Select = forwardRef(function Select(
         {children}
       </select>
       {error ? (
-        <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>
+        <p id={`${inputId}-error`} className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>
       ) : hint ? (
-        <p className="text-xs text-stone-500 dark:text-brand-200">{hint}</p>
+        <p id={`${inputId}-hint`} className="text-xs text-stone-500 dark:text-brand-200">{hint}</p>
       ) : null}
     </div>
   );
