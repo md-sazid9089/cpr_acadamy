@@ -124,7 +124,8 @@ export default function Hero() {
             {slides.length > 0 && <Carousel
               slides={slides}
               interval={5000}
-              fit="contain"
+              // Every poster fills the card whatever its size or shape; the edges outside 16:10 are cropped.
+              fit="cover"
               // Landscape frame with side arrows, matching the reference card.
               showArrows
               frameClassName="rounded-[6px] rounded-tl-[44px] rounded-br-[44px] border border-stone-200 dark:border-stone-200"

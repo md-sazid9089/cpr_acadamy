@@ -55,8 +55,8 @@ export default function HeroTab() {
   return (
     <Section
       title="Home hero posters"
-      description="The posters on the right of the home page. They change every 5 seconds, in the order below."
-      specs={['4:5 portrait', '1080 × 1350 recommended', 'JPG, PNG or WebP', 'Up to 5 MB', `Up to ${LIMIT} posters`]}
+      description="The posters on the right of the home page. They change every 5 seconds, in the order below. Every image is cropped from the centre to fill the 16:10 card, so keep text away from the edges."
+      specs={['16:10 landscape', '1600 × 1000 recommended', 'Cropped to fit', 'JPG, PNG or WebP', 'Up to 5 MB', `Up to ${LIMIT} posters`]}
     >
       {isLoading ? <ContentSkeleton label="Loading posters" /> : isError ? (
         <EmptyState variant="error" title="Couldn't load the posters" description={error?.message} onRetry={refetch} isFetching={isFetching} />
@@ -68,7 +68,7 @@ export default function HeroTab() {
                 <Carousel
                   key={live.map((slide) => slide.id).join()}
                   slides={live.map((slide) => ({ id: slide.id, src: slide.imageUrl, alt: slide.title || 'Poster' }))}
-                  fit="contain"
+                  fit="cover"
                   showArrows
                   frameClassName="rounded-[6px] rounded-tl-[44px] rounded-br-[44px] border border-stone-200 dark:border-stone-200"
                   aspectClassName="aspect-[16/10]"
@@ -87,7 +87,7 @@ export default function HeroTab() {
 
           <ul className="space-y-2.5">
             {slides.map((slide, index) => (
-              <li key={slide.id} className="grid grid-cols-[auto_56px_minmax(0,1fr)] items-center gap-3 rounded-image border border-stone-200 bg-white p-2.5 sm:grid-cols-[auto_64px_minmax(0,1fr)_auto] dark:border-stone-200 dark:bg-surface-dark">
+              <li key={slide.id} className="grid grid-cols-[auto_80px_minmax(0,1fr)] items-center gap-3 rounded-image border border-stone-200 bg-white p-2.5 sm:grid-cols-[auto_104px_minmax(0,1fr)_auto] dark:border-stone-200 dark:bg-surface-dark">
                 <div className="grid gap-1">
                   <button type="button" aria-label="Move up" disabled={index === 0 || reorder.isPending} onClick={() => move(index, -1)} className="flex h-6 w-7 items-center justify-center rounded-md border border-stone-200 text-stone-500 hover:text-brand-600 disabled:opacity-30 dark:border-stone-200 dark:text-brand-200">
                     <FaChevronUp aria-hidden="true" className="h-3 w-3" />
@@ -96,7 +96,7 @@ export default function HeroTab() {
                     <FaChevronDown aria-hidden="true" className="h-3 w-3" />
                   </button>
                 </div>
-                <img src={slide.imageUrl} alt="" className="aspect-[4/5] w-full rounded-md object-cover" />
+                <img src={slide.imageUrl} alt="" className="aspect-[16/10] w-full rounded-md object-cover" />
                 <div className="grid min-w-0 gap-2.5 sm:grid-cols-2">
                   <SaveOnBlurInput id={`hero-title-${slide.id}`} label="Poster title" value={slide.title} onSave={(title) => update.mutate({ id: slide.id, title })} />
                   <SaveOnBlurInput id={`hero-link-${slide.id}`} label="Opens when clicked" value={slide.link} placeholder="/courses/…  (optional)" maxLength={500} onSave={(link) => update.mutate({ id: slide.id, link })} />
