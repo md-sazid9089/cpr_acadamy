@@ -52,11 +52,10 @@ const READY_TIMEOUT_MS = 8000;
  * seeks back to the first frame immediately so the related-videos end
  * screen never has a chance to render.
  *
- * Until the first frame plays, and after it ends, a black cover hides the
- * video, because YouTube paints its logo, title and "Watch on YouTube" over an
- * unstarted embed. While paused, only the bottom band is covered: YouTube puts
- * a "More videos" shelf there (no player setting turns it off), and the rest of
- * the paused frame stays visible for the student to read.
+ * Until the first frame plays (and again after the video ends) a black cover
+ * hides the video, because YouTube paints its logo, title and "Watch on
+ * YouTube" over an unstarted embed. While paused the video stays fully visible,
+ * so YouTube may show its own "More videos" shelf (no player setting turns it off).
  *
  * If the IFrame API fails to load, the player never becomes ready, or the
  * video itself errors out, the player shows a "Try again" message. It never
@@ -247,14 +246,9 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         aria-label={playing ? 'Pause' : 'Play'}
         className={`absolute inset-0 flex h-full w-full items-center justify-center ${started ? 'bg-transparent' : 'bg-black'}`}
       >
-        {/* Paused: only the bottom band goes dark, where YouTube puts its "More videos" shelf, so the paused frame
-            (a slide, a diagram) stays readable above it. */}
-        {started && !playing && (
-          <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[44%] bg-gradient-to-t from-black from-0% via-black via-72% to-transparent" />
-        )}
         {!ready && <span className="text-sm text-white/70">Loading…</span>}
         {ready && !playing && (
-          <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white">
             <FaPlay aria-hidden="true" className="h-6 w-6 translate-x-0.5" />
           </span>
         )}
@@ -268,8 +262,7 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
         </span>
       )}
 
-      {/* Solid along the bottom edge, where YouTube draws "More videos" and its logo for a moment after a seek. */}
-      <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black from-0% via-black via-55% to-transparent px-3 pb-2 pt-7">
+      <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-6">
         <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} className="shrink-0 text-white">
           {playing ? <FaPause aria-hidden="true" className="h-4 w-4" /> : <FaPlay aria-hidden="true" className="h-4 w-4" />}
         </button>
