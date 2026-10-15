@@ -27,7 +27,8 @@ export default function DashboardLayout({ variant = ROLES.STUDENT }) {
   const isCoursesPage = pathname.replace(/\/$/, '') === '/dashboard/courses';
   const isNoticesPage = pathname.replace(/\/$/, '') === '/dashboard/notice';
   const isPaymentsPage = pathname.replace(/\/$/, '') === '/dashboard/payments';
-  const isInvoicePage = pathname.startsWith('/dashboard/invoices/');
+  // Checkout shows the same receipt once a payment is confirmed, so it prints the same way.
+  const isInvoicePage = pathname.startsWith('/dashboard/invoices/') || pathname.startsWith('/dashboard/checkout/');
 
   // Sends the student to /login if the backend revokes this session mid-visit.
   useForcedLogoutRedirect();

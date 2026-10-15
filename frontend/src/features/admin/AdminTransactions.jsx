@@ -11,6 +11,7 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import Input, { Select, Textarea } from '@/components/ui/Input.jsx';
+import { paymentReference } from '@/features/payments/wallets.js';
 import { PAYMENT_METHODS, PAYMENT_STATUS } from '@/constants';
 import { cn, formatBDT, formatDateTime } from '@/lib/utils';
 
@@ -92,7 +93,7 @@ export function ReconcileDialog({ payment, onClose, onDone, initialDecision = ''
       open={Boolean(payment)}
       onClose={onClose}
       title="Review payment"
-      description={payment ? `${payment.invoiceNo} · ${payment.courseTitle} · ${formatBDT(payment.amount)}` : ''}
+      description={payment ? `${paymentReference(payment.invoiceNo)} · ${payment.courseTitle} · ${formatBDT(payment.amount)}` : ''}
     >
       <form onSubmit={submit} className="space-y-4">
         {(payment?.payerMobile || payment?.screenshotUrl) && (
@@ -332,7 +333,9 @@ export default function TransactionsPanel() {
                         )}
                       </span>
                     ) : <span className="text-xs text-stone-400 dark:text-brand-200">—</span>}
-                    <p className="font-mono text-[11px] text-stone-400 dark:text-brand-200">{row.invoiceNo}</p>
+                    <p className="font-mono text-[11px] text-stone-400 dark:text-brand-200" title={row.invoiceNo}>
+                      Ref {paymentReference(row.invoiceNo)}
+                    </p>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3.5">
                     <StatusBadge status={row.status} className="capitalize" />

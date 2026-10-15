@@ -25,15 +25,25 @@ test('history retains full invoice references and offers view actions, filters, 
   assert.equal(source.includes('CardHeader'), false);
 });
 
-test('invoice uses the shared address, labelled institution, logo and separate recorded dates', () => {
-  const source = read('../src/features/payments/Invoice.jsx');
+test('the receipt uses the shared address, labelled institution, logo and the recorded dates', () => {
+  const source = read('../src/features/payments/PaymentFlow.jsx');
   assert.ok(source.includes('{CONTACT.address}'));
   assert.ok(read('../src/components/layout/Footer.jsx').includes('CONTACT.address'));
   assert.ok(source.includes('Institution: {invoice.billedTo.institution}'));
   assert.ok(source.includes('cpr-logo.png'));
-  assert.ok(source.includes('invoice.issuedAt'));
-  assert.ok(source.includes('invoice.paidAt &&'));
+  assert.ok(source.includes('invoice.paidAt ?? invoice.issuedAt'));
   assert.ok(source.includes('invoice.invoiceNo'));
+});
+
+test('the payment page is driven by the invoice status alone, so a student returns to the same step', () => {
+  const source = read('../src/features/payments/PaymentFlow.jsx');
+  for (const status of ["invoice.status === 'pending'", "invoice.status === 'refunded'"]) assert.ok(source.includes(status));
+  assert.ok(source.includes("const paid = invoice.status === 'paid'"));
+  assert.ok(source.includes("const failed = invoice.status === 'failed'"));
+  // Checkout opens the invoice itself; there is no separate "create invoice" button.
+  const checkout = read('../src/features/payments/Checkout.jsx');
+  assert.ok(checkout.includes('openInvoice.mutate'));
+  assert.equal(checkout.includes('Create invoice'), false);
 });
 
 test('invoice print rules remove shell chrome and preserve a white document with dark text', () => {

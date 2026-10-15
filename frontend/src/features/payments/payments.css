@@ -63,7 +63,8 @@
   body:has(.invoice-print-layout) button,
   body:has(.invoice-print-layout) canvas,
   body:has(.invoice-print-layout) .invoice-toolbar,
-  body:has(.invoice-print-layout) .invoice-payment-notice { display: none !important; }
+  body:has(.invoice-print-layout) .invoice-payment-notice,
+  body:has(.invoice-print-layout) .payment-no-print { display: none !important; }
   .invoice-print-layout, .invoice-print-layout .dashboard-content, .invoice-page { display: block !important; min-height: 0 !important; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; background: var(--white) !important; }
   .invoice-print-layout .invoice-document { margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
   .invoice-print-layout .invoice-document,

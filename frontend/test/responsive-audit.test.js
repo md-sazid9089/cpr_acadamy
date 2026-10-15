@@ -19,7 +19,10 @@ test('navbar mobile menu control reserves a 44px touch target', () => {
   assert.match(read('../src/components/layout/Navbar.jsx'), /min-h-11 min-w-11/);
 });
 
-test('invoice quantity column reserves room for its heading on narrow screens', () => {
-  const source = read('../src/features/payments/Invoice.jsx');
-  assert.ok(source.includes("<colgroup><col /><col style={{ width: '3rem' }} /><col style={{ width: '30%' }} /></colgroup>"));
+test('the receipt table fits a phone: full width, no forced minimum, amounts right-aligned', () => {
+  const source = read('../src/features/payments/PaymentFlow.jsx');
+  const table = source.slice(source.indexOf('<table'), source.indexOf('</table>'));
+  assert.ok(table.includes('className="w-full text-sm"'));
+  assert.equal(/min-w-\[/.test(table), false);
+  assert.ok(table.includes('text-right tabular-nums'));
 });
