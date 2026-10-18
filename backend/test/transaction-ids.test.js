@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { fixture } from '../test-support/fixture.js';
 import { one } from '../src/db.js';
 
+const screenshotUrl = '/api/media/0b3c8e5a-7a7e-4d40-9a2f-1b2c3d4e5f60.png';
+
 async function setup() {
   const context = await fixture();
   const admin = await context.user('admin', '01799999999');
@@ -27,7 +29,7 @@ test('one real payment reference cannot unlock two invoices by changing its lett
       assert.equal(response.statusCode, 409, variant);
       assert.equal(response.json().code, 'DUPLICATE_TRANSACTION_ID', variant);
     }
-    const proof = await second.request('POST', `/payments/${two.id}/proof`, { transactionId: '9xk2lm3pq1', payerMobile: '01812345678' });
+    const proof = await second.request('POST', `/payments/${two.id}/proof`, { transactionId: '9xk2lm3pq1', screenshotUrl });
     assert.equal(proof.statusCode, 409);
     assert.equal(proof.json().code, 'DUPLICATE_TRANSACTION_ID');
     assert.equal(paid.json().status, 'paid');
@@ -38,10 +40,10 @@ test('a rejected invoice does not keep its reference locked for the genuine paye
   const { context, admin, first, invoice, confirm, second } = await setup();
   try {
     const wrong = await invoice(first, 'ids-one');
-    assert.equal((await first.request('POST', `/payments/${wrong.id}/proof`, { transactionId: 'real-ref-77', payerMobile: '01712345678' })).statusCode, 200);
+    assert.equal((await first.request('POST', `/payments/${wrong.id}/proof`, { transactionId: 'real-ref-77', screenshotUrl })).statusCode, 200);
     assert.equal((await admin.request('POST', `/admin/payments/${wrong.id}/reject`, { reason: 'wrong amount sent' })).statusCode, 200);
     const retry = await invoice(first, 'ids-one', 2);
-    const proof = await first.request('POST', `/payments/${retry.id}/proof`, { transactionId: 'REAL-REF-77', payerMobile: '01712345678' });
+    const proof = await first.request('POST', `/payments/${retry.id}/proof`, { transactionId: 'REAL-REF-77', screenshotUrl });
     assert.equal(proof.statusCode, 200, proof.body);
     assert.equal((await confirm(retry, 'real-ref-77')).statusCode, 200);
     // ... while the live payment still protects the reference from everyone else

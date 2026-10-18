@@ -37,9 +37,9 @@ export async function fetchPaymentHistoryPage(params, signal) {
   return data;
 }
 
-/** Attaches the student's own transaction ID, paying mobile, and an optional screenshot to a pending invoice. */
-export async function submitPaymentProof({ id, transactionId, payerMobile, screenshotUrl }) {
-  const { data } = await apiClient.post(`/payments/${id}/proof`, { transactionId, payerMobile, screenshotUrl: screenshotUrl || '' });
+/** Attaches the student's transaction ID and required payment screenshot to a pending invoice. */
+export async function submitPaymentProof({ id, transactionId, screenshotUrl }) {
+  const { data } = await apiClient.post(`/payments/${id}/proof`, { transactionId, screenshotUrl });
   return data;
 }
 

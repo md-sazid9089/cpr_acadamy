@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { one } from '../db.js';
-import { audit, ensure, uuid, text, mobile, pageQuery } from '../http.js';
+import { audit, ensure, uuid, text, pageQuery } from '../http.js';
 import { money, requireCourseAccess } from './courses.js';
 import { registrationNumber } from './students.js';
 
-// A bank/bKash reference means the same payment in any letter case, so it is stored upper-case.
+// A provider transaction ID means the same payment in any letter case, so it is stored upper-case.
 const transactionId = text.min(3).max(120).transform(value => value.toUpperCase());
 
 export function paymentDto(row) {
@@ -42,7 +42,7 @@ export function isOwnScreenshotUrl(value, config) {
 }
 
 export function billingRoutes(route, database, config) {
-  const screenshotUrl = z.union([z.string().max(2048).refine(value => isOwnScreenshotUrl(value, config), 'Attach the screenshot with the upload button.'), z.literal('')]).default('');
+  const screenshotUrl = z.string().max(2048).refine(value => isOwnScreenshotUrl(value, config), 'Attach the screenshot with the upload button.');
   route('POST', '/payments/initiate', { auth: 'active', body: z.object({
     courseSlug: text, method: z.enum(['bkash', 'nagad', 'rocket', 'card', 'manual']),
     amount: money.optional(), planId: uuid.optional(),
@@ -86,10 +86,10 @@ export function billingRoutes(route, database, config) {
     return paymentDto(payment);
   });
   // Replaces the old "share it over WhatsApp" step: the student attaches their own
-  // transaction ID, the mobile they paid from, and an optional screenshot right on
+  // transaction ID and required screenshot right on
   // the invoice, for an admin to review in /admin/payments before confirming.
   route('POST', '/payments/:id/proof', { auth: 'active', body: z.object({
-    transactionId, payerMobile: mobile, screenshotUrl,
+    transactionId, screenshotUrl,
   }).strict() }, async request => database.transaction(async transaction => {
     const payment = await one(transaction, 'SELECT * FROM payments WHERE id=$1 AND user_id=$2 FOR UPDATE', [request.params.id, request.auth.user_id]);
     ensure(payment, 404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
@@ -97,8 +97,8 @@ export function billingRoutes(route, database, config) {
     ensure(payment.status === 'pending', 409, 'INVALID_PAYMENT_STATE', 'Only a pending invoice can be updated with payment proof.');
     const duplicate = await one(transaction, "SELECT id FROM payments WHERE transaction_id=$1 AND id<>$2 AND status<>'failed'", [request.body.transactionId, payment.id]);
     ensure(!duplicate, 409, 'DUPLICATE_TRANSACTION_ID', 'This transaction ID is already linked to another payment.');
-    const updated = await one(transaction, `UPDATE payments SET transaction_id=$2,payer_mobile=$3,screenshot_url=$4,proof_submitted_at=now() WHERE id=$1 RETURNING *`,
-      [payment.id, request.body.transactionId, request.body.payerMobile, request.body.screenshotUrl || null]);
+    const updated = await one(transaction, `UPDATE payments SET transaction_id=$2,screenshot_url=$3,proof_submitted_at=now() WHERE id=$1 RETURNING *`,
+      [payment.id, request.body.transactionId, request.body.screenshotUrl]);
     await audit(transaction, request.auth.user_id, 'payment.proof_submitted', payment.id, { transactionId: request.body.transactionId });
     return paymentDto(updated);
   }));

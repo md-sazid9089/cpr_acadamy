@@ -261,7 +261,7 @@ test('billing edge cases: idempotency conflicts, pending reuse, rejected invoice
     let unpaid = (await other.request('GET', `/me/subscriptions?batchId=${batchId}`)).json().unpaid;
     assert.deepEqual(unpaid.map(item => [item.amount, item.awaitingApproval]), [[99.99, false]]);
     assert.ok(unpaid[0].invoicedOn);
-    assert.equal((await other.request('POST', `/payments/${unpaid[0].id}/proof`, { transactionId: 'PLAN-PROOF-1', payerMobile: '01812345678' })).statusCode, 200);
+    assert.equal((await other.request('POST', `/payments/${unpaid[0].id}/proof`, { transactionId: 'PLAN-PROOF-1', screenshotUrl: '/api/media/0b3c8e5a-7a7e-4d40-9a2f-1b2c3d4e5f60.png' })).statusCode, 200);
     unpaid = (await other.request('GET', `/me/subscriptions?batchId=${batchId}`)).json().unpaid;
     assert.equal(unpaid[0].awaitingApproval, true);
 

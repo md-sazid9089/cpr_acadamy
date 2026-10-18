@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { FaCheck, FaCircleCheck, FaCopy, FaPrint, FaRegCircleXmark, FaCamera, FaPen, FaWhatsapp, FaPlay } from 'react-icons/fa6';
 import { submitPaymentProof, uploadPaymentScreenshot } from './api/payments.api.js';
 import {
-  WALLETS, walletById, paymentReference, cleanMobile, isValidMobile, cleanTransactionId, isValidTransactionId,
+  WALLETS, walletById, cleanTransactionId, isValidTransactionId,
 } from './wallets.js';
 import Button from '@/components/ui/Button.jsx';
 import FormError from '@/components/ui/FormError.jsx';
@@ -126,11 +126,9 @@ function DetailRows({ rows }) {
  * the invoice's own status, so the student can leave and come back at any point.
  */
 export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated, onRestart, isRestarting }) {
-  const reference = paymentReference(invoice.invoiceNo);
   const hasProof = Boolean(invoice.proofSubmittedAt);
   const [editing, setEditing] = useState(!hasProof);
   const [wallet, setWallet] = useState(() => readWallet(invoice.id));
-  const [payerMobile, setPayerMobile] = useState(invoice.payerMobile ?? '');
   const [transactionId, setTransactionId] = useState(invoice.transactionId ?? '');
   const [screenshotUrl, setScreenshotUrl] = useState(invoice.screenshotUrl ?? '');
   const [touched, setTouched] = useState({});
@@ -147,13 +145,11 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
   });
 
   const chosen = walletById(wallet);
-  const mobile = cleanMobile(payerMobile);
   const trx = cleanTransactionId(transactionId);
-  const mobileOk = isValidMobile(mobile);
   const trxOk = isValidTransactionId(trx);
-  const ready = Boolean(chosen) && mobileOk && trxOk;
+  const ready = Boolean(chosen) && trxOk && Boolean(screenshotUrl);
 
-  const PROOF_FIELDS = ['transactionId', 'payerMobile', 'screenshotUrl'];
+  const PROOF_FIELDS = ['transactionId', 'screenshotUrl'];
   const refusal = submitMutation.error;
   const fieldErrors = Object.fromEntries(Object.entries(refusal?.fieldErrors ?? {}).filter(([field]) => PROOF_FIELDS.includes(field)));
   const formMessage = refusal && (refusal.code !== 'VALIDATION_ERROR' || Object.keys(fieldErrors).length === 0) ? refusal.message : null;
@@ -215,12 +211,6 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
               <dd className="font-heading text-2xl font-bold tabular-nums text-brand-800 dark:text-white">{formatBDT(invoice.total)}</dd>
             </div>
           </dl>
-          {reference && (
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-image bg-brand-50 px-3 py-2 text-sm dark:bg-brand-950/60">
-              <span lang="bn" className="text-brand-800 dark:text-brand-200">আপনার রেফারেন্স</span>
-              <span className="font-bold tabular-nums text-brand-800 dark:text-white">{reference}</span>
-            </div>
-          )}
         </div>
       </section>
 
@@ -231,15 +221,15 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
           onSubmit={(event) => {
             event.preventDefault();
             if (!ready || isUploading) return;
-            submitMutation.mutate({ id: invoice.id, transactionId: trx, payerMobile: mobile, screenshotUrl });
+            submitMutation.mutate({ id: invoice.id, transactionId: trx, screenshotUrl });
           }}
         >
           <Step number="১" title="যেভাবে পেমেন্ট করবেন">
             <ol className="space-y-2.5 text-sm text-stone-700 dark:text-brand-200" lang="bn">
               {[
                 <>নিচে <strong>বিকাশ বা নগদ</strong> বেছে নিন। পাঠানোর নম্বর ও টাকার পরিমাণ দেখাবে।</>,
-                <>আপনার অ্যাপ থেকে <strong className="tabular-nums">{formatBDT(invoice.total)}</strong> <strong>Send Money</strong> করুন। রেফারেন্সে লিখুন <strong className="tabular-nums">{reference}</strong>।</>,
-                <>যে নম্বর থেকে পাঠিয়েছেন সেটি ও <strong>ট্রানজেকশন আইডি (TrxID)</strong> লিখে জমা দিন। যাচাইয়ের পর কোর্স চালু হবে।</>,
+                <>আপনার অ্যাপ থেকে <strong className="tabular-nums">{formatBDT(invoice.total)}</strong> <strong>Send Money</strong> করুন। Reference ঘরটি খালি রাখতে পারেন।</>,
+                <><strong>ট্রানজেকশন আইডি (TrxID)</strong> লিখুন এবং পেমেন্টের <strong>স্ক্রিনশট</strong> যোগ করে জমা দিন। যাচাইয়ের পর কোর্স চালু হবে।</>,
               ].map((line, index) => (
                 <li key={index} className="flex items-start gap-2.5">
                   <span aria-hidden="true" className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">
@@ -300,7 +290,6 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
                   {[
                     [`যে নম্বরে পাঠাবেন (${chosen.accountType})`, chosen.number, 'নম্বর'],
                     ['টাকার পরিমাণ', formatBDT(invoice.total), 'পরিমাণ'],
-                    ['রেফারেন্স', reference, 'রেফারেন্স'],
                   ].map(([label, value, copyLabel], index) => (
                     <div key={label} className={cn('flex items-center justify-between gap-3 py-2.5', index > 0 && 'border-t border-dashed border-stone-200 dark:border-stone-200')}>
                       <span lang="bn" className="text-sm text-stone-500 dark:text-brand-200">{label}</span>
@@ -315,39 +304,16 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
                   <li>{chosen.app} অ্যাপে <strong>Send Money</strong> চাপুন</li>
                   <li>উপরের নম্বরটি দিন</li>
                   <li>পরিমাণ <strong className="tabular-nums">{formatBDT(invoice.total)}</strong> লিখুন</li>
-                  <li>রেফারেন্সে <strong className="tabular-nums">{reference}</strong> লিখুন</li>
-                  <li>পিন দিয়ে কনফার্ম করুন, তারপর মেসেজ থেকে TrxID কপি করুন</li>
+                  <li>পিন দিয়ে কনফার্ম করুন; Reference লেখা দরকার নেই</li>
+                  <li>মেসেজ থেকে TrxID কপি করুন এবং পেমেন্টের স্ক্রিনশট নিন</li>
                 </ol>
               </div>
             )}
           </Step>
 
           <Step number="৩" title="পেমেন্টের তথ্য দিন" locked={!chosen} done={ready}>
-            <fieldset disabled={!chosen} className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label lang="bn" htmlFor="payer-mobile" className="mb-1.5 block text-sm font-semibold text-brand-800 dark:text-brand-200">
-                  যে নম্বর থেকে পাঠিয়েছেন
-                </label>
-                <input
-                  id="payer-mobile"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  maxLength={16}
-                  placeholder="01XXXXXXXXX"
-                  value={payerMobile}
-                  onChange={(event) => setPayerMobile(event.target.value)}
-                  onBlur={() => setTouched((previous) => ({ ...previous, mobile: true }))}
-                  aria-invalid={touched.mobile && mobile && !mobileOk ? 'true' : undefined}
-                  className={cn(field, mobileOk ? 'border-brand-500' : touched.mobile && mobile ? 'border-red-500' : 'border-stone-200')}
-                />
-                <p lang="bn" className={cn('mt-1.5 text-xs', touched.mobile && mobile && !mobileOk ? 'text-red-600 dark:text-red-400' : 'text-stone-500 dark:text-brand-200')}>
-                  {fieldErrors.payerMobile
-                    || (mobileOk ? '✓ ঠিক আছে'
-                      : touched.mobile && mobile ? 'সঠিক ১১ সংখ্যার নম্বর দিন (যেমন 01712345678)'
-                        : '১১ সংখ্যার মোবাইল নম্বর')}
-                </p>
-              </div>
-              <div>
+            <fieldset disabled={!chosen}>
+              <div className="max-w-md">
                 <label lang="bn" htmlFor="payer-trx" className="mb-1.5 block text-sm font-semibold text-brand-800 dark:text-brand-200">
                   ট্রানজেকশন আইডি (TrxID)
                 </label>
@@ -385,7 +351,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
                 <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!chosen || isUploading} onChange={attachScreenshot} />
               </label>
               <span lang="bn" className="text-sm text-stone-500 dark:text-brand-200">
-                {screenshotUrl ? '✓ যোগ হয়েছে' : 'ঐচ্ছিক, যাচাই দ্রুত হয়'}
+                {screenshotUrl ? '✓ যোগ হয়েছে' : 'স্ক্রিনশট আবশ্যক'}
               </span>
             </div>
             {(uploadError || fieldErrors.screenshotUrl) && (
@@ -412,7 +378,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
             <p lang="bn" className="mt-2.5 text-sm text-stone-500 dark:text-brand-200">
               {!chosen ? 'পেমেন্ট মাধ্যম বেছে নিন ও তথ্য পূরণ করুন'
                 : ready ? 'জমা দেওয়ার পর অ্যাডমিন আপনার পেমেন্ট যাচাই করবেন'
-                  : 'নম্বর ও TrxID দিন'}
+                  : !trxOk ? 'TrxID দিন' : 'পেমেন্টের স্ক্রিনশট যোগ করুন'}
             </p>
             {hasProof && (
               <button type="button" lang="bn" onClick={() => setEditing(false)} className="mt-3 text-sm font-semibold text-brand-600 underline underline-offset-4 dark:text-brand-300">
@@ -442,8 +408,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
               ['পরিমাণ', formatBDT(invoice.total)],
               ['মাধ্যম', chosen?.name ?? 'ম্যানুয়াল'],
               ['TrxID', invoice.transactionId],
-              ['প্রেরক নম্বর', invoice.payerMobile],
-              ['রেফারেন্স', reference],
+              ['স্ক্রিনশট', invoice.screenshotUrl ? 'সংযুক্ত' : ''],
             ]}
           />
 
@@ -481,7 +446,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
           <p lang="bn" className="mx-auto mt-1.5 max-w-[46ch] text-sm text-stone-500 dark:text-brand-200">
             অ্যাডমিন এই পেমেন্টের সঙ্গে কোনো লেনদেন মেলাতে পারেননি। কারণ জানতে বা আবার চেষ্টা করতে নিচের বোতামটি ব্যবহার করুন।
           </p>
-          <DetailRows rows={[['TrxID', invoice.transactionId], ['প্রেরক নম্বর', invoice.payerMobile], ['রেফারেন্স', reference]]} />
+          <DetailRows rows={[['TrxID', invoice.transactionId], ['স্ক্রিনশট', invoice.screenshotUrl ? 'সংযুক্ত' : '']]} />
           <div className="mt-5 flex flex-wrap justify-center gap-2.5">
             {onRestart && (
               <Button onClick={onRestart} isLoading={isRestarting}>
@@ -544,8 +509,8 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
                 >
                   PAID
                 </span>
-                <p lang="bn">রসিদ নং <strong className="text-brand-800 dark:text-white">{reference}</strong></p>
-                <p className="mt-0.5 break-all">{invoice.invoiceNo}</p>
+                <p lang="bn">ইনভয়েস নং</p>
+                <p className="mt-0.5 break-all font-semibold text-brand-800 dark:text-white">{invoice.invoiceNo}</p>
                 <p className="mt-0.5">{formatDate(invoice.paidAt ?? invoice.issuedAt)}</p>
               </div>
             </div>
@@ -581,7 +546,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
             </table>
 
             <div className="mt-3 grid grid-cols-2 gap-3 rounded-image bg-stone-50 px-3 py-2.5 text-sm sm:grid-cols-3 dark:bg-surface-dark">
-              {[['মাধ্যম', chosen?.name ?? 'ম্যানুয়াল'], ['TrxID', invoice.transactionId], ['প্রেরক নম্বর', invoice.payerMobile]]
+              {[['মাধ্যম', chosen?.name ?? 'ম্যানুয়াল'], ['TrxID', invoice.transactionId]]
                 .filter(([, value]) => value)
                 .map(([label, value]) => (
                   <div key={label}>
@@ -611,7 +576,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
       {invoice.status === 'refunded' && (
         <section className="payment-no-print rounded-card border border-stone-200 bg-white p-6 text-center dark:border-stone-200 dark:bg-surface-dark-subtle">
           <h2 lang="bn" className="font-heading text-lg font-bold text-brand-800 dark:text-white">এই পেমেন্ট ফেরত দেওয়া হয়েছে</h2>
-          <DetailRows rows={[['পরিমাণ', formatBDT(invoice.total)], ['রেফারেন্স', reference]]} />
+          <DetailRows rows={[['পরিমাণ', formatBDT(invoice.total)], ['TrxID', invoice.transactionId]]} />
         </section>
       )}
     </div>

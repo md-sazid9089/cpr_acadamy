@@ -25,13 +25,13 @@ test('payment proof rejects screenshot links that are not this app\'s own upload
     const student = await context.user();
     await admin.request('POST', '/admin/courses', { slug: 'shots', title: 'Shots', category: 'FCPS', price: 100, isPublished: true });
     const invoice = (await student.request('POST', '/payments/initiate', { courseSlug: 'shots', method: 'manual' }, { 'idempotency-key': 'key-shots-001' })).json();
-    const proof = screenshotUrl => student.request('POST', `/payments/${invoice.id}/proof`, { transactionId: 'SHOT-REF-1', payerMobile: '01712345678', screenshotUrl });
+    const proof = screenshotUrl => student.request('POST', `/payments/${invoice.id}/proof`, { transactionId: 'SHOT-REF-1', screenshotUrl });
     for (const url of ['javascript:alert(1)', 'data:text/html,<b>x</b>', 'https://evil.example/pixel.gif', 'http://169.254.169.254/x']) {
       const response = await proof(url);
       assert.equal(response.statusCode, 400, url);
       assert.equal(response.json().code, 'VALIDATION_ERROR');
     }
     assert.equal((await proof(local)).statusCode, 200);
-    assert.equal((await proof('')).statusCode, 200, 'the screenshot stays optional');
+    assert.equal((await proof('')).statusCode, 400, 'a screenshot is required as payment proof');
   } finally { await context.close(); }
 });
