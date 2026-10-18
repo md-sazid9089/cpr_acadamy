@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { FaPlay, FaPause, FaVolumeHigh, FaVolumeXmark, FaExpand, FaCompress } from 'react-icons/fa6';
+import { FaPlay, FaVolumeHigh, FaVolumeXmark, FaExpand, FaCompress } from 'react-icons/fa6';
 import YouTubePlayer from './YouTubePlayer.jsx';
 import PlaybackRateControl from './PlaybackRateControl.jsx';
 import SkipControls, { SKIP_SECONDS } from './SkipControls.jsx';
@@ -168,8 +168,6 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
         )}
       </button>
 
-      <SkipControls playing={playing} onSkip={skip} />
-
       {watermark && (
         <span className="pointer-events-none absolute right-3 top-3 rounded bg-black/40 px-2 py-1 text-[11px] text-white/70">
           {watermark}
@@ -177,41 +175,44 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
       )}
 
       {/* Bottom control bar */}
-      <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-6 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-        <button type="button" onClick={toggle} aria-label={playing ? 'Pause' : 'Play'} className="shrink-0 text-white">
-          {playing ? <FaPause aria-hidden="true" className="h-4 w-4" /> : <FaPlay aria-hidden="true" className="h-4 w-4" />}
-        </button>
-
-        <div
-          role="slider"
-          aria-label="Seek"
-          aria-valuemin={0}
-          aria-valuemax={duration}
-          aria-valuenow={current}
-          onClick={seek}
-          className="relative h-1.5 flex-1 cursor-pointer rounded-full bg-white/25"
-        >
+      <div className="absolute inset-x-0 bottom-0 space-y-1 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-2 pb-1.5 pt-7 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 sm:px-3 sm:pb-2">
+        <div className="flex items-center gap-2">
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-brand-500"
-            style={{ width: duration ? `${(current / duration) * 100}%` : '0%' }}
-          />
+            role="slider"
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={duration}
+            aria-valuenow={current}
+            onClick={seek}
+            className="relative h-1.5 flex-1 cursor-pointer rounded-full bg-white/25"
+          >
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-brand-500"
+              style={{ width: duration ? `${(current / duration) * 100}%` : '0%' }}
+            />
+          </div>
+          <span className="shrink-0 text-[10px] tabular-nums text-white/80 sm:text-[11px]">
+            {formatTime(current)} / {formatTime(duration)}
+          </span>
         </div>
 
-        <span className="hidden shrink-0 text-[11px] tabular-nums text-white/80 sm:inline">
-          {formatTime(current)} / {formatTime(duration)}
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          <SkipControls playing={playing} onToggle={toggle} onSkip={skip} />
 
-        <button type="button" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'} className="shrink-0 text-white">
-          {muted ? <FaVolumeXmark aria-hidden="true" className="h-4 w-4" /> : <FaVolumeHigh aria-hidden="true" className="h-4 w-4" />}
-        </button>
+          <div className="flex min-w-0 items-center gap-3">
+            <button type="button" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'} className="shrink-0 text-white">
+              {muted ? <FaVolumeXmark aria-hidden="true" className="h-4 w-4" /> : <FaVolumeHigh aria-hidden="true" className="h-4 w-4" />}
+            </button>
 
-        <div className="flex shrink-0 items-center justify-center">
-          <PlaybackRateControl rate={rate} onChange={applyRate} />
+            <div className="flex shrink-0 items-center justify-center">
+              <PlaybackRateControl rate={rate} onChange={applyRate} />
+            </div>
+
+            <button type="button" onClick={toggleFullscreen} aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} className="shrink-0 text-white">
+              {fullscreen ? <FaCompress aria-hidden="true" className="h-4 w-4" /> : <FaExpand aria-hidden="true" className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
-
-        <button type="button" onClick={toggleFullscreen} aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'} className="shrink-0 text-white">
-          {fullscreen ? <FaCompress aria-hidden="true" className="h-4 w-4" /> : <FaExpand aria-hidden="true" className="h-4 w-4" />}
-        </button>
       </div>
     </div>
   );
