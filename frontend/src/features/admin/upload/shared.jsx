@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaTrash } from 'react-icons/fa6';
 import { uploadImage } from '../api/admin.api.js';
+import Button from '@/components/ui/Button.jsx';
+import Modal from '@/components/ui/Modal.jsx';
 import { cn } from '@/lib/utils';
 
 /** One block of the Upload page: title, description and size guidance on the left, an action on the right. */
@@ -69,34 +71,55 @@ export function StatusPill({ on, onText = 'On site', offText = 'Hidden' }) {
   );
 }
 
-/** A delete button that asks for a second click instead of a confirm box. */
+/** A destructive action with explicit confirmation and duplicate-submit protection. */
 export function DeleteButton({ onConfirm, label = 'Delete', text, className, disabled }) {
-  const [armed, setArmed] = useState(false);
-  const timer = useRef();
-  useEffect(() => () => clearTimeout(timer.current), []);
-  const click = () => {
-    if (armed) { setArmed(false); onConfirm(); return; }
-    setArmed(true);
-    timer.current = setTimeout(() => setArmed(false), 3000);
+  const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const confirm = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await onConfirm();
+      setOpen(false);
+    } catch {
+      // The owning mutation renders the API error; keep the dialog open for retry or cancel.
+    } finally {
+      setDeleting(false);
+    }
   };
   return (
-    <button
-      type="button"
-      onClick={click}
-      disabled={disabled}
-      aria-label={armed ? 'Click again to delete' : label}
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border text-sm font-semibold transition-colors disabled:opacity-40',
-        text ? 'min-h-[38px] px-3' : 'h-8 w-8',
-        armed
-          ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'
-          : 'border-stone-200 bg-white text-stone-500 hover:border-red-500 hover:text-red-700 dark:border-stone-200 dark:bg-surface-dark dark:text-brand-200',
-        className,
-      )}
-    >
-      <FaTrash aria-hidden="true" className="h-3.5 w-3.5" />
-      {text && (armed ? 'Click again to delete' : text)}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        disabled={disabled || deleting}
+        aria-label={label}
+        className={cn(
+          'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-stone-200 bg-white text-sm font-semibold text-stone-500 transition-colors hover:border-red-500 hover:text-red-700 disabled:opacity-40 dark:border-stone-200 dark:bg-surface-dark dark:text-brand-200',
+          text ? 'min-h-[38px] px-3' : 'h-8 w-8',
+          className,
+        )}
+      >
+        <FaTrash aria-hidden="true" className="h-3.5 w-3.5" />
+        {text}
+      </button>
+      <Modal
+        open={open}
+        onClose={() => { if (!deleting) setOpen(false); }}
+        title={`${label}?`}
+        description="This action cannot be undone."
+        size="sm"
+        closeOnBackdrop={!deleting}
+      >
+        <p className="text-sm text-stone-600 dark:text-brand-200">Are you sure you want to continue?</p>
+        <div className="mt-5 flex justify-end gap-3">
+          <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={deleting}>Cancel</Button>
+          <Button type="button" variant="danger" onClick={confirm} isLoading={deleting}>
+            {deleting ? 'Deleting…' : label}
+          </Button>
+        </div>
+      </Modal>
+    </>
   );
 }
 

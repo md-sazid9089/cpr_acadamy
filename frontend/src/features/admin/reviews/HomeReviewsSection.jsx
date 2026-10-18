@@ -129,7 +129,7 @@ export default function HomeReviewsSection() {
                     <button type="button" aria-label="Edit review" onClick={() => open(review)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 text-stone-500 hover:text-brand-600 dark:border-stone-200 dark:text-brand-200">
                       <FaPenToSquare aria-hidden="true" className="h-3.5 w-3.5" />
                     </button>
-                    <DeleteButton label="Delete review" onConfirm={() => remove.mutate(review.id)} />
+                    <DeleteButton label="Delete review" onConfirm={() => remove.mutateAsync(review.id)} />
                   </div>
                 </li>
               ))}

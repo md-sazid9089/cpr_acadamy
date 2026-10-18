@@ -83,7 +83,7 @@ export default function CollageTab() {
                     <SaveOnBlurInput id={`collage-caption-${post.id}`} label="Caption" value={post.caption} maxLength={300} onSave={(caption) => update.mutate({ id: post.id, caption })} />
                     <div className="flex items-center justify-between gap-2">
                       <Switch checked={post.isPublished} disabled={full} onChange={(isPublished) => update.mutate({ id: post.id, isPublished })}>Home page</Switch>
-                      <DeleteButton label="Delete post" onConfirm={() => remove.mutate(post.id)} />
+                      <DeleteButton label="Delete post" onConfirm={() => remove.mutateAsync(post.id)} />
                     </div>
                     {full && <p className="text-xs text-stone-500 dark:text-brand-200">All {HOME_LIMIT} places are used. Switch another post off first.</p>}
                   </div>

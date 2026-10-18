@@ -104,7 +104,7 @@ export default function HeroTab() {
                 <div className="col-span-3 flex items-center justify-end gap-3 sm:col-span-1">
                   <StatusPill on={slide.isPublished} />
                   <Switch label="Show on the home page" checked={slide.isPublished} onChange={(isPublished) => update.mutate({ id: slide.id, isPublished })} />
-                  <DeleteButton label="Delete poster" onConfirm={() => remove.mutate(slide.id)} />
+                  <DeleteButton label="Delete poster" onConfirm={() => remove.mutateAsync(slide.id)} />
                 </div>
               </li>
             ))}

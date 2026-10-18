@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FaChevronDown, FaChevronUp, FaStar, FaTrash } from 'react-icons/fa6';
+import { FaChevronDown, FaChevronUp, FaStar } from 'react-icons/fa6';
 import {
   addGalleryEventPhoto, createGalleryEvent, deleteGalleryEvent, deleteGalleryEventPhoto, fetchAdminGalleryEvents,
   fetchAdminGalleryHero, reorderGalleryEvents, saveGalleryHero, setGalleryEventCover, updateGalleryEvent,
@@ -79,7 +79,7 @@ function HeroPhoto() {
                     {uploading ? 'Uploading…' : 'Replace photo'}
                     <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { replace([...event.target.files]); event.target.value = ''; }} />
                   </label>
-                  <DeleteButton text="Remove" label="Remove hero photo" onConfirm={() => save.mutate({ imageUrl: null })} />
+                  <DeleteButton text="Remove" label="Remove hero photo" onConfirm={() => save.mutateAsync({ imageUrl: null })} />
                 </div>
               </>
             )}
@@ -205,9 +205,11 @@ function EventItem({ event, open, onToggle, canMoveUp, canMoveDown, onMove, onPr
                       <FaStar aria-hidden="true" className="h-3.5 w-3.5" />
                     </button>
                   )}
-                  <button type="button" aria-label="Delete photo" onClick={() => removePhoto.mutate({ eventId: event.id, photoId: photo.id })} className="flex h-7 w-7 items-center justify-center rounded-md bg-white/95 text-brand-800 hover:text-red-600">
-                    <FaTrash aria-hidden="true" className="h-3.5 w-3.5" />
-                  </button>
+                  <DeleteButton
+                    label="Delete photo"
+                    className="h-7 w-7 border-0 bg-white/95 text-brand-800 hover:text-red-600 dark:bg-white/95 dark:text-brand-800"
+                    onConfirm={() => removePhoto.mutateAsync({ eventId: event.id, photoId: photo.id })}
+                  />
                 </div>
               </div>
             ))}
@@ -231,7 +233,7 @@ function EventItem({ event, open, onToggle, canMoveUp, canMoveDown, onMove, onPr
               <button type="button" aria-label="Move event down" disabled={!canMoveDown} onClick={() => onMove(1)} className="flex h-8 w-8 items-center justify-center rounded-lg border border-stone-200 text-stone-500 hover:text-brand-600 disabled:opacity-30 dark:border-stone-200 dark:text-brand-200">
                 <FaChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
               </button>
-              <DeleteButton text="Delete event" label="Delete event" onConfirm={() => remove.mutate(event.id)} />
+              <DeleteButton text="Delete event" label="Delete event" onConfirm={() => remove.mutateAsync(event.id)} />
             </div>
           </div>
         </div>
