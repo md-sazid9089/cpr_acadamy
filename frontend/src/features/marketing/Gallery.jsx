@@ -8,6 +8,37 @@ import ResponsiveImage, { localWebpSrcSet } from '@/components/ui/ResponsiveImag
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 
+/** One public event cover with a visible name and photo count. */
+export function GalleryEventCard({ event, onOpen }) {
+  const name = event.name?.trim() || 'Event';
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={`${name}, ${event.photos.length} photos`}
+      className="group relative aspect-[16/11] overflow-hidden rounded-image border border-stone-200 bg-stone-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:bg-surface-dark"
+    >
+      <ResponsiveImage
+        src={event.coverUrl}
+        webpSrcSet={localWebpSrcSet(event.coverUrl)}
+        sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+        alt=""
+        loading="lazy"
+        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end gap-2 bg-gradient-to-t from-brand-950/95 via-brand-950/65 to-transparent px-2.5 pb-2 pt-9 text-white">
+        <span title={name} className="min-w-0 flex-1 truncate text-left text-xs font-bold leading-tight sm:text-sm">
+          {name}
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
+          <FaImages aria-hidden="true" className="h-3 w-3" />
+          {event.photos.length}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 /** Gallery page: one big hero photo, then a card per event that opens its photos in a viewer. Managed on the admin Upload page. */
 export default function Gallery() {
   const { data, isLoading, isError, error, isFetching, refetch } = useQuery({
@@ -78,26 +109,11 @@ export default function Gallery() {
           <div className="container-page relative z-10">
             <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
               {events.map((event) => (
-                <button
+                <GalleryEventCard
                   key={event.id}
-                  type="button"
-                  onClick={() => setOpen({ event, index: Math.max(0, event.photos.findIndex((photo) => photo.imageUrl === event.coverUrl)) })}
-                  aria-label={`${event.name || 'Event'}, ${event.photos.length} photos`}
-                  className="group relative aspect-[16/11] overflow-hidden rounded-image border border-stone-200 bg-stone-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:bg-surface-dark"
-                >
-                  <ResponsiveImage
-                    src={event.coverUrl}
-                    webpSrcSet={localWebpSrcSet(event.coverUrl)}
-                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-brand-900/70 px-2 py-0.5 text-xs font-semibold text-white">
-                    <FaImages aria-hidden="true" className="h-3 w-3" />
-                    {event.photos.length}
-                  </span>
-                </button>
+                  event={event}
+                  onOpen={() => setOpen({ event, index: Math.max(0, event.photos.findIndex((photo) => photo.imageUrl === event.coverUrl)) })}
+                />
               ))}
             </div>
           </div>

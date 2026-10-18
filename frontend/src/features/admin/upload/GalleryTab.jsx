@@ -190,7 +190,7 @@ function EventItem({ event, open, onToggle, canMoveUp, canMoveDown, onMove, onPr
 
       {open && (
         <div id={panelId} className="space-y-4 border-t border-stone-200 p-4 dark:border-stone-200">
-          <SaveOnBlurInput id={`event-name-${event.id}`} label="Event name (only admins see this)" value={event.name} maxLength={120} onSave={(name) => update.mutate({ id: event.id, name })} />
+          <SaveOnBlurInput id={`event-name-${event.id}`} label="Event name (shown on the public gallery)" value={event.name} maxLength={120} onSave={(name) => update.mutate({ id: event.id, name })} />
 
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
             {event.photos.map((photo) => (
