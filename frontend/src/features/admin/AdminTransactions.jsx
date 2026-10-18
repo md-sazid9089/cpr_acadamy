@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
-import Input, { Select, Textarea } from '@/components/ui/Input.jsx';
+import { Textarea } from '@/components/ui/Input.jsx';
 import { paymentReference } from '@/features/payments/wallets.js';
 import { PAYMENT_METHODS, PAYMENT_STATUS } from '@/constants';
 import { cn, formatBDT, formatDateTime } from '@/lib/utils';
@@ -63,17 +63,9 @@ export const PAYMENT_COLUMNS = [
   { key: 'status', header: 'Status', align: 'right', render: (row) => <StatusBadge status={row.status} /> },
 ];
 
-/**
- * Approval dialog for one pending manual payment. The admin picks the outcome
- * from a dropdown and writes a comment: "Payment received" confirms it (which
- * activates the student's enrolment, so it also needs the provider transaction
- * ID); "Not received" rejects it. The comment goes to the audit log either way.
- * `initialDecision` ('received' | 'not-received') pre-selects the outcome when the admin
- * clicked Confirm or Reject on the row.
- */
-export function ReconcileDialog({ payment, onClose, onDone, initialDecision = '' }) {
-  const [decision, setDecision] = useState(initialDecision);
-  const [transactionId, setTransactionId] = useState(payment?.transactionId ?? '');
+/** Opens a neutral proof review before the admin chooses an outcome. */
+export function ReconcileDialog({ payment, onClose, onDone }) {
+  const [decision, setDecision] = useState('');
   const [comment, setComment] = useState('');
 
   const confirm = useMutation({ mutationFn: confirmPayment, onSuccess: onDone });
@@ -84,29 +76,49 @@ export function ReconcileDialog({ payment, onClose, onDone, initialDecision = ''
 
   const submit = (event) => {
     event.preventDefault();
-    if (received) confirm.mutate({ id: payment.id, transactionId: transactionId.trim(), amount: payment.amount, evidence: comment.trim() });
+    if (received) confirm.mutate({ id: payment.id, transactionId: payment.transactionId.trim(), amount: payment.amount, evidence: comment.trim() });
     else reject.mutate({ id: payment.id, reason: comment.trim() });
   };
+
+  const details = [
+    ['Student', payment?.studentName],
+    ['Student mobile', payment?.studentMobile],
+    ['Course', payment?.courseTitle],
+    ['Amount', payment ? formatBDT(payment.amount) : ''],
+    ['Payment method', payment ? (METHOD_LABELS[payment.method] ?? payment.method) : ''],
+    ['Transaction ID', payment?.transactionId || 'Not submitted'],
+    ['Paid from', payment?.payerMobile || 'Not submitted'],
+    ['Submitted', payment ? formatDateTime(payment.proofSubmittedAt ?? payment.createdAt) : ''],
+    ['Invoice', payment?.invoiceNo],
+  ];
 
   return (
     <Modal
       open={Boolean(payment)}
       onClose={onClose}
       title="Review payment"
-      description={payment ? `${paymentReference(payment.invoiceNo)} · ${payment.courseTitle} · ${formatBDT(payment.amount)}` : ''}
+      description="Check the submitted details before accepting or rejecting."
+      size="lg"
     >
       <form onSubmit={submit} className="space-y-4">
-        {(payment?.payerMobile || payment?.screenshotUrl) && (
-          <div className="rounded-lg border border-stone-200 bg-surface-subtle p-3 text-xs dark:border-stone-200 dark:bg-surface-dark">
-            <p className="font-semibold text-stone-700 dark:text-brand-200">Submitted by the student</p>
-            {payment.payerMobile && <p className="mt-1 text-stone-600 dark:text-brand-200">Paid from: <strong>{payment.payerMobile}</strong></p>}
-            {payment.screenshotUrl && (
-              <a href={payment.screenshotUrl} target="_blank" rel="noopener noreferrer" className="mt-2 block">
-                <img src={payment.screenshotUrl} alt="Payment screenshot submitted by the student" className="max-h-40 rounded-lg border border-stone-200" />
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
+          <dl className="divide-y divide-stone-200 rounded-lg border border-stone-200 px-4 dark:border-stone-200">
+            {details.map(([label, value]) => (
+              <div key={label} className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 py-2.5 text-sm">
+                <dt className="text-stone-500 dark:text-brand-200">{label}</dt>
+                <dd className={cn('min-w-0 break-words font-medium text-stone-900 dark:text-white', label === 'Transaction ID' || label === 'Invoice' ? 'font-mono text-xs' : '')}>{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="rounded-lg border border-stone-200 bg-surface-subtle p-3 dark:border-stone-200 dark:bg-surface-dark">
+            <p className="text-xs font-semibold text-stone-700 dark:text-brand-200">Payment screenshot</p>
+            {payment?.screenshotUrl ? (
+              <a href={payment.screenshotUrl} target="_blank" rel="noopener noreferrer" className="mt-2 block" title="Open full-size screenshot">
+                <img src={payment.screenshotUrl} alt="Payment screenshot submitted by the student" className="max-h-64 w-full rounded-lg border border-stone-200 object-contain" />
               </a>
-            )}
+            ) : <p className="mt-2 text-sm text-stone-500 dark:text-brand-200">Not submitted</p>}
           </div>
-        )}
+        </div>
 
         {error && (
           <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
@@ -114,45 +126,36 @@ export function ReconcileDialog({ payment, onClose, onDone, initialDecision = ''
           </p>
         )}
 
-        <Select label="Payment status" required value={decision} onChange={(event) => setDecision(event.target.value)}>
-          <option value="" disabled>Select an option</option>
-          <option value="received">Payment received</option>
-          <option value="not-received">Not received</option>
-        </Select>
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold text-stone-800 dark:text-white">Decision</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button type="button" variant={decision === 'received' ? 'primary' : 'outline'} onClick={() => setDecision('received')} disabled={!payment?.transactionId || busy}>Accept payment</Button>
+            <Button type="button" variant={decision === 'not-received' ? 'danger' : 'outline'} onClick={() => setDecision('not-received')} disabled={busy}>Reject payment</Button>
+          </div>
+          {!payment?.transactionId && <p className="mt-2 text-xs text-red-600 dark:text-red-400">This payment cannot be accepted until the student submits a transaction ID.</p>}
+        </fieldset>
 
-        {received && (
-          <Input
-            label="Transaction ID"
+        {decision && (
+          <Textarea
+            label={received ? 'Verification note' : 'Rejection reason'}
             required
-            minLength={3}
-            value={transactionId}
-            onChange={(event) => setTransactionId(event.target.value)}
-            placeholder="bKash / Nagad / bank reference"
-            hint={`Confirms exactly ${formatBDT(payment?.amount)} — the invoice amount cannot be changed here.`}
+            minLength={received ? 10 : 5}
+            rows={3}
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            placeholder={decision === 'not-received' ? 'e.g. No matching transfer found after 7 days.' : 'e.g. Matched against the merchant statement on 12 Sep.'}
           />
         )}
-
-        <Textarea
-          label="Comment"
-          required
-          minLength={received ? 10 : 5}
-          rows={3}
-          value={comment}
-          onChange={(event) => setComment(event.target.value)}
-          placeholder={
-            decision === 'not-received'
-              ? 'e.g. No matching transfer found after 7 days.'
-              : 'e.g. Matched against the merchant statement on 12 Sep, sender 017…'
-          }
-        />
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button type="submit" variant={decision === 'not-received' ? 'danger' : 'primary'} disabled={!decision} isLoading={busy}>
-            {decision === 'not-received' ? 'Reject payment' : 'Approve & activate access'}
-          </Button>
+          {decision && (
+            <Button type="submit" variant={decision === 'not-received' ? 'danger' : 'primary'} isLoading={busy}>
+              {decision === 'not-received' ? 'Confirm rejection' : 'Confirm & activate access'}
+            </Button>
+          )}
         </div>
       </form>
     </Modal>
@@ -200,7 +203,7 @@ export default function TransactionsPanel() {
   const [filter, setFilter] = useState(PAYMENT_STATUS.PENDING);
   const [searchText, setSearchText] = useState('');
   const [search, setSearch] = useState('');
-  const [reconciling, setReconciling] = useState(null); // { payment, decision }
+  const [reconciling, setReconciling] = useState(null);
   const queryClient = useQueryClient();
 
   // Wait for a pause in typing before searching.
@@ -237,7 +240,7 @@ export default function TransactionsPanel() {
         count={latest?.pendingCount}
         description="Manual payments (bKash, Nagad, bank) to confirm once the money arrives."
         infoLabel="About transaction approval"
-        info="Check the transaction ID against your bKash, Nagad or bank statement. Confirming activates the student's access to the course; rejecting marks the payment failed. Both ask for a short note for the audit log."
+        info="Open a payment to review its transaction ID, payer details and screenshot. Accepting activates course access; rejecting marks the payment failed. Both require a short audit note."
       />
 
       <div className="space-y-3 border-b border-stone-200 px-5 py-4 sm:px-6 dark:border-stone-200">
@@ -343,9 +346,8 @@ export default function TransactionsPanel() {
                   </td>
                   <td className="whitespace-nowrap py-3.5 pl-3 pr-5">
                     {row.status === PAYMENT_STATUS.PENDING && (
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="danger" onClick={() => setReconciling({ payment: row, decision: 'not-received' })}>Reject</Button>
-                        <Button size="sm" onClick={() => setReconciling({ payment: row, decision: 'received' })}>Confirm</Button>
+                      <div className="flex justify-end">
+                        <Button size="sm" variant="outline" onClick={() => setReconciling(row)}>Open</Button>
                       </div>
                     )}
                   </td>
@@ -367,9 +369,8 @@ export default function TransactionsPanel() {
 
       {reconciling && (
         <ReconcileDialog
-          key={reconciling.payment.id + reconciling.decision}
-          payment={reconciling.payment}
-          initialDecision={reconciling.decision}
+          key={reconciling.id}
+          payment={reconciling}
           onClose={() => setReconciling(null)}
           onDone={finishReconcile}
         />
