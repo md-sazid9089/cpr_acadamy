@@ -11,7 +11,7 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { Textarea } from '@/components/ui/Input.jsx';
-import { paymentReference } from '@/features/payments/wallets.js';
+import { shortInvoiceNumber } from '@/features/payments/payment-display.js';
 import { PAYMENT_METHODS, PAYMENT_STATUS } from '@/constants';
 import { cn, formatBDT, formatDateTime } from '@/lib/utils';
 
@@ -24,7 +24,7 @@ export const PAYMENT_COLUMNS = [
     header: 'Invoice',
     render: (row) => (
       <div>
-        <p className="font-mono text-xs font-semibold text-stone-900 dark:text-white">{row.invoiceNo}</p>
+        <p className="font-mono text-xs font-semibold text-stone-900 dark:text-white" title={row.invoiceNo}>{shortInvoiceNumber(row.invoiceNo)}</p>
         <p className="text-xs text-stone-500 dark:text-brand-200">{formatDateTime(row.paidAt ?? row.createdAt)}</p>
       </div>
     ),
@@ -87,9 +87,8 @@ export function ReconcileDialog({ payment, onClose, onDone }) {
     ['Amount', payment ? formatBDT(payment.amount) : ''],
     ['Payment method', payment ? (METHOD_LABELS[payment.method] ?? payment.method) : ''],
     ['Transaction ID', payment?.transactionId || 'Not submitted'],
-    ['Paid from', payment?.payerMobile || 'Not submitted'],
     ['Submitted', payment ? formatDateTime(payment.proofSubmittedAt ?? payment.createdAt) : ''],
-    ['Invoice', payment?.invoiceNo],
+    ['Invoice', shortInvoiceNumber(payment?.invoiceNo)],
   ];
 
   return (
@@ -336,9 +335,6 @@ export default function TransactionsPanel() {
                         )}
                       </span>
                     ) : <span className="text-xs text-stone-400 dark:text-brand-200">—</span>}
-                    <p className="font-mono text-[11px] text-stone-400 dark:text-brand-200" title={row.invoiceNo}>
-                      Ref {paymentReference(row.invoiceNo)}
-                    </p>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3.5">
                     <StatusBadge status={row.status} className="capitalize" />

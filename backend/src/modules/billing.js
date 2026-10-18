@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { one } from '../db.js';
 import { audit, ensure, uuid, text, pageQuery } from '../http.js';
@@ -7,6 +7,13 @@ import { registrationNumber } from './students.js';
 
 // A provider transaction ID means the same payment in any letter case, so it is stored upper-case.
 const transactionId = text.min(3).max(120).transform(value => value.toUpperCase());
+
+// Internal payment IDs remain UUIDs. The invoice number is deliberately shorter
+// because people see it on receipts and in the admin panel, but 56 random bits
+// still give it ample collision resistance for the academy's scale.
+export function createInvoiceNumber(date = new Date(), entropy = randomBytes(7).toString('hex')) {
+  return `CPR-${date.getUTCFullYear()}-${String(entropy).replace(/[^a-f0-9]/gi, '').slice(0, 14).toUpperCase()}`;
+}
 
 export function paymentDto(row) {
   return { id: row.id, paymentId: row.id, invoiceNo: row.invoice_no, courseId: row.course_id,
@@ -72,7 +79,7 @@ export function billingRoutes(route, database, config) {
       const payment = await one(transaction, `INSERT INTO payments(user_id,course_id,plan_id,amount_minor,method,idempotency_key,invoice_no,description,billed_to,access_days)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [user.id, course.id, plan?.id || null, plan ? plan.price_minor : course.discount_minor ?? course.price_minor,
-        request.body.method, idempotencyKey, `CPR-${new Date().getUTCFullYear()}-${randomUUID().toUpperCase()}`,
+        request.body.method, idempotencyKey, createInvoiceNumber(),
         plan ? `${course.title}: ${plan.name}` : course.title,
         JSON.stringify({ name: user.full_name, mobile: user.mobile, institution: user.institution }), plan?.duration_days || course.access_days]);
       if (!plan) await transaction.query('INSERT INTO enrollments(user_id,course_id) VALUES ($1,$2) ON CONFLICT(user_id,course_id) DO NOTHING', [user.id, course.id]);

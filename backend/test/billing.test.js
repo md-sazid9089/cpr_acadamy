@@ -16,6 +16,7 @@ test('billing ignores client prices, isolates invoices, and activates access exa
     assert.equal(response.statusCode, 200, response.body);
     const payment = response.json();
     assert.equal(payment.amount, 800);
+    assert.match(payment.invoiceNo, /^CPR-\d{4}-[A-F0-9]{14}$/);
     assert.equal((await student.request('POST', '/payments/initiate', input, { 'idempotency-key': 'purchase-key-one' })).json().id, payment.id);
     assert.equal((await other.request('GET', `/invoices/${payment.id}`)).statusCode, 404);
     assert.equal((await student.request('GET', `/invoices/${payment.id}`)).json().paidAt, null);

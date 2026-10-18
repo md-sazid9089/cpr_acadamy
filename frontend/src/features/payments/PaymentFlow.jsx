@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { FaCheck, FaCircleCheck, FaCopy, FaPrint, FaRegCircleXmark, FaCamera, FaPen, FaWhatsapp, FaPlay } from 'react-icons/fa6';
 import { submitPaymentProof, uploadPaymentScreenshot } from './api/payments.api.js';
+import { shortInvoiceNumber } from './payment-display.js';
 import {
   WALLETS, walletById, cleanTransactionId, isValidTransactionId,
 } from './wallets.js';
@@ -510,7 +511,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
                   PAID
                 </span>
                 <p lang="bn">ইনভয়েস নং</p>
-                <p className="mt-0.5 break-all font-semibold text-brand-800 dark:text-white">{invoice.invoiceNo}</p>
+                <p className="mt-0.5 font-semibold text-brand-800 dark:text-white" title={invoice.invoiceNo}>{shortInvoiceNumber(invoice.invoiceNo)}</p>
                 <p className="mt-0.5">{formatDate(invoice.paidAt ?? invoice.issuedAt)}</p>
               </div>
             </div>
