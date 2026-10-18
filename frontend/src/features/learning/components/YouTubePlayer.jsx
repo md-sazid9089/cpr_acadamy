@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FaPlay, FaVolumeHigh, FaVolumeXmark, FaExpand, FaCompress } from 'react-icons/fa6';
+import { FaPlay, FaExpand, FaCompress } from 'react-icons/fa6';
 import PlaybackRateControl from './PlaybackRateControl.jsx';
 import SkipControls, { SKIP_SECONDS } from './SkipControls.jsx';
+import VolumeControl from './VolumeControl.jsx';
 
 let apiPromise = null;
 /** Loads the YouTube IFrame API script once and resolves with `window.YT`. */
@@ -76,6 +77,8 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const lastAudibleVolume = useRef(1);
   const [rate, setRate] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   // True once the custom player gave up (API blocked, never ready, or a video error). There is no fallback to YouTube's
@@ -187,7 +190,26 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
   const toggleMute = () => {
     const player = playerRef.current;
     if (!player) return;
-    if (muted) { player.unMute(); setMuted(false); } else { player.mute(); setMuted(true); }
+    if (muted) {
+      const restored = volume > 0 ? volume : lastAudibleVolume.current;
+      player.setVolume?.(restored * 100);
+      player.unMute();
+      setVolume(restored);
+      setMuted(false);
+    } else {
+      player.mute();
+      setMuted(true);
+    }
+  };
+
+  const applyVolume = (value) => {
+    const next = Math.min(1, Math.max(0, value));
+    if (next > 0) lastAudibleVolume.current = next;
+    setVolume(next);
+    setMuted(next === 0);
+    playerRef.current?.setVolume?.(next * 100);
+    if (next === 0) playerRef.current?.mute?.();
+    else playerRef.current?.unMute?.();
   };
 
   const applyRate = (value) => {
@@ -285,9 +307,7 @@ export default function YouTubePlayer({ videoId, title, watermark, onEnded, onEr
           {ready && <SkipControls playing={playing} onToggle={toggle} onSkip={skip} />}
 
           <div className="ml-auto flex min-w-0 items-center gap-3">
-            <button type="button" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'} className="shrink-0 text-white">
-              {muted ? <FaVolumeXmark aria-hidden="true" className="h-4 w-4" /> : <FaVolumeHigh aria-hidden="true" className="h-4 w-4" />}
-            </button>
+            <VolumeControl volume={volume} muted={muted} onToggleMute={toggleMute} onChange={applyVolume} />
 
             <div className="flex shrink-0 items-center justify-center">
               <PlaybackRateControl rate={rate} onChange={applyRate} />

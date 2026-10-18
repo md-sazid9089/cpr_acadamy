@@ -1,8 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { FaPlay, FaVolumeHigh, FaVolumeXmark, FaExpand, FaCompress } from 'react-icons/fa6';
+import { FaPlay, FaExpand, FaCompress } from 'react-icons/fa6';
 import YouTubePlayer from './YouTubePlayer.jsx';
 import PlaybackRateControl from './PlaybackRateControl.jsx';
 import SkipControls, { SKIP_SECONDS } from './SkipControls.jsx';
+import VolumeControl from './VolumeControl.jsx';
 
 /** 'https://youtu.be/ID', '…/watch?v=ID', '…/embed/ID', '…/shorts/ID' -> 'ID', else null. */
 function extractYouTubeId(url) {
@@ -49,6 +50,8 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const lastAudibleVolume = useRef(1);
   const [rate, setRate] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -82,9 +85,29 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
   };
 
   const toggleMute = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !muted;
-    setMuted(!muted);
+    const video = videoRef.current;
+    if (!video) return;
+    if (muted) {
+      const restored = volume > 0 ? volume : lastAudibleVolume.current;
+      video.volume = restored;
+      video.muted = false;
+      setVolume(restored);
+      setMuted(false);
+    } else {
+      video.muted = true;
+      setMuted(true);
+    }
+  };
+
+  const applyVolume = (value) => {
+    const next = Math.min(1, Math.max(0, value));
+    if (next > 0) lastAudibleVolume.current = next;
+    setVolume(next);
+    setMuted(next === 0);
+    if (videoRef.current) {
+      videoRef.current.volume = next;
+      videoRef.current.muted = next === 0;
+    }
   };
 
   const applyRate = (value) => {
@@ -200,9 +223,7 @@ export default function VideoPlayer({ src, poster, title, watermark, onEnded }) 
           <SkipControls playing={playing} onToggle={toggle} onSkip={skip} />
 
           <div className="flex min-w-0 items-center gap-3">
-            <button type="button" onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'} className="shrink-0 text-white">
-              {muted ? <FaVolumeXmark aria-hidden="true" className="h-4 w-4" /> : <FaVolumeHigh aria-hidden="true" className="h-4 w-4" />}
-            </button>
+            <VolumeControl volume={volume} muted={muted} onToggleMute={toggleMute} onChange={applyVolume} />
 
             <div className="flex shrink-0 items-center justify-center">
               <PlaybackRateControl rate={rate} onChange={applyRate} />

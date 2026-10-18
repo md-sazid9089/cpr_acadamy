@@ -20,3 +20,21 @@ test('video transport controls keep back, play/pause and forward together in the
     assert.equal((source.match(/<SkipControls/g) ?? []).length, 1);
   }
 });
+
+test('both video players expose an adjustable, mute-aware volume control', () => {
+  const control = read('../src/features/learning/components/VolumeControl.jsx');
+  assert.match(control, /type="range"/);
+  assert.match(control, /min="0"/);
+  assert.match(control, /max="100"/);
+  assert.match(control, /aria-label="Volume"/);
+
+  for (const player of ['VideoPlayer.jsx', 'YouTubePlayer.jsx']) {
+    const source = read(`../src/features/learning/components/${player}`);
+    assert.match(source, /<VolumeControl volume=\{volume\} muted=\{muted\} onToggleMute=\{toggleMute\} onChange=\{applyVolume\} \/>/);
+    assert.match(source, /lastAudibleVolume/);
+    assert.match(source, /setMuted\(next === 0\)/);
+  }
+
+  const youtube = read('../src/features/learning/components/YouTubePlayer.jsx');
+  assert.match(youtube, /setVolume\?\.\(next \* 100\)/);
+});
