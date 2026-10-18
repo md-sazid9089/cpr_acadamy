@@ -18,7 +18,7 @@ test('only images this app stored can be attached as payment screenshots', () =>
   assert.equal(isOwnScreenshotUrl('https://res.cloudinary.com/democloud/image/upload/a.png', {}), false, 'without Cloudinary configured only local uploads count');
 });
 
-test('payment proof rejects screenshot links that are not this app\'s own uploads', async () => {
+test('payment proof accepts no screenshot but rejects unsafe screenshot links', async () => {
   const context = await fixture();
   try {
     const admin = await context.user('admin', '01799999999');
@@ -32,6 +32,12 @@ test('payment proof rejects screenshot links that are not this app\'s own upload
       assert.equal(response.json().code, 'VALIDATION_ERROR');
     }
     assert.equal((await proof(local)).statusCode, 200);
-    assert.equal((await proof('')).statusCode, 400, 'a screenshot is required as payment proof');
+    assert.equal((await proof('')).statusCode, 400, 'an explicitly supplied screenshot URL cannot be blank');
+
+    await admin.request('POST', '/admin/courses', { slug: 'trx-only', title: 'Trx only', category: 'FCPS', price: 100, isPublished: true });
+    const trxOnlyInvoice = (await student.request('POST', '/payments/initiate', { courseSlug: 'trx-only', method: 'manual' }, { 'idempotency-key': 'key-trx-only-001' })).json();
+    const trxOnly = await student.request('POST', `/payments/${trxOnlyInvoice.id}/proof`, { transactionId: 'TRX-ONLY-1' });
+    assert.equal(trxOnly.statusCode, 200, trxOnly.body);
+    assert.equal(trxOnly.json().screenshotUrl, null);
   } finally { await context.close(); }
 });

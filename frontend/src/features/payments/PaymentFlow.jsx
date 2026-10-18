@@ -148,7 +148,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
   const chosen = walletById(wallet);
   const trx = cleanTransactionId(transactionId);
   const trxOk = isValidTransactionId(trx);
-  const ready = Boolean(chosen) && trxOk && Boolean(screenshotUrl);
+  const ready = Boolean(chosen) && trxOk;
 
   const PROOF_FIELDS = ['transactionId', 'screenshotUrl'];
   const refusal = submitMutation.error;
@@ -230,7 +230,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
               {[
                 <>নিচে <strong>বিকাশ বা নগদ</strong> বেছে নিন। পাঠানোর নম্বর ও টাকার পরিমাণ দেখাবে।</>,
                 <>আপনার অ্যাপ থেকে <strong className="tabular-nums">{formatBDT(invoice.total)}</strong> <strong>Send Money</strong> করুন। Reference ঘরটি খালি রাখতে পারেন।</>,
-                <><strong>ট্রানজেকশন আইডি (TrxID)</strong> লিখুন এবং পেমেন্টের <strong>স্ক্রিনশট</strong> যোগ করে জমা দিন। যাচাইয়ের পর কোর্স চালু হবে।</>,
+                <><strong>ট্রানজেকশন আইডি (TrxID)</strong> লিখে জমা দিন। চাইলে পেমেন্টের স্ক্রিনশটও যোগ করতে পারেন। যাচাইয়ের পর কোর্স চালু হবে।</>,
               ].map((line, index) => (
                 <li key={index} className="flex items-start gap-2.5">
                   <span aria-hidden="true" className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">
@@ -306,7 +306,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
                   <li>উপরের নম্বরটি দিন</li>
                   <li>পরিমাণ <strong className="tabular-nums">{formatBDT(invoice.total)}</strong> লিখুন</li>
                   <li>পিন দিয়ে কনফার্ম করুন; Reference লেখা দরকার নেই</li>
-                  <li>মেসেজ থেকে TrxID কপি করুন এবং পেমেন্টের স্ক্রিনশট নিন</li>
+                  <li>মেসেজ থেকে TrxID কপি করুন; চাইলে পেমেন্টের স্ক্রিনশট রাখুন</li>
                 </ol>
               </div>
             )}
@@ -352,7 +352,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
                 <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!chosen || isUploading} onChange={attachScreenshot} />
               </label>
               <span lang="bn" className="text-sm text-stone-500 dark:text-brand-200">
-                {screenshotUrl ? '✓ যোগ হয়েছে' : 'স্ক্রিনশট আবশ্যক'}
+                {screenshotUrl ? '✓ যোগ হয়েছে' : 'ঐচ্ছিক'}
               </span>
             </div>
             {(uploadError || fieldErrors.screenshotUrl) && (
@@ -379,7 +379,7 @@ export default function PaymentFlow({ invoice, courseSlug, courseMeta, onUpdated
             <p lang="bn" className="mt-2.5 text-sm text-stone-500 dark:text-brand-200">
               {!chosen ? 'পেমেন্ট মাধ্যম বেছে নিন ও তথ্য পূরণ করুন'
                 : ready ? 'জমা দেওয়ার পর অ্যাডমিন আপনার পেমেন্ট যাচাই করবেন'
-                  : !trxOk ? 'TrxID দিন' : 'পেমেন্টের স্ক্রিনশট যোগ করুন'}
+                  : 'TrxID দিন'}
             </p>
             {hasProof && (
               <button type="button" lang="bn" onClick={() => setEditing(false)} className="mt-3 text-sm font-semibold text-brand-600 underline underline-offset-4 dark:text-brand-300">

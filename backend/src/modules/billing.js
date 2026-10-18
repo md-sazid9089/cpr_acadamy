@@ -93,10 +93,10 @@ export function billingRoutes(route, database, config) {
     return paymentDto(payment);
   });
   // Replaces the old "share it over WhatsApp" step: the student attaches their own
-  // transaction ID and required screenshot right on
+  // transaction ID and an optional screenshot right on
   // the invoice, for an admin to review in /admin/payments before confirming.
   route('POST', '/payments/:id/proof', { auth: 'active', body: z.object({
-    transactionId, screenshotUrl,
+    transactionId, screenshotUrl: screenshotUrl.optional(),
   }).strict() }, async request => database.transaction(async transaction => {
     const payment = await one(transaction, 'SELECT * FROM payments WHERE id=$1 AND user_id=$2 FOR UPDATE', [request.params.id, request.auth.user_id]);
     ensure(payment, 404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
@@ -105,7 +105,7 @@ export function billingRoutes(route, database, config) {
     const duplicate = await one(transaction, "SELECT id FROM payments WHERE transaction_id=$1 AND id<>$2 AND status<>'failed'", [request.body.transactionId, payment.id]);
     ensure(!duplicate, 409, 'DUPLICATE_TRANSACTION_ID', 'This transaction ID is already linked to another payment.');
     const updated = await one(transaction, `UPDATE payments SET transaction_id=$2,screenshot_url=$3,proof_submitted_at=now() WHERE id=$1 RETURNING *`,
-      [payment.id, request.body.transactionId, request.body.screenshotUrl]);
+      [payment.id, request.body.transactionId, request.body.screenshotUrl ?? null]);
     await audit(transaction, request.auth.user_id, 'payment.proof_submitted', payment.id, { transactionId: request.body.transactionId });
     return paymentDto(updated);
   }));
