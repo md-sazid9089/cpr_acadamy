@@ -44,8 +44,10 @@ export async function sendWithReve(config, { mobile, message }) {
   }
   if (!response.ok) throw new Error(`Reve SMS HTTP ${response.status}`);
   // A refusal still comes back as HTTP 200: {"Status":"108","Text":"REJECTD"}. Only Status "0" means it was accepted.
-  const status = String((await response.json().catch(() => null))?.Status ?? '');
+  const res = await response.json().catch(() => null);
+  const status = String(res?.Status ?? '');
   if (status !== '0') throw new Error(`Reve SMS rejected (status ${/^-?\d{1,4}$/.test(status) ? status : 'unreadable'})`);
+  return res?.Message_ID;
 }
 
 export function requireSms(config) {

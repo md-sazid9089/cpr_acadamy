@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { loadConfig } from './config.js';
 import { openDatabase, migrate } from './db.js';
 import { buildApp } from './app.js';
+import { deliverSms } from './sms.js';
 import { isCronAuthorized, maintainAfterRequest, runMaintenance, startWorker } from './worker.js';
 
 const runtimeKey = Symbol.for('cpr-academy.runtime');
@@ -44,11 +45,12 @@ function runtime() {
   return globalThis[runtimeKey];
 }
 
-/** WORKER_MODE=serverless: called after each response has been sent (see maintainAfterRequest). */
+/** WORKER_MODE=serverless or after-write immediate dispatch. */
 export async function runAfterRequest(method) {
   try {
     const { database, config } = await runtime();
     if (config.workerMode === 'serverless') await maintainAfterRequest(database, config, method);
+    else if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) await deliverSms(database, config);
   } catch (error) {
     logger.error({ code: error.code, errorType: error.name }, 'Maintenance after request failed');
   }
