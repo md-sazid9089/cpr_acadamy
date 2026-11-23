@@ -50,8 +50,10 @@ function toForm(course) {
     highlights: course.highlights?.length ? [...course.highlights] : [''],
     price: course.price ?? '',
     discountPrice: course.discountPrice ?? '',
+    offerType: course.offer?.type ?? 'date',
     offerLabel: course.offer?.label ?? '',
     offerEndsAt: toDateInput(course.offer?.endsAt),
+    offerSeatLimit: course.offer?.seatLimit ?? '',
     startsOn: toDateInput(course.startsOn),
     duration: course.duration ?? '',
     lessonCount: course.lessonCount ?? '',
@@ -81,7 +83,12 @@ function toPayload(form) {
     discountPrice: discount,
     // An offer only means something when there is a discounted price to attach it to.
     offer: discount && form.offerLabel.trim()
-      ? { label: form.offerLabel.trim(), endsAt: fromDateInput(form.offerEndsAt) }
+      ? {
+          type: form.offerType || 'date',
+          label: form.offerLabel.trim(),
+          endsAt: form.offerType === 'date' ? fromDateInput(form.offerEndsAt) : null,
+          seatLimit: form.offerType === 'seats' ? (Number(form.offerSeatLimit) || null) : null,
+        }
       : null,
     startsOn: fromDateInput(form.startsOn),
     duration: form.duration.trim(),
@@ -153,7 +160,7 @@ export default function CourseDetailTab() {
   const removeOffer = useMutation({
     mutationFn: () => updateCourse({ id: course.id, discountPrice: null, offer: null }),
     onSuccess: (saved) => {
-      const cleared = { discountPrice: '', offerLabel: '', offerEndsAt: '' };
+      const cleared = { discountPrice: '', offerType: 'date', offerLabel: '', offerEndsAt: '', offerSeatLimit: '' };
       setForm((prev) => ({ ...prev, ...cleared }));
       setSavedForm((prev) => JSON.stringify({ ...JSON.parse(prev), ...cleared }));
       queryClient.setQueryData(adminCourseKey(course.id), saved);
@@ -240,7 +247,9 @@ export default function CourseDetailTab() {
   const discountTooHigh = hasDiscount && discount >= price;
   const classTimeBackwards = Boolean(form.classStart && form.classEnd && form.classEnd <= form.classStart);
   const offerBadge = form.offerLabel.trim()
-    ? `${form.offerLabel.trim()}${form.offerEndsAt ? `, until ${formatDateInput(form.offerEndsAt)}` : ''}`
+    ? form.offerType === 'seats'
+      ? `${form.offerLabel.trim()}${form.offerSeatLimit ? `, first ${form.offerSeatLimit} seats` : ''}`
+      : `${form.offerLabel.trim()}${form.offerEndsAt ? `, until ${formatDateInput(form.offerEndsAt)}` : ''}`
     : null;
 
   return (
@@ -451,14 +460,37 @@ export default function CourseDetailTab() {
             placeholder="e.g. Early bird"
             hint={hasDiscount ? 'Shown beside the discounted fee.' : 'Set a discounted fee to enable the offer.'}
           />
-          <Input
-            label="Offer ends"
-            type="date"
-            value={form.offerEndsAt}
-            onChange={set('offerEndsAt')}
+          <Select
+            label="Offer condition"
+            value={form.offerType}
+            onChange={set('offerType')}
             disabled={!hasDiscount}
-            hint={hasDiscount ? 'After this date the regular fee shows again.' : undefined}
-          />
+          >
+            <option value="date">Date limit (নির্দিষ্ট তারিখ পর্যন্ত)</option>
+            <option value="seats">First come first serve with limited seat (সীমিত আসন)</option>
+          </Select>
+          {form.offerType === 'seats' ? (
+            <Input
+              label="Limited seats"
+              type="number"
+              min={1}
+              step={1}
+              value={form.offerSeatLimit}
+              onChange={set('offerSeatLimit')}
+              disabled={!hasDiscount}
+              placeholder="e.g. 50"
+              hint={hasDiscount ? 'Offer ends automatically when these many students enroll.' : undefined}
+            />
+          ) : (
+            <Input
+              label="Offer ends"
+              type="date"
+              value={form.offerEndsAt}
+              onChange={set('offerEndsAt')}
+              disabled={!hasDiscount}
+              hint={hasDiscount ? 'After this date the regular fee shows again.' : undefined}
+            />
+          )}
         </div>
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg bg-brand-50 px-4 py-2.5 text-sm text-stone-700 dark:bg-brand-950/40 dark:text-brand-200">
           <span className="text-stone-500 dark:text-brand-200">Public page shows:</span>

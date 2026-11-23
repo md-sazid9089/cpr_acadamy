@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import { transformSync } from 'esbuild';
 import { answerState } from '../src/features/exams/answer-state.js';
 import { createAnswerQueue } from '../src/features/exams/answer-queue.js';
+import { parseQuestionsJson, safeJsonParse } from '../src/features/admin/courses/questionJsonParser.js';
 
 function loadModule(path, dependencies = {}) {
   const module = { exports: {} };
@@ -107,4 +108,74 @@ test('autosave retries failures and serializes newer values behind pending saves
   queue.dispose();
   queue.enqueue('q3', 'b');
   assert.equal(queue.hasPending, false);
+});
+
+test('questionJsonParser parses Bengali options, auto-detects SBA, and repairs unquoted values', () => {
+  const json = `[
+    {
+      "id": 1,
+      "question": "বাংলা সাহিত্যের প্রাচীনতম নিদর্শন কোনটি?",
+      "options": {
+        "ক": "শ্রীকৃষ্ণকীর্তন",
+        "খ": "চর্যাপদ",
+        "গ": "মহাভারত",
+        "ঘ": "মনসামঙ্গল"
+      },
+      "answer": "খ",
+      "explanation": "চর্যাপদ বাংলা সাহিত্যের প্রথম নিদর্শন।"
+    },
+    {
+      "id": 2,
+      "question": "সমাস ব্যাকরণের কোন তত্ত্বে আলোচিত হয়?",
+      "options": {
+        "ক": রূপতত্ত্ব",
+        "খ": ধ্বনিতত্ত্ব",
+        "গ": বাক্যতত্ত্ব",
+        "ঘ": অর্থতত্ত্ব"
+      },
+      "answer": "ক"
+    }
+  ]`;
+
+  const parsed = parseQuestionsJson(json);
+  assert.equal(parsed.total, 2);
+  assert.equal(parsed.errors.length, 0);
+
+  // Question 1
+  assert.equal(parsed.questions[0].type, 'sba');
+  assert.equal(parsed.questions[0].stem, 'বাংলা সাহিত্যের প্রাচীনতম নিদর্শন কোনটি?');
+  assert.equal(parsed.questions[0].options.length, 4);
+  assert.equal(parsed.questions[0].correctOptionId, 'b');
+
+  // Question 2 (healed unquoted values)
+  assert.equal(parsed.questions[1].type, 'sba');
+  assert.equal(parsed.questions[1].options[0].text, 'রূপতত্ত্ব');
+  assert.equal(parsed.questions[1].correctOptionId, 'a');
+});
+
+test('questionJsonParser parses MTF true/false answers correctly', () => {
+  const json = [
+    {
+      question: 'Regarding the cranial nerves:',
+      options: {
+        A: 'Optic nerve is sensory',
+        B: 'Trochlear nerve is mixed',
+        C: 'Vagus nerve is purely motor'
+      },
+      answer: {
+        A: true,
+        B: false,
+        C: false
+      }
+    }
+  ];
+
+  const parsed = parseQuestionsJson(json);
+  assert.equal(parsed.total, 1);
+  assert.equal(parsed.questions[0].type, 'mtf');
+  assert.deepEqual(parsed.questions[0].correctAnswer, {
+    a: true,
+    b: false,
+    c: false
+  });
 });

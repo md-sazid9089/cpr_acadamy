@@ -76,9 +76,28 @@ export function billingRoutes(route, database, config) {
       }
       const pending = await one(transaction, "SELECT * FROM payments WHERE user_id=$1 AND course_id=$2 AND plan_id IS NOT DISTINCT FROM $3::uuid AND status='pending'", [user.id, course.id, plan?.id || null]);
       if (pending) return { ok: true, ...paymentDto(pending), redirectUrl: null };
+      let courseFee = course.price_minor;
+      let offerActive = course.discount_minor != null;
+      if (offerActive) {
+        const meta = typeof course.metadata === 'string' ? JSON.parse(course.metadata || '{}') : (course.metadata || {});
+        const off = meta.offer;
+        if (off) {
+          if (off.type === 'seats' && off.seatLimit != null) {
+            const enrolledRow = await one(transaction, "SELECT count(*)::int AS count FROM enrollments WHERE course_id=$1 AND status='active' AND expires_at>now()", [course.id]);
+            if (Number(enrolledRow?.count || 0) >= off.seatLimit) {
+              offerActive = false;
+            }
+          } else if (off.endsAt && new Date(off.endsAt).getTime() <= Date.now()) {
+            offerActive = false;
+          }
+        }
+      }
+      if (offerActive && course.discount_minor != null) {
+        courseFee = course.discount_minor;
+      }
       const payment = await one(transaction, `INSERT INTO payments(user_id,course_id,plan_id,amount_minor,method,idempotency_key,invoice_no,description,billed_to,access_days)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [user.id, course.id, plan?.id || null, plan ? plan.price_minor : course.discount_minor ?? course.price_minor,
+      [user.id, course.id, plan?.id || null, plan ? plan.price_minor : courseFee,
         request.body.method, idempotencyKey, createInvoiceNumber(),
         plan ? `${course.title}: ${plan.name}` : course.title,
         JSON.stringify({ name: user.full_name, mobile: user.mobile, institution: user.institution }), plan?.duration_days || course.access_days]);

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useOutletContext, useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FaArrowLeftLong, FaCheck, FaPlus, FaTriangleExclamation } from 'react-icons/fa6';
+import { FaArrowLeftLong, FaCheck, FaPlus, FaTriangleExclamation, FaUpload } from 'react-icons/fa6';
 import { blankQuestion, fetchAdminExam, updateExam } from '../api/admin.api.js';
 import { adminExamKey, adminExamsKey } from './keys.js';
 import { TYPE_LABELS } from './CourseExamsTab.jsx';
 import QuestionCard, { isQuestionComplete } from './QuestionCard.jsx';
+import UploadQuestionsModal from './UploadQuestionsModal.jsx';
 import Card from '@/components/ui/Card.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -179,6 +180,7 @@ function ExamEditor({ exam, course }) {
   const [questions, setQuestions] = useState(exam.questions ?? []);
   const [dirty, setDirty] = useState(() => new Set());
   const [deleting, setDeleting] = useState(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [savedAt, setSavedAt] = useState(null);
 
@@ -385,6 +387,33 @@ function ExamEditor({ exam, course }) {
     [next[from], next[to]] = [next[to], next[from]];
     setQuestions(next);
     persist(next);
+  };
+
+  const handleBulkImport = ({ questions: importedQuestions, mode, adjustTarget }) => {
+    const nextQuestions = mode === 'replace' ? importedQuestions : [...questions, ...importedQuestions];
+    setQuestions(nextQuestions);
+    setDirty(new Set());
+
+    let nextTarget = Number(settings.questionCount) || 0;
+    if (adjustTarget && nextQuestions.length > nextTarget) {
+      nextTarget = nextQuestions.length;
+      setSettings((prev) => ({ ...prev, questionCount: nextTarget }));
+    }
+
+    updateExam({
+      id: exam.id,
+      questions: nextQuestions,
+      type: settings.type,
+      questionCount: nextTarget,
+    })
+      .then((saved) => {
+        lastSaved.current = nextQuestions;
+        remember({ ...saved, questions: nextQuestions });
+        invalidateList();
+      })
+      .catch((error) => {
+        setSaveError(error.message);
+      });
   };
 
   // ── Derived ──
@@ -727,7 +756,21 @@ function ExamEditor({ exam, course }) {
           : complete
             ? `${written} of ${target} written. The paper is complete.`
             : `${written} of ${target} written. Each question saves when you move to the next.`}
-        action={locked ? null : addButtons({ variant: 'primary', disabled: atTarget })}
+        action={
+          locked ? null : (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setUploadModalOpen(true)}
+              >
+                <FaUpload aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
+                Upload JSON
+              </Button>
+              {addButtons({ variant: 'primary', disabled: atTarget })}
+            </div>
+          )
+        }
       >
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={isMtf ? 'info' : 'brand'}>{TYPE_LABELS[settings.type]}</Badge>
@@ -746,6 +789,21 @@ function ExamEditor({ exam, course }) {
           <span className="block h-full rounded-full bg-brand-500 transition-[width]" style={{ width: `${writtenPercent}%` }} />
         </div>
       </Section>
+
+      {questions.length === 0 && (
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-10 text-center dark:border-stone-700 dark:bg-surface-dark">
+          <p className="text-sm font-medium text-stone-600 dark:text-brand-200">
+            No questions added to this exam yet.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+            <Button variant="primary" onClick={() => setUploadModalOpen(true)}>
+              <FaUpload aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
+              Upload Questions from JSON
+            </Button>
+            {addButtons({ variant: 'outline', disabled: false })}
+          </div>
+        </div>
+      )}
 
       {questions.length > 0 && (
         <fieldset disabled={locked} className="space-y-4 disabled:opacity-80">
@@ -769,6 +827,13 @@ function ExamEditor({ exam, course }) {
           ))}
 
           <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setUploadModalOpen(true)}
+            >
+              <FaUpload aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
+              Upload JSON
+            </Button>
             {addButtons({ variant: 'secondary', disabled: atTarget })}
             <Button
               variant="outline"
@@ -807,6 +872,15 @@ function ExamEditor({ exam, course }) {
           Delete question {questions.findIndex((q) => q.id === deleting?.id) + 1}? The ones after it move up.
         </p>
       </Modal>
+
+      <UploadQuestionsModal
+        open={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onImport={handleBulkImport}
+        existingCount={questions.length}
+        defaultSbaMarks={typeMarks.sba}
+        defaultMtfMarks={typeMarks.mtf}
+      />
     </div>
   );
 }

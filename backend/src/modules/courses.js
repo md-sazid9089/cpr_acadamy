@@ -24,7 +24,12 @@ const metadata = z.object({
   startsOn: timestamp.nullable().default(null), isFeatured: z.boolean().default(false),
   classTime: z.object({ start: clock.default(''), end: clock.default('') }).strict().default({ start: '', end: '' }),
   classDays: z.array(z.enum(['sat', 'sun', 'mon', 'tue', 'wed', 'thu', 'fri'])).max(7).default([]),
-  offer: z.object({ label: z.string().trim().min(1).max(120), endsAt: timestamp.nullable().default(null) }).strict().nullable().default(null),
+  offer: z.object({
+    type: z.enum(['date', 'seats']).default('date'),
+    label: z.string().trim().min(1).max(120),
+    endsAt: timestamp.nullable().default(null),
+    seatLimit: z.number().int().positive().nullable().default(null),
+  }).strict().nullable().default(null),
 }).strict();
 const courseFields = z.object({
   slug: z.string().min(3).max(160).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), title: text,

@@ -54,7 +54,18 @@ export default function CourseDetail() {
 
   const categorySlug = slugForCategory(course.category);
   const scheduleUrl = `/courses/${categorySlug}/${course.slug}/schedule`;
-  const hasDiscount = Boolean(course.discountPrice);
+  const isOfferActive = (c) => {
+    if (!c?.discountPrice || c.discountPrice >= c.price) return false;
+    if (!c.offer) return true;
+    if (c.offer.type === 'seats' && c.offer.seatLimit != null) {
+      return (c.enrolledCount || 0) < c.offer.seatLimit;
+    }
+    if (c.offer.endsAt) {
+      return new Date(c.offer.endsAt).getTime() > Date.now();
+    }
+    return true;
+  };
+  const hasDiscount = isOfferActive(course);
   const startsOnLabel = course.startsOn ? formatDate(course.startsOn) : 'To be announced';
   const description = paragraphs(course.description);
   const outline = course.highlights ?? [];
@@ -308,11 +319,17 @@ export default function CourseDetail() {
                       <p className="mt-1 text-2xl font-extrabold text-brand-700 dark:text-brand-400">
                         {formatBDT(course.discountPrice)}
                       </p>
-                      {course.offer?.endsAt && (
+                      {course.offer?.type === 'seats' && course.offer?.seatLimit ? (
+                        <p className="mt-0.5 text-xs font-semibold text-accent-700 dark:text-accent-300">
+                          {Math.max(0, course.offer.seatLimit - (course.enrolledCount || 0)) > 0
+                            ? `Limited to first ${course.offer.seatLimit} students (${Math.max(0, course.offer.seatLimit - (course.enrolledCount || 0))} seats left!)`
+                            : 'Offer seats filled'}
+                        </p>
+                      ) : course.offer?.endsAt ? (
                         <p className="mt-0.5 text-xs font-medium text-stone-500 dark:text-brand-200">
                           Offer ends {formatDate(course.offer.endsAt)}
                         </p>
-                      )}
+                      ) : null}
                     </div>
                   )}
                 </div>

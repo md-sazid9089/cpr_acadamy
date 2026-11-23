@@ -28,7 +28,18 @@ const CATEGORY_GRADIENTS = {
  */
 export default function CourseCard({ course, onEnroll }) {
   const detailPath = `/courses/${categorySlug(course.category)}/${course.slug}`;
-  const hasDiscount = Boolean(course.discountPrice);
+  const isOfferActive = (c) => {
+    if (!c?.discountPrice || c.discountPrice >= c.price) return false;
+    if (!c.offer) return true;
+    if (c.offer.type === 'seats' && c.offer.seatLimit != null) {
+      return (c.enrolledCount || 0) < c.offer.seatLimit;
+    }
+    if (c.offer.endsAt) {
+      return new Date(c.offer.endsAt).getTime() > Date.now();
+    }
+    return true;
+  };
+  const hasDiscount = isOfferActive(course);
 
   // Deterministic fallback poster based on course id
   const charCode = course.id ? course.id.charCodeAt(course.id.length - 1) : 0;
@@ -61,7 +72,9 @@ export default function CourseCard({ course, onEnroll }) {
           </Badge>
           {hasDiscount && (
             <Badge tone="warning" className="bg-brand-100 font-bold text-brand-800">
-              Offer running
+              {course.offer?.type === 'seats' && course.offer?.seatLimit
+                ? `Seats left: ${Math.max(0, course.offer.seatLimit - (course.enrolledCount || 0))}`
+                : 'Offer running'}
             </Badge>
           )}
         </div>

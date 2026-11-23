@@ -1,4 +1,6 @@
 .local/
+node_modules/
+DA8tf.jpg.jpeg
 
 # Claude Code: settings.json is shared; settings.local.json is per-developer.
 .claude/settings.local.json

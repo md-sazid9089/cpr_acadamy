@@ -212,7 +212,14 @@ function toCoursePayload(course) {
   }
   if (course.startsOn !== undefined) payload.startsOn = course.startsOn || null;
   if (course.offer !== undefined) {
-    payload.offer = course.offer?.label ? { label: course.offer.label, endsAt: course.offer.endsAt || null } : null;
+    payload.offer = course.offer?.label
+      ? {
+          type: course.offer.type || 'date',
+          label: course.offer.label,
+          endsAt: course.offer.type === 'date' ? (course.offer.endsAt || null) : null,
+          seatLimit: course.offer.type === 'seats' ? (Number(course.offer.seatLimit) || null) : null,
+        }
+      : null;
   }
   return payload;
 }
