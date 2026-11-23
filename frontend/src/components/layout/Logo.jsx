@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
  * @param {{ className?: string, compact?: boolean }} props
  * @param {boolean} [props.compact=false] Smaller mark, for tight bars.
  */
-export default function Logo({ className, compact = false }) {
+export default function Logo({ className, compact = false, imgClassName }) {
   return (
     <Link
       to="/"
@@ -29,11 +29,9 @@ export default function Logo({ className, compact = false }) {
         width="240"
         height="191"
         className={cn(
-          // The box is intentionally wider than the artwork's own 240x191
-          // ratio (a 2:1 box) — object-contain keeps the mark itself
-          // undistorted and centered, with the extra width as side padding.
-          'rounded-none object-contain border border-stone-200',
-          compact ? 'h-11 w-[5.5rem]' : 'h-[4.5rem] w-[9rem]',
+          'rounded-md object-contain',
+          compact ? 'h-11 w-auto' : 'h-[4.5rem] w-auto',
+          imgClassName,
         )}
       />
     </Link>
