@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { FaArrowLeftLong, FaEnvelope, FaIdCard, FaPhone, FaSchool } from 'react-icons/fa6';
@@ -41,6 +41,8 @@ export default function AdminStudentDetail() {
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(null);
   const [note, setNote] = useState('');
+  // Each dialog opens with a blank note: a cancelled draft must not leak into the next decision.
+  useEffect(() => { setNote(''); }, [confirming]);
 
   const [studentQuery, paymentsQuery] = useQueries({
     queries: [

@@ -135,7 +135,7 @@ export function studentRoutes(route, database, config) {
   route('GET', '/admin/students/:id/payments', { auth: 'admin', query: pageQuery }, async request => {
     const user = await one(database, "SELECT id FROM users WHERE id=$1 AND role='student'", [request.params.id]);
     ensure(user, 404, 'STUDENT_NOT_FOUND', 'Student not found.');
-    return Promise.all((await database.query('SELECT * FROM payments WHERE user_id=$1 ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [user.id, request.query.limit, request.query.offset])).rows.map(async row => ({ ...paymentDto(row), userId: row.user_id, adminReviewedByName: await attachReviewer(database, row) })));
+    return Promise.all((await database.query('SELECT * FROM payments WHERE user_id=$1 ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [user.id, request.query.limit, request.query.offset])).rows.map(async row => ({ ...paymentDto(row, { includeAdminReview: true }), userId: row.user_id, adminReviewedByName: await attachReviewer(database, row) })));
   });
   route('PATCH', '/admin/students/:id/status', { auth: 'admin', body: z.object({ status: z.enum(['active', 'rejected', 'suspended']), note: z.string().trim().max(2000).optional() }).strict() }, async request => database.transaction(async transaction => {
     const user = await one(transaction, "SELECT * FROM users WHERE id=$1 AND role='student' FOR UPDATE", [request.params.id]);
@@ -147,7 +147,8 @@ export function studentRoutes(route, database, config) {
     // A rejection can be reversed: the admin may have misjudged it, and the student cannot register the number again.
     const transitions = { awaiting_approval: ['active', 'rejected'], active: ['suspended'], suspended: ['active'], rejected: ['active'] };
     ensure(transitions[user.status]?.includes(next) && user.mobile_verified_at, 409, 'INVALID_STATUS_TRANSITION', 'This account cannot transition to that status.');
-    await transaction.query('UPDATE users SET status=$2,status_decided_by=$3,status_decided_at=CASE WHEN $5 THEN NULL ELSE now() END,status_note=CASE WHEN $5 THEN NULL ELSE $4 END WHERE id=$1', [user.id, next, request.auth.user_id, note, next === 'active']);
+    // Activation clears a stale rejection/suspension note unless the admin typed a new one.
+    await transaction.query('UPDATE users SET status=$2,status_decided_by=$3,status_decided_at=CASE WHEN $5 AND $4::text IS NULL THEN NULL ELSE now() END,status_note=CASE WHEN $5 AND $4::text IS NULL THEN NULL ELSE $4 END WHERE id=$1', [user.id, next, request.auth.user_id, note, next === 'active']);
     if (next !== 'active') await transaction.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [user.id]);
     await audit(transaction, request.auth.user_id, 'student.status_changed', user.id, { previous: user.status, status: next });
     if (config.smsMode !== 'disabled') await enqueueSms(transaction, config, user, `Your CPR Academy account status is now ${next}.`, 86400);

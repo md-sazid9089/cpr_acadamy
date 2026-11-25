@@ -54,11 +54,18 @@ test('admin comments on registrations and payments stay on the record with who a
     assert.ok(detail.statusDecidedBy, 'the deciding admin is named');
     assert.ok(detail.statusDecidedAt, 'the decision time is kept');
 
-    // Approving clears the rejection note.
+    // Approving without a note clears the rejection note.
     assert.equal((await admin.request('PATCH', `/admin/students/${student.id}/status`, { status: 'active' })).statusCode, 200);
     detail = (await admin.request('GET', `/admin/students/${student.id}`)).json();
     assert.equal(detail.statusNote, null);
     assert.equal(detail.statusDecidedAt, null);
+
+    // Approving with a note keeps it on the record.
+    assert.equal((await admin.request('PATCH', `/admin/students/${student.id}/status`, { status: 'suspended', note: 'Chargeback abuse.' })).statusCode, 200);
+    assert.equal((await admin.request('PATCH', `/admin/students/${student.id}/status`, { status: 'active', note: 'Documents verified by phone.' })).statusCode, 200);
+    detail = (await admin.request('GET', `/admin/students/${student.id}`)).json();
+    assert.equal(detail.statusNote, 'Documents verified by phone.');
+    assert.ok(detail.statusDecidedAt, 'the approval time is kept');
 
     // Suspend with a reason and read it back.
     await admin.request('PATCH', `/admin/students/${student.id}/status`, { status: 'suspended', note: 'Repeated chargebacks.' });
@@ -84,6 +91,17 @@ test('admin comments on registrations and payments stay on the record with who a
 
     const history = (await admin.request('GET', `/admin/students/${student.id}/payments`)).json();
     assert.equal(history.find(item => item.id === payment.id).adminReviewNote, 'Caller said the money never left their wallet.');
+
+    // The student who made the payment never sees staff review notes on their own invoices.
+    const payer = await context.user('student', '01899998888', 'active');
+    await context.database.query(`INSERT INTO payments(user_id,course_id,amount_minor,method,status,idempotency_key,invoice_no,description,billed_to,access_days,admin_review_note,admin_reviewed_by,admin_reviewed_at)
+      VALUES ($1,$2,100000,'manual','failed','notes-key-3','CPR-2026-NOTES3','Notes Course','{}',30,'Internal staff note.',$3,now())`, [payer.id, course.id, admin.id]);
+    const mine = (await payer.request('GET', '/me/payments')).json();
+    const mineRow = mine.find(item => item.invoiceNo === 'CPR-2026-NOTES3');
+    assert.ok(mineRow, 'the payment shows up in the student history');
+    assert.equal('adminReviewNote' in mineRow, false);
+    assert.equal('adminReviewedBy' in mineRow, false);
+    assert.equal('adminReviewedAt' in mineRow, false);
 
     // Confirming also records the note (here the verification evidence, when no separate note is given).
     await context.database.query(`INSERT INTO payments(user_id,course_id,amount_minor,method,status,idempotency_key,invoice_no,description,billed_to,access_days,transaction_id)

@@ -15,12 +15,13 @@ export function createInvoiceNumber(date = new Date(), entropy = randomBytes(7).
   return `CPR-${date.getUTCFullYear()}-${String(entropy).replace(/[^a-f0-9]/gi, '').slice(0, 14).toUpperCase()}`;
 }
 
-export function paymentDto(row) {
+/** Student-facing by default: staff review notes and reviewer ids only leave the API on admin routes. */
+export function paymentDto(row, { includeAdminReview = false } = {}) {
   return { id: row.id, paymentId: row.id, invoiceNo: row.invoice_no, courseId: row.course_id,
     courseTitle: row.description, amount: row.amount_minor / 100, status: row.status, currency: row.currency,
     method: row.method, transactionId: row.transaction_id, paidAt: row.paid_at, createdAt: row.created_at,
     payerMobile: row.payer_mobile ?? null, screenshotUrl: row.screenshot_url ?? null, proofSubmittedAt: row.proof_submitted_at ?? null,
-    adminReviewNote: row.admin_review_note ?? null, adminReviewedAt: row.admin_reviewed_at ?? null, adminReviewedBy: row.admin_reviewed_by ?? null };
+    ...(includeAdminReview ? { adminReviewNote: row.admin_review_note ?? null, adminReviewedAt: row.admin_reviewed_at ?? null, adminReviewedBy: row.admin_reviewed_by ?? null } : {}) };
 }
 
 /** Who made the payment decision, for admin views. */
@@ -185,12 +186,12 @@ export function billingRoutes(route, database, config) {
     ]);
     // pendingCount is every pending payment, whatever the search, for the "waiting" badge.
     const { pending: pendingCount } = term ? await one(database, "SELECT count(*)::int AS pending FROM payments WHERE status='pending'") : counts;
-    const items = await Promise.all(rows.rows.map(async row => ({ ...paymentDto(row), userId: row.user_id, studentId: row.user_id, studentName: row.full_name, studentMobile: row.student_mobile, adminReviewedByName: await attachReviewer(database, row) })));
+    const items = await Promise.all(rows.rows.map(async row => ({ ...paymentDto(row, { includeAdminReview: true }), userId: row.user_id, studentId: row.user_id, studentName: row.full_name, studentMobile: row.student_mobile, adminReviewedByName: await attachReviewer(database, row) })));
     return { items,
       total: counts.total, pendingCount,
       counts: { all: counts.all, pending: counts.pending, paid: counts.paid, failed: counts.failed, refunded: counts.refunded } };
   });
-  route('GET', '/admin/payments', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => Promise.all((await database.query('SELECT * FROM payments WHERE ($1::text IS NULL OR status=$1) ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.query.status || null, request.query.limit, request.query.offset])).rows.map(async row => ({ ...paymentDto(row), userId: row.user_id, adminReviewedByName: await attachReviewer(database, row) }))));
+  route('GET', '/admin/payments', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => Promise.all((await database.query('SELECT * FROM payments WHERE ($1::text IS NULL OR status=$1) ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.query.status || null, request.query.limit, request.query.offset])).rows.map(async row => ({ ...paymentDto(row, { includeAdminReview: true }), userId: row.user_id, adminReviewedByName: await attachReviewer(database, row) }))));
 
   route('POST', '/admin/payments/:id/confirm', { auth: 'admin', body: z.object({ transactionId, amount: money, evidence: z.string().trim().min(10).max(2000), note: z.string().trim().max(2000).optional() }).strict() }, async request => database.transaction(async transaction => {
     const payment = await one(transaction, 'SELECT * FROM payments WHERE id=$1 FOR UPDATE', [request.params.id]);
@@ -201,7 +202,7 @@ export function billingRoutes(route, database, config) {
     ensure(!matchingTransaction, 409, 'DUPLICATE_TRANSACTION_ID', 'This transaction ID is already linked to another payment.');
     if (payment.status === 'paid') {
       ensure(payment.transaction_id === request.body.transactionId, 409, 'PAYMENT_ALREADY_CONFIRMED', 'This payment has already been reconciled.');
-      return paymentDto(payment);
+      return paymentDto(payment, { includeAdminReview: true });
     }
     ensure(payment.status === 'pending', 409, 'INVALID_PAYMENT_STATE', 'Only pending payments can be confirmed.');
     const paid = await one(transaction, "UPDATE payments SET status='paid',transaction_id=$2,paid_at=now(),admin_review_note=$3,admin_reviewed_by=$4,admin_reviewed_at=now() WHERE id=$1 RETURNING *", [payment.id, request.body.transactionId, request.body.note || request.body.evidence, request.auth.user_id]);
@@ -214,13 +215,13 @@ export function billingRoutes(route, database, config) {
         ON CONFLICT(user_id,course_id) DO UPDATE SET status='active',starts_at=now(),expires_at=GREATEST(COALESCE(enrollments.expires_at,now()),now())+$3*interval '1 day'`, [payment.user_id, payment.course_id, payment.access_days]);
     }
     await audit(transaction, request.auth.user_id, 'payment.confirmed', payment.id, { transactionId: request.body.transactionId, amountMinor: paid.amount_minor, evidence: request.body.evidence });
-    return paymentDto(paid);
+    return paymentDto(paid, { includeAdminReview: true });
   }));
   route('POST', '/admin/payments/:id/reject', { auth: 'admin', body: z.object({ reason: text.min(5), note: z.string().trim().max(2000).optional() }).strict() }, async request => database.transaction(async transaction => {
     const payment = await one(transaction, "UPDATE payments SET status='failed',admin_review_note=$2,admin_reviewed_by=$3,admin_reviewed_at=now() WHERE id=$1 AND status='pending' RETURNING *", [request.params.id, request.body.note || request.body.reason, request.auth.user_id]);
     ensure(payment, 409, 'INVALID_PAYMENT_STATE', 'Only pending payments can be rejected.');
     await audit(transaction, request.auth.user_id, 'payment.rejected', payment.id, { reason: request.body.reason });
-    return paymentDto(payment);
+    return paymentDto(payment, { includeAdminReview: true });
   }));
 
   route('POST', '/admin/subscription-plans', { auth: 'admin', body: z.object({ courseId: uuid, name: text, description: z.string().max(2000).default(''), amount: money.refine(value => value > 0), durationDays: z.number().int().min(1).max(3650), features: z.array(text).max(20).default([]) }).strict() }, async request => database.transaction(async transaction => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStudents, updateStudentStatus } from './api/admin.api.js';
@@ -24,6 +24,8 @@ export default function AdminStudents() {
   const [filter, setFilter] = useState(ACCOUNT_STATUS.AWAITING_APPROVAL);
   const [confirming, setConfirming] = useState(null);
   const [note, setNote] = useState('');
+  // Each dialog opens with a blank note: a cancelled draft must not leak into the next decision.
+  useEffect(() => { setNote(''); }, [confirming]);
   const [searchText, setSearchText] = useState('');
   const [search, setSearch] = useState('');
   const navigate = useNavigate();

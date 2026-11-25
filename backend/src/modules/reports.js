@@ -36,7 +36,7 @@ export function reportRoutes(route, database) {
       byMonth: byMonth.map(row => ({ month: row.month, amount: Number(row.amount) / 100 })),
       byMethod: byMethod.map(row => ({ method: row.method, amount: Number(row.amount) / 100, share: paidTotal ? Math.round(Number(row.amount) / paidTotal * 100) : 0 })),
       byCourse: byCourse.map(row => ({ courseId: row.course_id, courseTitle: row.title, amount: Number(row.amount) / 100, count: row.count })),
-      transactions: transactions.map(row => ({ ...paymentDto(row), userId: row.user_id, studentId: row.user_id, studentName: row.full_name })),
+      transactions: transactions.map(row => ({ ...paymentDto(row, { includeAdminReview: true }), userId: row.user_id, studentId: row.user_id, studentName: row.full_name })),
     };
   });
   route('GET', '/announcements', { query: pageQuery }, async request => (await database.query('SELECT * FROM announcements WHERE is_published AND published_at<=now() ORDER BY pinned DESC,published_at DESC,id LIMIT $1 OFFSET $2', [request.query.limit, request.query.offset])).rows.map(announcementDto));
