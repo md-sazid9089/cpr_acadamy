@@ -19,7 +19,15 @@ export function paymentDto(row) {
   return { id: row.id, paymentId: row.id, invoiceNo: row.invoice_no, courseId: row.course_id,
     courseTitle: row.description, amount: row.amount_minor / 100, status: row.status, currency: row.currency,
     method: row.method, transactionId: row.transaction_id, paidAt: row.paid_at, createdAt: row.created_at,
-    payerMobile: row.payer_mobile ?? null, screenshotUrl: row.screenshot_url ?? null, proofSubmittedAt: row.proof_submitted_at ?? null };
+    payerMobile: row.payer_mobile ?? null, screenshotUrl: row.screenshot_url ?? null, proofSubmittedAt: row.proof_submitted_at ?? null,
+    adminReviewNote: row.admin_review_note ?? null, adminReviewedAt: row.admin_reviewed_at ?? null, adminReviewedBy: row.admin_reviewed_by ?? null };
+}
+
+/** Who made the payment decision, for admin views. */
+export async function attachReviewer(database, row) {
+  if (!row.admin_reviewed_by) return null;
+  const reviewer = await one(database, 'SELECT full_name FROM users WHERE id=$1', [row.admin_reviewed_by]);
+  return reviewer?.full_name ?? null;
 }
 
 function planDto(row) {
@@ -177,13 +185,14 @@ export function billingRoutes(route, database, config) {
     ]);
     // pendingCount is every pending payment, whatever the search, for the "waiting" badge.
     const { pending: pendingCount } = term ? await one(database, "SELECT count(*)::int AS pending FROM payments WHERE status='pending'") : counts;
-    return { items: rows.rows.map(row => ({ ...paymentDto(row), userId: row.user_id, studentId: row.user_id, studentName: row.full_name, studentMobile: row.student_mobile })),
+    const items = await Promise.all(rows.rows.map(async row => ({ ...paymentDto(row), userId: row.user_id, studentId: row.user_id, studentName: row.full_name, studentMobile: row.student_mobile, adminReviewedByName: await attachReviewer(database, row) })));
+    return { items,
       total: counts.total, pendingCount,
       counts: { all: counts.all, pending: counts.pending, paid: counts.paid, failed: counts.failed, refunded: counts.refunded } };
   });
-  route('GET', '/admin/payments', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => (await database.query('SELECT * FROM payments WHERE ($1::text IS NULL OR status=$1) ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.query.status || null, request.query.limit, request.query.offset])).rows.map(row => ({ ...paymentDto(row), userId: row.user_id })));
+  route('GET', '/admin/payments', { auth: 'admin', query: pageQuery.extend({ status: z.enum(['pending', 'paid', 'failed', 'refunded']).optional() }) }, async request => Promise.all((await database.query('SELECT * FROM payments WHERE ($1::text IS NULL OR status=$1) ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [request.query.status || null, request.query.limit, request.query.offset])).rows.map(async row => ({ ...paymentDto(row), userId: row.user_id, adminReviewedByName: await attachReviewer(database, row) }))));
 
-  route('POST', '/admin/payments/:id/confirm', { auth: 'admin', body: z.object({ transactionId, amount: money, evidence: z.string().trim().min(10).max(2000) }).strict() }, async request => database.transaction(async transaction => {
+  route('POST', '/admin/payments/:id/confirm', { auth: 'admin', body: z.object({ transactionId, amount: money, evidence: z.string().trim().min(10).max(2000), note: z.string().trim().max(2000).optional() }).strict() }, async request => database.transaction(async transaction => {
     const payment = await one(transaction, 'SELECT * FROM payments WHERE id=$1 FOR UPDATE', [request.params.id]);
     ensure(payment, 404, 'PAYMENT_NOT_FOUND', 'Payment not found.');
     ensure(payment.method === 'manual', 409, 'GATEWAY_CONFIRMATION_REQUIRED', 'Gateway payments require provider verification.');
@@ -195,7 +204,7 @@ export function billingRoutes(route, database, config) {
       return paymentDto(payment);
     }
     ensure(payment.status === 'pending', 409, 'INVALID_PAYMENT_STATE', 'Only pending payments can be confirmed.');
-    const paid = await one(transaction, "UPDATE payments SET status='paid',transaction_id=$2,paid_at=now() WHERE id=$1 RETURNING *", [payment.id, request.body.transactionId]);
+    const paid = await one(transaction, "UPDATE payments SET status='paid',transaction_id=$2,paid_at=now(),admin_review_note=$3,admin_reviewed_by=$4,admin_reviewed_at=now() WHERE id=$1 RETURNING *", [payment.id, request.body.transactionId, request.body.note || request.body.evidence, request.auth.user_id]);
     if (payment.plan_id) {
       await transaction.query(`INSERT INTO subscriptions(user_id,plan_id,starts_at,ends_at) VALUES ($1,$2,now(),now()+$3*interval '1 day')
         ON CONFLICT(user_id,plan_id) DO UPDATE SET starts_at=CASE WHEN subscriptions.ends_at<now() THEN now() ELSE subscriptions.starts_at END,
@@ -207,8 +216,8 @@ export function billingRoutes(route, database, config) {
     await audit(transaction, request.auth.user_id, 'payment.confirmed', payment.id, { transactionId: request.body.transactionId, amountMinor: paid.amount_minor, evidence: request.body.evidence });
     return paymentDto(paid);
   }));
-  route('POST', '/admin/payments/:id/reject', { auth: 'admin', body: z.object({ reason: text.min(5) }).strict() }, async request => database.transaction(async transaction => {
-    const payment = await one(transaction, "UPDATE payments SET status='failed' WHERE id=$1 AND status='pending' RETURNING *", [request.params.id]);
+  route('POST', '/admin/payments/:id/reject', { auth: 'admin', body: z.object({ reason: text.min(5), note: z.string().trim().max(2000).optional() }).strict() }, async request => database.transaction(async transaction => {
+    const payment = await one(transaction, "UPDATE payments SET status='failed',admin_review_note=$2,admin_reviewed_by=$3,admin_reviewed_at=now() WHERE id=$1 AND status='pending' RETURNING *", [request.params.id, request.body.note || request.body.reason, request.auth.user_id]);
     ensure(payment, 409, 'INVALID_PAYMENT_STATE', 'Only pending payments can be rejected.');
     await audit(transaction, request.auth.user_id, 'payment.rejected', payment.id, { reason: request.body.reason });
     return paymentDto(payment);

@@ -174,8 +174,8 @@ export function authRoutes(route, database, config) {
     return database.transaction(async transaction => {
       const current = await one(transaction, 'SELECT * FROM users WHERE id=$1 FOR UPDATE', [user.id]);
       ensure(current.password_hash === user.password_hash, 401, 'INVALID_CREDENTIALS', 'Please sign in again.');
-      ensure(!['suspended', 'rejected'].includes(current.status), 403, 'ACCOUNT_NOT_ACTIVE', 'This account cannot sign in.');
-      ensure(current.status !== 'otp_pending', 403, 'OTP_REQUIRED', 'Verify your mobile number before signing in.');
+      if (['suspended', 'rejected'].includes(current.status)) throw new ApiError(403, 'ACCOUNT_NOT_ACTIVE', 'This account cannot sign in.', { reason: current.status });
+      if (current.status === 'otp_pending') throw new ApiError(403, 'OTP_REQUIRED', 'Verify your mobile number before signing in.', { reason: current.status });
       const stamped = await one(transaction, 'UPDATE users SET last_login_at=now() WHERE id=$1 RETURNING *', [current.id]);
       const session = await issueSession(transaction, stamped, deviceId);
       await audit(transaction, user.id, 'auth.login', user.id);

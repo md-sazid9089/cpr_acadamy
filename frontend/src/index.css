@@ -119,6 +119,12 @@
     padding: 8px 12px;
   }
 
+  .ui-button[data-size='xs'] {
+    min-height: 40px;
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+
   .ui-button[data-size='icon'] {
     min-width: var(--control-height-medium);
     padding: 12px;
@@ -223,6 +229,11 @@
 .ui-button.ui-button-cta {
   font-size: 20px;
   font-weight: 700;
+}
+
+/* This rule is unlayered, so it would otherwise beat the layered xs size. */
+.ui-button.ui-button-cta[data-size='xs'] {
+  font-size: 14px;
 }
 
 button, input:not([type='checkbox']):not([type='radio']), select, textarea {

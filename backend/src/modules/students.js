@@ -3,7 +3,7 @@ import { one } from '../db.js';
 import { audit, ensure, text, password, pageQuery } from '../http.js';
 import { hashPassword, verifyPassword, publicUser } from '../security.js';
 import { enqueueSms } from '../sms.js';
-import { paymentDto } from './billing.js';
+import { attachReviewer, paymentDto } from './billing.js';
 
 const profileValue = z.string().trim().max(300);
 const profileSchemas = {
@@ -128,22 +128,26 @@ export function studentRoutes(route, database, config) {
   route('GET', '/admin/students/:id', { auth: 'admin' }, async request => {
     const user = await one(database, "SELECT * FROM users WHERE id=$1 AND role='student'", [request.params.id]);
     ensure(user, 404, 'STUDENT_NOT_FOUND', 'Student not found.');
-    return { ...publicUser(user), interest: user.interest, profile: profileDto(user), enrollments: await myCourses(database, user.id) };
+    const reviewer = user.status_decided_by ? await one(database, 'SELECT full_name FROM users WHERE id=$1', [user.status_decided_by]) : null;
+    return { ...publicUser(user), interest: user.interest, profile: profileDto(user), enrollments: await myCourses(database, user.id),
+      statusNote: user.status_note ?? null, statusDecidedAt: user.status_decided_at ?? null, statusDecidedBy: reviewer?.full_name ?? null };
   });
   route('GET', '/admin/students/:id/payments', { auth: 'admin', query: pageQuery }, async request => {
     const user = await one(database, "SELECT id FROM users WHERE id=$1 AND role='student'", [request.params.id]);
     ensure(user, 404, 'STUDENT_NOT_FOUND', 'Student not found.');
-    return (await database.query('SELECT * FROM payments WHERE user_id=$1 ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [user.id, request.query.limit, request.query.offset])).rows.map(row => ({ ...paymentDto(row), userId: row.user_id }));
+    return Promise.all((await database.query('SELECT * FROM payments WHERE user_id=$1 ORDER BY created_at DESC,id LIMIT $2 OFFSET $3', [user.id, request.query.limit, request.query.offset])).rows.map(async row => ({ ...paymentDto(row), userId: row.user_id, adminReviewedByName: await attachReviewer(database, row) })));
   });
-  route('PATCH', '/admin/students/:id/status', { auth: 'admin', body: z.object({ status: z.enum(['active', 'rejected', 'suspended']) }).strict() }, async request => database.transaction(async transaction => {
+  route('PATCH', '/admin/students/:id/status', { auth: 'admin', body: z.object({ status: z.enum(['active', 'rejected', 'suspended']), note: z.string().trim().max(2000).optional() }).strict() }, async request => database.transaction(async transaction => {
     const user = await one(transaction, "SELECT * FROM users WHERE id=$1 AND role='student' FOR UPDATE", [request.params.id]);
     ensure(user, 404, 'STUDENT_NOT_FOUND', 'Student not found.');
     const next = request.body.status;
     if (user.status === next) return { ok: true, studentId: user.id, status: next };
+    // The admin's note (why a registration was rejected or an account suspended) stays with the record.
+    const note = request.body.note?.trim() || null;
     // A rejection can be reversed: the admin may have misjudged it, and the student cannot register the number again.
     const transitions = { awaiting_approval: ['active', 'rejected'], active: ['suspended'], suspended: ['active'], rejected: ['active'] };
     ensure(transitions[user.status]?.includes(next) && user.mobile_verified_at, 409, 'INVALID_STATUS_TRANSITION', 'This account cannot transition to that status.');
-    await transaction.query('UPDATE users SET status=$2 WHERE id=$1', [user.id, next]);
+    await transaction.query('UPDATE users SET status=$2,status_decided_by=$3,status_decided_at=CASE WHEN $5 THEN NULL ELSE now() END,status_note=CASE WHEN $5 THEN NULL ELSE $4 END WHERE id=$1', [user.id, next, request.auth.user_id, note, next === 'active']);
     if (next !== 'active') await transaction.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [user.id]);
     await audit(transaction, request.auth.user_id, 'student.status_changed', user.id, { previous: user.status, status: next });
     if (config.smsMode !== 'disabled') await enqueueSms(transaction, config, user, `Your CPR Academy account status is now ${next}.`, 86400);

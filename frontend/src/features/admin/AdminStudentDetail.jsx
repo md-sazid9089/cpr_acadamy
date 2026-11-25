@@ -3,13 +3,14 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { FaArrowLeftLong, FaEnvelope, FaIdCard, FaPhone, FaSchool } from 'react-icons/fa6';
 import { fetchStudent, fetchStudentPayments, updateStudentStatus } from './api/admin.api.js';
-import { PAYMENT_COLUMNS } from './AdminTransactions.jsx';
+import { AdminNote, PAYMENT_COLUMNS } from './AdminTransactions.jsx';
 import Card, { CardBody, CardHeader, StatCard } from '@/components/ui/Card.jsx';
 import Table from '@/components/ui/Table.jsx';
 import Badge, { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import Modal from '@/components/ui/Modal.jsx';
+import { Textarea } from '@/components/ui/Input.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import { ACCOUNT_STATUS, PAYMENT_STATUS } from '@/constants';
 import { formatBDT, formatDate, formatDateTime } from '@/lib/utils';
@@ -39,6 +40,7 @@ export default function AdminStudentDetail() {
   const { studentId } = useParams();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(null);
+  const [note, setNote] = useState('');
 
   const [studentQuery, paymentsQuery] = useQueries({
     queries: [
@@ -48,12 +50,13 @@ export default function AdminStudentDetail() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: updateStudentStatus,
+    mutationFn: ({ status, note: decisionNote }) => updateStudentStatus({ studentId: student.id, status, note: decisionNote }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'student', studentId] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
       setConfirming(null);
+      setNote('');
     },
   });
 
@@ -155,6 +158,15 @@ export default function AdminStudentDetail() {
         </CardBody>
       </Card>
 
+      {student.statusNote && (
+        <AdminNote
+          label={student.status === ACCOUNT_STATUS.REJECTED ? 'Rejection reason' : student.status === ACCOUNT_STATUS.SUSPENDED ? 'Suspension reason' : 'Admin note'}
+          note={student.statusNote}
+          at={student.statusDecidedAt}
+          by={student.statusDecidedBy}
+        />
+      )}
+
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Total paid" value={formatBDT(totalPaid)} hint={`${payments.filter((p) => p.status === PAYMENT_STATUS.PAID).length} paid invoices`} />
         <StatCard label="Awaiting payment" value={formatBDT(pendingAmount)} hint={pendingAmount ? 'Pending invoices' : 'Nothing outstanding'} />
@@ -197,7 +209,7 @@ export default function AdminStudentDetail() {
             <Button
               variant={confirming === ACCOUNT_STATUS.ACTIVE ? 'primary' : 'danger'}
               isLoading={statusMutation.isPending}
-              onClick={() => statusMutation.mutate({ studentId: student.id, status: confirming })}
+              onClick={() => statusMutation.mutate({ status: confirming, note: note.trim() || undefined })}
             >
               Confirm
             </Button>
@@ -210,6 +222,16 @@ export default function AdminStudentDetail() {
             ? ' They will receive an activation SMS and can sign in immediately.'
             : ' They will lose access and be notified by SMS.'}
         </p>
+        <div className="mt-4">
+          <Textarea
+            label={confirming === ACCOUNT_STATUS.ACTIVE ? 'Note (optional)' : 'Reason (shown to admins later)'}
+            rows={3}
+            maxLength={2000}
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            placeholder={confirming === ACCOUNT_STATUS.ACTIVE ? 'e.g. Documents verified.' : 'e.g. Registration details do not match BMDC records.'}
+          />
+        </div>
         {statusMutation.isError && (
           <p role="alert" className="mt-3 text-sm font-medium text-red-600 dark:text-red-400">{statusMutation.error.message}</p>
         )}
