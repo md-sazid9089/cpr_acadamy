@@ -24,9 +24,9 @@ const CATEGORY_GRADIENTS = {
 /**
  * Course card — compact floating info badge to keep the poster artwork clearly visible.
  *
- * @param {{ course: import('@/types').Course, onEnroll?: (course: any) => void }} props
+ * @param {{ course: import('@/types').Course, onEnroll?: (course: any) => void, enrolled?: boolean }} props
  */
-export default function CourseCard({ course, onEnroll }) {
+export default function CourseCard({ course, onEnroll, enrolled = false }) {
   const detailPath = `/courses/${categorySlug(course.category)}/${course.slug}`;
   const isOfferActive = (c) => {
     if (!c?.discountPrice || c.discountPrice >= c.price) return false;
@@ -103,13 +103,19 @@ export default function CourseCard({ course, onEnroll }) {
           )}
         </div>
 
-        {/* Compact action buttons */}
+        {/* Compact action buttons. An enrolled student gets a badge instead of a second Enrol button. */}
         <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-3 sm:gap-3">
+          {enrolled ? (
+            <Badge tone="success" className="order-2 sm:order-1 flex items-center justify-center self-center rounded-control border-transparent px-3 py-2 text-xs font-bold sm:text-sm">
+              Enrolled ✓
+            </Badge>
+          ) : (
+            <Button size="sm" className="order-1 sm:order-2" fullWidth onClick={() => onEnroll?.(course)}>
+              Enrol
+            </Button>
+          )}
           <Button to={detailPath} variant="outline" size="sm" className="order-2 sm:order-1" fullWidth>
             Details
-          </Button>
-          <Button size="sm" className="order-1 sm:order-2" fullWidth onClick={() => onEnroll?.(course)}>
-            Enrol
           </Button>
         </div>
       </div>
