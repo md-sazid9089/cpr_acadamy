@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate } from 'react-router-dom';
 import { FaCheck } from 'react-icons/fa6';
-import AuthCard from './components/AuthCard.jsx';
+import AuthCard, { FormAlert } from './components/AuthCard.jsx';
 import { fetchApprovalStatus } from './api/auth.api.js';
 import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import { useAuthStore } from '@/lib/auth';
 import { ACCOUNT_STATUS, CONTACT } from '@/constants';
-import { maskMobile } from '@/lib/utils';
+import { ACCOUNT_STATUS_MESSAGES } from './login-errors.js';
 
 const STEPS = [
   { key: 'registered', label: 'Registration submitted' },
@@ -33,7 +33,7 @@ export default function PendingApproval() {
   const isRejected = status === ACCOUNT_STATUS.REJECTED;
 
   // Poll so the screen flips over on its own the moment an admin approves.
-  const { refetch, isFetching } = useQuery({
+  const { refetch, isFetching, error } = useQuery({
     queryKey: ['auth', 'approval-status', mobile],
     queryFn: async () => {
       const result = await fetchApprovalStatus();
@@ -53,11 +53,7 @@ export default function PendingApproval() {
   return (
     <AuthCard
       title={isRejected ? 'Registration not approved' : 'Your account is awaiting approval'}
-      description={
-        isRejected
-          ? 'Our team could not verify the details you submitted.'
-          : `Thanks for verifying ${mobile ? maskMobile(mobile) : 'your number'}. An administrator reviews every new registration before it is activated.`
-      }
+      description={ACCOUNT_STATUS_MESSAGES[status]}
       footer={
         <>
           Approved already?{' '}
@@ -112,6 +108,7 @@ export default function PendingApproval() {
         </div>
       )}
 
+      <FormAlert>{error?.message}</FormAlert>
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {!isRejected && (
           <Button variant="outline" fullWidth isLoading={isFetching} onClick={() => refetch()}>

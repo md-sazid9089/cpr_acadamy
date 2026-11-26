@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import AuthCard, { FormAlert } from './components/AuthCard.jsx';
 import { loginSchema } from './schemas/auth.schemas.js';
+import { loginErrorMessage } from './login-errors.js';
 import { checkAdminGate, login as loginRequest, openAdminGate } from './api/auth.api.js';
 import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
@@ -122,14 +123,14 @@ function AdminSignIn({ gatePass, onPassRejected }) {
       // The server answers a missing pass exactly like a wrong password, so ask separately whether
       // the pass has expired (or the key changed) before blaming the password.
       if (error.code === 'INVALID_CREDENTIALS' && !(await checkAdminGate(gatePass).catch(() => true))) onPassRejected();
-      else setSubmitError(error.message ?? 'Sign in failed. Please try again.');
+      else setSubmitError(loginErrorMessage(error));
     }
   };
 
   return (
     <AuthCard title="Staff sign in" description="Use your administrator mobile number and password.">
       <FormAlert>{submitError}</FormAlert>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit(onSubmit, () => setSubmitError(null))} className="space-y-4" noValidate>
         <Input
           label="Mobile number"
           required

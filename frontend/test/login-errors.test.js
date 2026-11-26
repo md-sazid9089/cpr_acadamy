@@ -9,6 +9,7 @@ const { loginErrorMessage } = await import(`data:text/javascript;base64,${Buffer
 
 test('wrong credentials and unknown accounts share one message', () => {
   assert.equal(loginErrorMessage({ code: 'INVALID_CREDENTIALS' }), 'Mobile number or password is incorrect.');
+  assert.equal(loginErrorMessage({ code: 'INVALID_CREDENTIALS', reason: 'suspended' }), 'Mobile number or password is incorrect.');
   assert.equal(loginErrorMessage({ code: 'SOME_OTHER_CODE' }), 'Something went wrong. Please try again later.');
   assert.equal(loginErrorMessage(null), 'Something went wrong. Please try again later.');
 });

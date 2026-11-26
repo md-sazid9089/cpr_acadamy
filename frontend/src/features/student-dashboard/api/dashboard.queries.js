@@ -32,8 +32,8 @@ export const dashboardKeys = {
   complaint: (id) => ['dashboard', 'complaints', id],
 };
 
-export function useMyCourses() {
-  return useQuery({ queryKey: dashboardKeys.myCourses, queryFn: fetchMyCourses });
+export function useMyCourses({ enabled = true } = {}) {
+  return useQuery({ queryKey: dashboardKeys.myCourses, queryFn: fetchMyCourses, enabled });
 }
 
 export function useUpcomingExams() {

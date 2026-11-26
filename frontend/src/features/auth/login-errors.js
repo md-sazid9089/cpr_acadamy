@@ -9,7 +9,7 @@ const LOGIN_MESSAGES = {
 };
 
 /** The account status behind a refused sign-in, each with its own explanation. */
-const BLOCKED_STATUS_MESSAGES = {
+export const ACCOUNT_STATUS_MESSAGES = {
   [ACCOUNT_STATUS.AWAITING_APPROVAL]: 'Your account is under review. Please wait for admin approval.',
   [ACCOUNT_STATUS.OTP_PENDING]: 'Please verify your mobile number before signing in.',
   [ACCOUNT_STATUS.SUSPENDED]: 'Your account has been suspended. Contact support.',
@@ -21,8 +21,9 @@ const BLOCKED_STATUS_MESSAGES = {
  * ("Request failed with status code 500", "timeout of 20000ms exceeded").
  */
 export function loginErrorMessage(error) {
-  const blockedByStatus = BLOCKED_STATUS_MESSAGES[error?.reason];
-  if (blockedByStatus) return blockedByStatus;
+  if (['ACCOUNT_NOT_ACTIVE', 'OTP_REQUIRED'].includes(error?.code) && Object.hasOwn(ACCOUNT_STATUS_MESSAGES, error.reason)) {
+    return ACCOUNT_STATUS_MESSAGES[error.reason];
+  }
   const serverMessage = LOGIN_MESSAGES[error?.code];
   if (serverMessage) return serverMessage;
   if (error?.userMessage) return error.userMessage;

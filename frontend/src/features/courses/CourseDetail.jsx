@@ -12,7 +12,8 @@ import {
   FaArrowRightLong,
 } from 'react-icons/fa6';
 import { useCourse } from './api/courses.queries.js';
-import { useEnrollAction } from './hooks/useEnrollAction.js';
+import { useCourseEnrollment } from './hooks/useCourseEnrollment.js';
+import CourseAccessAction from './components/CourseAccessAction.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -32,7 +33,7 @@ function paragraphs(text) {
 export default function CourseDetail() {
   const { slug } = useParams();
   const { data: course, isLoading, isError } = useCourse(slug);
-  const onEnroll = useEnrollAction();
+  const enrollment = useCourseEnrollment();
   const [activeSection, setActiveSection] = useState('description');
 
   if (isLoading) {
@@ -437,13 +438,14 @@ export default function CourseDetail() {
                 </div>
 
                 <div className="mt-5 space-y-3">
-                  <Button
+                  <CourseAccessAction
                     fullWidth
                     className="font-bold"
-                    onClick={() => onEnroll(course)}
+                    course={course}
+                    enrollment={enrollment}
                   >
                     Enrol Now
-                  </Button>
+                  </CourseAccessAction>
 
                   <Button
                     to={scheduleUrl}

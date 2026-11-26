@@ -10,6 +10,7 @@ import { OTP_LENGTH } from '@/constants';
 export const bdMobileSchema = z
   .string()
   .trim()
+  .min(1, 'Enter your mobile number')
   .regex(/^01[3-9]\d{8}$/, 'Enter a valid Bangladeshi mobile number, e.g. 01712345678');
 
 /**
