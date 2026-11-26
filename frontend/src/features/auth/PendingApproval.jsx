@@ -24,20 +24,19 @@ const STEPS = [
 export default function PendingApproval() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
-  const pendingMobile = useAuthStore((s) => s.pendingMobile);
   const logout = useAuthStore((s) => s.logout);
   const setUser = useAuthStore((s) => s.setUser);
 
-  const mobile = user?.mobile ?? pendingMobile;
-  const status = user?.status ?? ACCOUNT_STATUS.AWAITING_APPROVAL;
+  const status = user?.status;
   const isRejected = status === ACCOUNT_STATUS.REJECTED;
 
   // Poll so the screen flips over on its own the moment an admin approves.
   const { refetch, isFetching, error } = useQuery({
-    queryKey: ['auth', 'approval-status', mobile],
+    queryKey: ['auth', 'approval-status', user?.id],
     queryFn: async () => {
       const result = await fetchApprovalStatus();
-      if (user && result.status !== user.status) setUser({ ...user, status: result.status });
+      const current = useAuthStore.getState().user;
+      if (current && current.id === user?.id && result.status !== current.status) setUser({ ...current, status: result.status });
       return result;
     },
     enabled: Boolean(accessToken && user) && !isRejected && status !== ACCOUNT_STATUS.ACTIVE,
@@ -45,7 +44,8 @@ export default function PendingApproval() {
   });
 
   // Approved (by the poll, "Check status", or before arriving here): nothing left to wait for.
-  if (user && status === ACCOUNT_STATUS.ACTIVE) return <Navigate to="/dashboard" replace />;
+  if (!accessToken || !user) return <Navigate to="/login" replace />;
+  if (status === ACCOUNT_STATUS.ACTIVE) return <Navigate to="/dashboard" replace />;
 
   // How far along the four-step strip we are.
   const reachedIndex = isRejected ? 1 : 2;
