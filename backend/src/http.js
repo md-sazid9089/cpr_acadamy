@@ -4,10 +4,12 @@ import { digestToken } from './security.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 export class ApiError extends Error {
-  constructor(statusCode, code, message) {
+  /** @param {string} [details.reason] machine-readable detail, e.g. the account status behind ACCOUNT_NOT_ACTIVE */
+  constructor(statusCode, code, message, details = {}) {
     super(message);
     this.statusCode = statusCode;
     this.code = code;
+    Object.assign(this, details);
   }
 }
 

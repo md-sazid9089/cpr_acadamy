@@ -17,6 +17,20 @@ import { cn, formatBDT, formatDateTime } from '@/lib/utils';
 
 const METHOD_LABELS = Object.fromEntries(PAYMENT_METHODS.map((method) => [method.id, method.label]));
 
+/** The admin's comment left when a payment or registration was decided, with who and when. */
+export function AdminNote({ note, at, by, label = 'Admin note' }) {
+  if (!note) return null;
+  return (
+    <div className="rounded-lg border border-stone-200 bg-surface-subtle p-3 text-sm dark:border-stone-200 dark:bg-surface-dark">
+      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-brand-200">{label}</p>
+      <p className="mt-1 whitespace-pre-wrap text-stone-800 dark:text-white">{note}</p>
+      <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">
+        {by ? `by ${by}` : ''}{by && at ? ' · ' : ''}{at ? formatDateTime(at) : ''}
+      </p>
+    </div>
+  );
+}
+
 /** Transaction columns shared with the student detail page. */
 export const PAYMENT_COLUMNS = [
   {
@@ -63,10 +77,11 @@ export const PAYMENT_COLUMNS = [
   { key: 'status', header: 'Status', align: 'right', render: (row) => <StatusBadge status={row.status} /> },
 ];
 
-/** Opens a neutral proof review before the admin chooses an outcome. */
+/** Opens a neutral proof review before the admin chooses an outcome; for a decided payment it shows the admin's note. */
 export function ReconcileDialog({ payment, onClose, onDone }) {
   const [decision, setDecision] = useState('');
   const [comment, setComment] = useState('');
+  const decided = payment && payment.status !== PAYMENT_STATUS.PENDING;
 
   const confirm = useMutation({ mutationFn: confirmPayment, onSuccess: onDone });
   const reject = useMutation({ mutationFn: rejectPayment, onSuccess: onDone });
@@ -119,22 +134,25 @@ export function ReconcileDialog({ payment, onClose, onDone }) {
           </div>
         </div>
 
+        {decided && <AdminNote note={payment.adminReviewNote} at={payment.adminReviewedAt} by={payment.adminReviewedByName ?? payment.adminReviewedBy} />}
+
         {error && (
           <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
             {error.message}
           </p>
         )}
 
-        <fieldset>
+        {!decided && <fieldset>
           <legend className="mb-2 text-sm font-semibold text-stone-800 dark:text-white">Decision</legend>
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button type="button" variant={decision === 'received' ? 'primary' : 'outline'} onClick={() => setDecision('received')} disabled={!payment?.transactionId || busy}>Accept payment</Button>
-            <Button type="button" variant={decision === 'not-received' ? 'danger' : 'outline'} onClick={() => setDecision('not-received')} disabled={busy}>Reject payment</Button>
+            <Button type="button" variant={decision === 'received' ? 'primary' : 'outline'} onClick={() => setDecision('received')} disabled={decided || !payment?.transactionId || busy}>Accept payment</Button>
+            <Button type="button" variant={decision === 'not-received' ? 'danger' : 'outline'} onClick={() => setDecision('not-received')} disabled={decided || busy}>Reject payment</Button>
           </div>
+          {decided && <p className="text-xs text-stone-500 dark:text-brand-200">This payment is already {payment.status}; the decision below cannot be changed here.</p>}
           {!payment?.transactionId && <p className="mt-2 text-xs text-red-600 dark:text-red-400">This payment cannot be accepted until the student submits a transaction ID.</p>}
-        </fieldset>
+        </fieldset>}
 
-        {decision && (
+        {!decided && decision && (
           <Textarea
             label={received ? 'Verification note' : 'Rejection reason'}
             required
@@ -148,9 +166,9 @@ export function ReconcileDialog({ payment, onClose, onDone }) {
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
-            Cancel
+            {decided ? 'Close' : 'Cancel'}
           </Button>
-          {decision && (
+          {!decided && decision && (
             <Button type="submit" variant={decision === 'not-received' ? 'danger' : 'primary'} isLoading={busy}>
               {decision === 'not-received' ? 'Confirm rejection' : 'Confirm & activate access'}
             </Button>
@@ -341,11 +359,11 @@ export default function TransactionsPanel() {
                     <p className="mt-1 text-xs text-stone-500 dark:text-brand-200">{dayAndTime(row.proofSubmittedAt ?? row.createdAt)}</p>
                   </td>
                   <td className="whitespace-nowrap py-3.5 pl-3 pr-5">
-                    {row.status === PAYMENT_STATUS.PENDING && (
-                      <div className="flex justify-end">
-                        <Button size="sm" variant="outline" onClick={() => setReconciling(row)}>Open</Button>
-                      </div>
-                    )}
+                    <div className="flex justify-end">
+                      <Button size="sm" variant={row.status === PAYMENT_STATUS.PENDING ? 'outline' : 'ghost'} onClick={() => setReconciling(row)}>
+                        {row.status === PAYMENT_STATUS.PENDING ? 'Open' : 'View'}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

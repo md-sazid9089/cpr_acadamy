@@ -93,12 +93,10 @@ export default function Hero() {
               প্রয়োজন অনুযায়ী প্রস্তুতি শুরু করুন
             </p>
 
-            {/* .button-group stacks full-width below sm: everywhere else it's
-                used (e.g. Modal footers), but the hero's two CTAs read better
-                side by side even on a phone — flex-row overrides that, and
-                flex-1 splits the row evenly instead of each button trying to
-                be 100% width. */}
-            <div className="button-group mt-10 flex-row items-stretch justify-center sm:items-center lg:justify-start">
+            {/* Desktop/tablet: the CTAs sit under the copy, beside the carousel card.
+                On phones the carousel comes first and a compact copy of these buttons
+                follows it (see below the grid), so the buttons never push the gallery down. */}
+            <div className="button-group mt-10 hidden flex-row items-stretch justify-center sm:items-center lg:justify-start md:flex">
               <Button
                 to="/register"
                 variant="accent"
@@ -134,6 +132,28 @@ export default function Hero() {
               label="Course promotions"
             />}
           </div>
+        </div>
+
+        {/* Mobile only: compact CTAs after the carousel (hero text → carousel → buttons).
+            Smaller type and padding than the desktop row above, which takes over from md up. */}
+        <div className="button-group mt-8 flex-row md:hidden">
+          <Button
+            to="/register"
+            variant="accent"
+            shape="pill"
+            size="xs"
+            className="flex-1"
+          >
+            প্রস্তুতি শুরু করুন
+          </Button>
+          <Button
+            to="/courses"
+            variant="outline"
+            size="xs"
+            className="flex-1"
+          >
+            কোর্সগুলো দেখুন
+          </Button>
         </div>
       </div>
       <ValueProps />

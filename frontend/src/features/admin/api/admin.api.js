@@ -131,9 +131,9 @@ export async function fetchStudentPayments(studentId) {
   return data;
 }
 
-/** @param {{ studentId: string, status: string }} args Triggers the status SMS. */
-export async function updateStudentStatus({ studentId, status }) {
-  const { data } = await apiClient.patch(`/admin/students/${studentId}/status`, { status });
+/** @param {{ studentId: string, status: string, note?: string }} args Triggers the status SMS; `note` is kept on the record. */
+export async function updateStudentStatus({ studentId, status, note }) {
+  const { data } = await apiClient.patch(`/admin/students/${studentId}/status`, { status, ...(note ? { note } : {}) });
   return data;
 }
 

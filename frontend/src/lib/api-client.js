@@ -107,17 +107,33 @@ export function normalizeError(error) {
   const data = error.response?.data;
   const code = data?.code ?? 'NETWORK_ERROR';
   const summary = data?.message ?? error.message ?? 'Something went wrong. Please check your connection and try again.';
+  /** A plain sentence for forms to show when there is nothing more specific to say. */
+  const userMessage = isNetworkFailure(error)
+    ? error.code === 'ECONNABORTED' || error.message?.includes('timeout')
+      ? 'Server is not responding. Please try again.'
+      : 'Please check your internet connection.'
+    : error.response?.status >= 500
+      ? 'Something went wrong. Please try again later.'
+      : undefined;
   /** @type {Record<string, string>} field -> message, for RHF setError. */
   const fieldErrors = data?.errors ?? {};
   return {
     status: error.response?.status ?? 0,
     code,
+    userMessage,
+    /** Machine-readable detail from the server, e.g. which account status blocked a login. */
+    reason: data?.reason,
     // Says which field and why when the server named one, so every screen that shows `message` is specific.
     message: describeApiError(code, summary, fieldErrors),
     /** The server's own headline, e.g. "Please check the submitted fields." */
     summary,
     fieldErrors,
   };
+}
+
+/** True when the request never got an answer from the server (offline, DNS, refused, timed out). */
+export function isNetworkFailure(error) {
+  return !error.response && Boolean(error.request);
 }
 
 export default apiClient;

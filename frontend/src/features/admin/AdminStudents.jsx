@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchStudents, updateStudentStatus } from './api/admin.api.js';
@@ -7,7 +7,7 @@ import Table from '@/components/ui/Table.jsx';
 import { StatusBadge } from '@/components/ui/Badge.jsx';
 import Button from '@/components/ui/Button.jsx';
 import Modal from '@/components/ui/Modal.jsx';
-import Input from '@/components/ui/Input.jsx';
+import Input, { Textarea } from '@/components/ui/Input.jsx';
 import { ACCOUNT_STATUS } from '@/constants';
 import { cn, formatDate } from '@/lib/utils';
 
@@ -23,6 +23,9 @@ const FILTERS = [
 export default function AdminStudents() {
   const [filter, setFilter] = useState(ACCOUNT_STATUS.AWAITING_APPROVAL);
   const [confirming, setConfirming] = useState(null);
+  const [note, setNote] = useState('');
+  // Each dialog opens with a blank note: a cancelled draft must not leak into the next decision.
+  useEffect(() => { setNote(''); }, [confirming]);
   const [searchText, setSearchText] = useState('');
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
@@ -39,6 +42,7 @@ export default function AdminStudents() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'students'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
       setConfirming(null);
+      setNote('');
     },
   });
 
@@ -210,6 +214,7 @@ export default function AdminStudents() {
                 statusMutation.mutate({
                   studentId: confirming.student.id,
                   status: confirming.action,
+                  note: note.trim() || undefined,
                 })
               }
             >
@@ -226,6 +231,18 @@ export default function AdminStudents() {
               ? ' They will receive an activation SMS and can sign in immediately.'
               : ' They will lose access and be notified by SMS.'}
           </p>
+        )}
+        {confirming && (
+          <div className="mt-4">
+            <Textarea
+              label={confirming.action === ACCOUNT_STATUS.ACTIVE ? 'Note (optional)' : 'Reason (kept on the record)'}
+              rows={3}
+              maxLength={2000}
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder={confirming.action === ACCOUNT_STATUS.ACTIVE ? '' : 'e.g. Registration details do not match BMDC records.'}
+            />
+          </div>
         )}
         {statusMutation.isError && (
           <p role="alert" className="mt-3 text-sm font-medium text-red-600 dark:text-red-400">{statusMutation.error.message}</p>
