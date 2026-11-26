@@ -44,18 +44,33 @@ export default function Footer() {
           </p>
 
           <p className="text-xs leading-relaxed text-stone-500 dark:text-brand-200">
-            {CONTACT.address || 'House-32, Road-07, GEC Circle, Chattogram - 4000'}
+            <a
+              href={CONTACT.mapLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-brand-400 hover:underline"
+            >
+              📍 {CONTACT.address || 'Chokbazar Moti, Chattogram'}
+            </a>
           </p>
 
           <div className="space-y-1 text-xs">
             <p>
               <strong className="text-brand-900 dark:text-white">Helpline:</strong>{' '}
               <a
-                href="tel:+8801329672052"
+                href="tel:+8801898938981"
                 className="transition-colors hover:text-brand-400"
               >
-                +88 01329 672052
+                01898-938981
               </a>
+              {', '}
+              <a
+                href="tel:+8801898938982"
+                className="transition-colors hover:text-brand-400"
+              >
+                01898-938982
+              </a>
+              <span className="text-stone-500 dark:text-brand-200"> (WhatsApp)</span>
             </p>
             <p>
               <strong className="text-brand-900 dark:text-white">Email:</strong>{' '}
@@ -185,17 +200,17 @@ export default function Footer() {
             <p className="text-xs font-semibold">Follow Us:</p>
             <div className="mt-2.5 flex items-center gap-2">
               <a
-                href="https://facebook.com"
+                href={CONTACT.facebookPage}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Facebook"
+                aria-label="Facebook Page"
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-700 transition hover:bg-brand-600 hover:text-white dark:bg-white/10 dark:text-white"
               >
                 <FaFacebookF className="h-3.5 w-3.5" />
               </a>
 
               <a
-                href="https://wa.me/8801329672052"
+                href={`https://wa.me/${CONTACT.whatsapp}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="WhatsApp"
@@ -205,7 +220,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="https://youtube.com"
+                href={CONTACT.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="YouTube"
@@ -252,7 +267,7 @@ export default function Footer() {
 
       {/* ── Floating WhatsApp / Helpline Call Button ── */}
       <a
-        href="tel:+8801329672052"
+        href="tel:+8801898938981"
         aria-label="Call helpline"
         className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white border border-stone-200 transition-all duration-300 hover:scale-110 hover:bg-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-400/50"
       >

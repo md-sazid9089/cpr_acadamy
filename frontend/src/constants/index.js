@@ -287,12 +287,14 @@ export const OTP_LENGTH = 6;
 export const OTP_RESEND_SECONDS = 60;
 
 export const CONTACT = Object.freeze({
-  phone: '+880 1700-000000',
-  whatsapp: import.meta.env?.VITE_WHATSAPP_NUMBER ?? '8801700000000',
+  phone: '01898-938981',
+  phone2: '01898-938982',
+  whatsapp: import.meta.env?.VITE_WHATSAPP_NUMBER ?? '8801898938982',
   email: 'support@cprmedicalacademy.com',
-  address: 'House 12, Road 5, Dhanmondi, Dhaka 1205, Bangladesh',
+  address: 'Chokbazar Moti, Chattogram',
   hours: 'Saturday – Thursday, 10:00 AM – 8:00 PM',
-  // TODO: placeholder — swap in the real Facebook Page/Group URLs.
-  facebookPage: 'https://facebook.com/cprmedicalacademy',
-  facebookGroup: 'https://facebook.com/groups/cprmedicalacademy',
+  facebookPage: 'https://www.facebook.com/cprmedicalacademy.ctg',
+  facebookGroup: 'https://www.facebook.com/groups/1829895761124460',
+  youtube: 'https://www.youtube.com/@cprmedicalacademy',
+  mapLink: 'https://www.google.com/maps?q=9R2M+P63+CPR+Medical+Academy,+Chokbazar+moti,+Chattogram&ftid=0x30ad27007f1f1af3:0xda4587362b6647bd&entry=gps',
 });
