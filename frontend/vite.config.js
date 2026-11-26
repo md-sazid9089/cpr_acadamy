@@ -2,6 +2,22 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
 
+const proxy = {
+  '/api': {
+    target: process.env.VITE_DEV_API_ORIGIN || 'http://127.0.0.1:3001',
+    changeOrigin: true,
+    configure(server) {
+      // Vite otherwise turns a refused upstream connection into an indistinguishable HTTP 500.
+      server.on('error', (_error, _request, response) => {
+        if (response?.writeHead && !response.headersSent && !response.destroyed) {
+          response.writeHead(502, { 'Content-Type': 'application/json' });
+          response.end(JSON.stringify({ code: 'UPSTREAM_UNAVAILABLE' }));
+        }
+      });
+    },
+  },
+};
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -22,14 +38,10 @@ export default defineConfig({
     open: true,
     // Same-origin /api in development too, so no CORS and the same relative
     // base URL works locally and behind the production reverse proxy.
-    proxy: {
-      '/api': { target: process.env.VITE_DEV_API_ORIGIN || 'http://127.0.0.1:3001', changeOrigin: true },
-    },
+    proxy,
   },
   preview: {
-    proxy: {
-      '/api': { target: process.env.VITE_DEV_API_ORIGIN || 'http://127.0.0.1:3001', changeOrigin: true },
-    },
+    proxy,
   },
   build: {
     rollupOptions: {

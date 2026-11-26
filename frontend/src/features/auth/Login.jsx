@@ -9,14 +9,14 @@ import Input from '@/components/ui/Input.jsx';
 import Button from '@/components/ui/Button.jsx';
 import { useAuthStore } from '@/lib/auth';
 import { ACCOUNT_STATUS, FORCED_LOGOUT_REASONS, ROLES } from '@/constants';
-import { loginErrorMessage } from './login-errors.js';
+import { ACCOUNT_STATUS_MESSAGES, loginErrorMessage } from './login-errors.js';
 
 const FORCED_LOGOUT_MESSAGES = {
   [FORCED_LOGOUT_REASONS.ANOTHER_DEVICE]:
     'You were signed out because this account was used on another device. Only one device can be signed in at a time.',
   [FORCED_LOGOUT_REASONS.TOKEN_EXPIRED]: 'Your session expired. Please sign in again.',
   [FORCED_LOGOUT_REASONS.ACCOUNT_SUSPENDED]:
-    'This account has been suspended. Please contact the academy office.',
+    ACCOUNT_STATUS_MESSAGES[ACCOUNT_STATUS.SUSPENDED],
   [FORCED_LOGOUT_REASONS.PASSWORD_CHANGED]: 'Your password was changed. Sign in with your new password.',
 };
 
@@ -61,7 +61,7 @@ export default function Login() {
       navigate(location.state?.from ?? fallback, { replace: true });
     } catch (error) {
       // An admin without a staff pass gets the same answer as a wrong password, by design.
-      setSubmitError(loginErrorMessage(error));
+      setSubmitError({ message: loginErrorMessage(error), verificationMobile: error.code === 'OTP_REQUIRED' ? values.mobile : null });
     }
   };
 
@@ -83,10 +83,15 @@ export default function Login() {
       }
     >
       <FormAlert tone={!submitError && forcedLogoutReason === FORCED_LOGOUT_REASONS.PASSWORD_CHANGED ? 'info' : 'error'}>
-        {submitError ?? FORCED_LOGOUT_MESSAGES[forcedLogoutReason]}
+        {submitError?.verificationMobile ? (
+          <>
+            {submitError.message}{' '}
+            <Link to="/verify-otp" state={{ mobile: submitError.verificationMobile }} className="underline">Verify mobile number</Link>
+          </>
+        ) : submitError?.message ?? FORCED_LOGOUT_MESSAGES[forcedLogoutReason]}
       </FormAlert>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit(onSubmit, () => setSubmitError(null))} className="space-y-4" noValidate>
         <Input
           label="Mobile number"
           required

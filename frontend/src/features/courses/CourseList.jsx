@@ -4,8 +4,7 @@ import CategoryPills from './components/CategoryPills.jsx';
 import CourseCard from './components/CourseCard.jsx';
 import { useCatalog, useCourses } from './api/courses.queries.js';
 import { catalogCategories, categoryFromSlug, categoryLabel, categorySlug } from './catalog.js';
-import { useEnrollAction } from './hooks/useEnrollAction.js';
-import { useEnrolledCourseIds } from './hooks/useEnrolledCourseIds.js';
+import { useCourseEnrollment } from './hooks/useCourseEnrollment.js';
 import Input from '@/components/ui/Input.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -22,8 +21,7 @@ export default function CourseList() {
   const categories = useMemo(() => catalogCategories(catalog), [catalog]);
   const activeCategory = categoryFromSlug(categoryParam, categories);
   const { data: courses = [], isLoading, isError } = useCourses({ category: activeCategory, search });
-  const onEnroll = useEnrollAction();
-  const enrolledCourseIds = useEnrolledCourseIds();
+  const enrollment = useCourseEnrollment();
 
   const heading = useMemo(
     () => (activeCategory === 'ALL' ? 'All Courses' : categoryLabel(activeCategory)),
@@ -80,7 +78,7 @@ export default function CourseList() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {courses.map((course) => (
-              <CourseCard key={course.id} course={course} onEnroll={onEnroll} enrolled={enrolledCourseIds.has(course.id)} />
+              <CourseCard key={course.id} course={course} enrollment={enrollment} />
             ))}
           </div>
         )}

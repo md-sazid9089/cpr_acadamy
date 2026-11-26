@@ -1,7 +1,8 @@
 import { Link, useParams } from 'react-router-dom';
 import { FaPrint, FaArrowLeftLong } from 'react-icons/fa6';
 import { useCourse } from './api/courses.queries.js';
-import { useEnrollAction } from './hooks/useEnrollAction.js';
+import { useCourseEnrollment } from './hooks/useCourseEnrollment.js';
+import CourseAccessAction from './components/CourseAccessAction.jsx';
 import { useCourseSchedule } from '@/features/course-hub/api/courseHub.queries.js';
 import Button from '@/components/ui/Button.jsx';
 import { PageSkeleton } from '@/components/ui/Skeleton.jsx';
@@ -13,7 +14,7 @@ export default function CourseSchedule() {
   const { slug } = useParams();
   const { data: course, isLoading, isError } = useCourse(slug);
   const { data: routine = [], isLoading: routineLoading, isError: routineIsError, error: routineError, isFetching: routineIsFetching, refetch: refetchRoutine } = useCourseSchedule(course?.slug);
-  const onEnroll = useEnrollAction();
+  const enrollment = useCourseEnrollment();
 
   if (!slug || isError || (!isLoading && !course)) {
     return (
@@ -78,13 +79,12 @@ export default function CourseSchedule() {
               Print
             </Button>
 
-            <Button
+            <CourseAccessAction
               size="md"
               className="px-6 font-bold"
-              onClick={() => onEnroll(courseData)}
-            >
-              Enroll
-            </Button>
+              course={courseData}
+              enrollment={enrollment}
+            />
           </div>
         </div>
 

@@ -77,7 +77,10 @@ apiClient.interceptors.response.use(
         config._retried = true;
         config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
         return apiClient.request(config);
-      } catch {
+      } catch (refreshError) {
+        if (isNetworkFailure(refreshError) || refreshError.response?.status >= 500) {
+          return Promise.reject(normalizeError(refreshError));
+        }
         // Two tabs refreshing at once: the loser is told its refresh token is spent while the winner's
         // response is still in flight. Give the winner a moment to store the new session before giving up.
         const adopted = await adoptStoredSession(usedToken);
@@ -105,30 +108,38 @@ apiClient.interceptors.response.use(
 /** Flatten an axios error into a predictable shape for the UI layer. */
 export function normalizeError(error) {
   const data = error.response?.data;
-  const code = data?.code ?? 'NETWORK_ERROR';
-  const summary = data?.message ?? error.message ?? 'Something went wrong. Please check your connection and try again.';
-  /** A plain sentence for forms to show when there is nothing more specific to say. */
-  const userMessage = isNetworkFailure(error)
-    ? error.code === 'ECONNABORTED' || error.message?.includes('timeout')
-      ? 'Server is not responding. Please try again.'
-      : 'Please check your internet connection.'
-    : error.response?.status >= 500
-      ? 'Something went wrong. Please try again later.'
-      : undefined;
+  const status = error.response?.status ?? 0;
+  const code = data?.code ?? (status ? 'HTTP_ERROR' : 'NETWORK_ERROR');
+  const userMessage = transportMessage(error, status);
+  const summary = userMessage ?? data?.message ?? 'Something went wrong. Please try again later.';
   /** @type {Record<string, string>} field -> message, for RHF setError. */
   const fieldErrors = data?.errors ?? {};
   return {
-    status: error.response?.status ?? 0,
+    status,
     code,
     userMessage,
     /** Machine-readable detail from the server, e.g. which account status blocked a login. */
     reason: data?.reason,
     // Says which field and why when the server named one, so every screen that shows `message` is specific.
     message: describeApiError(code, summary, fieldErrors),
-    /** The server's own headline, e.g. "Please check the submitted fields." */
     summary,
     fieldErrors,
   };
+}
+
+function transportMessage(error, status) {
+  const unavailable = 'Server is not responding. Please try again.';
+  if (isNetworkFailure(error)) {
+    return ['ECONNABORTED', 'ETIMEDOUT', 'ECONNREFUSED'].includes(error.code)
+      ? unavailable : 'Please check your internet connection.';
+  }
+  if (status === 502 || status === 504) return unavailable;
+  if (status === 503) {
+    const data = error.response?.data;
+    if (!data?.code || data.code === 'SERVICE_UNAVAILABLE') return unavailable;
+    if (data.message) return; // Keep actionable service errors (e.g. an alternative to SMS).
+  }
+  if (status >= 500) return 'Something went wrong. Please try again later.';
 }
 
 /** True when the request never got an answer from the server (offline, DNS, refused, timed out). */

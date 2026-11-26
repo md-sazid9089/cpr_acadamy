@@ -4,8 +4,7 @@ import { FaArrowRightLong } from 'react-icons/fa6';
 import CategoryPills from '@/features/courses/components/CategoryPills.jsx';
 import CourseCard from '@/features/courses/components/CourseCard.jsx';
 import { useFeaturedCourses } from '@/features/courses/api/courses.queries.js';
-import { useEnrollAction } from '@/features/courses/hooks/useEnrollAction.js';
-import { useEnrolledCourseIds } from '@/features/courses/hooks/useEnrolledCourseIds.js';
+import { useCourseEnrollment } from '@/features/courses/hooks/useCourseEnrollment.js';
 import Button from '@/components/ui/Button.jsx';
 import ContentSkeleton from '@/components/ui/Skeleton.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
@@ -14,8 +13,7 @@ import EmptyState from '@/components/ui/EmptyState.jsx';
 export default function FeaturedCourses() {
   const [category, setCategory] = useState('ALL');
   const { data: courses = [], isLoading, isError } = useFeaturedCourses();
-  const onEnroll = useEnrollAction();
-  const enrolledCourseIds = useEnrolledCourseIds();
+  const enrollment = useCourseEnrollment();
 
   // Filtering happens client-side here: the featured set is small and already
   // in cache, so a per-category request would only add latency.
@@ -74,7 +72,7 @@ export default function FeaturedCourses() {
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
               {visible.map((course) => (
-                <CourseCard key={course.id} course={course} onEnroll={onEnroll} enrolled={enrolledCourseIds.has(course.id)} />
+                <CourseCard key={course.id} course={course} enrollment={enrollment} />
               ))}
             </div>
           )}

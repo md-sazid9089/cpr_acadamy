@@ -80,7 +80,7 @@ export default function Hero() {
 
         {/* Two-column hero: marketing copy on the left, poster carousel card on
             the right. Below lg the copy stacks above the card. */}
-        <div className="relative top-10 grid items-center gap-12 lg:top-16 lg:grid-cols-2 lg:gap-20">
+        <div className="relative grid items-center gap-12 pt-10 md:top-10 md:pt-0 lg:top-16 lg:grid-cols-2 lg:gap-20">
           <div className="text-center lg:text-left" lang="bn">
             <h2 className="text-4xl font-extrabold leading-tight tracking-normal text-brand-900 sm:text-5xl lg:text-6xl dark:text-white">
               আপনার সফলতার প্রস্তুতি শুরু হোক{' '}

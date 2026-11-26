@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate } from 'react-router-dom';
 import { FaCheck } from 'react-icons/fa6';
-import AuthCard from './components/AuthCard.jsx';
+import AuthCard, { FormAlert } from './components/AuthCard.jsx';
 import { fetchApprovalStatus } from './api/auth.api.js';
 import Button from '@/components/ui/Button.jsx';
 import Badge from '@/components/ui/Badge.jsx';
 import { useAuthStore } from '@/lib/auth';
 import { ACCOUNT_STATUS, CONTACT } from '@/constants';
-import { maskMobile } from '@/lib/utils';
+import { ACCOUNT_STATUS_MESSAGES } from './login-errors.js';
 
 const STEPS = [
   { key: 'registered', label: 'Registration submitted' },
@@ -24,20 +24,19 @@ const STEPS = [
 export default function PendingApproval() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
-  const pendingMobile = useAuthStore((s) => s.pendingMobile);
   const logout = useAuthStore((s) => s.logout);
   const setUser = useAuthStore((s) => s.setUser);
 
-  const mobile = user?.mobile ?? pendingMobile;
-  const status = user?.status ?? ACCOUNT_STATUS.AWAITING_APPROVAL;
+  const status = user?.status;
   const isRejected = status === ACCOUNT_STATUS.REJECTED;
 
   // Poll so the screen flips over on its own the moment an admin approves.
-  const { refetch, isFetching } = useQuery({
-    queryKey: ['auth', 'approval-status', mobile],
+  const { refetch, isFetching, error } = useQuery({
+    queryKey: ['auth', 'approval-status', user?.id],
     queryFn: async () => {
       const result = await fetchApprovalStatus();
-      if (user && result.status !== user.status) setUser({ ...user, status: result.status });
+      const current = useAuthStore.getState().user;
+      if (current && current.id === user?.id && result.status !== current.status) setUser({ ...current, status: result.status });
       return result;
     },
     enabled: Boolean(accessToken && user) && !isRejected && status !== ACCOUNT_STATUS.ACTIVE,
@@ -45,7 +44,8 @@ export default function PendingApproval() {
   });
 
   // Approved (by the poll, "Check status", or before arriving here): nothing left to wait for.
-  if (user && status === ACCOUNT_STATUS.ACTIVE) return <Navigate to="/dashboard" replace />;
+  if (!accessToken || !user) return <Navigate to="/login" replace />;
+  if (status === ACCOUNT_STATUS.ACTIVE) return <Navigate to="/dashboard" replace />;
 
   // How far along the four-step strip we are.
   const reachedIndex = isRejected ? 1 : 2;
@@ -53,11 +53,7 @@ export default function PendingApproval() {
   return (
     <AuthCard
       title={isRejected ? 'Registration not approved' : 'Your account is awaiting approval'}
-      description={
-        isRejected
-          ? 'Our team could not verify the details you submitted.'
-          : `Thanks for verifying ${mobile ? maskMobile(mobile) : 'your number'}. An administrator reviews every new registration before it is activated.`
-      }
+      description={ACCOUNT_STATUS_MESSAGES[status]}
       footer={
         <>
           Approved already?{' '}
@@ -112,6 +108,7 @@ export default function PendingApproval() {
         </div>
       )}
 
+      <FormAlert>{error?.message}</FormAlert>
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {!isRejected && (
           <Button variant="outline" fullWidth isLoading={isFetching} onClick={() => refetch()}>
